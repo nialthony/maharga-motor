@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Lock, AlertCircle, X } from 'lucide-react';
+import { Lock, AlertCircle, X, Eye, EyeOff } from 'lucide-react';
 
 export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, employees }) {
   const [username, setUsername] = useState('owner');
-  const [pin, setPin] = useState('8888');
+  const [pin, setPin] = useState('');
+  const [showPin, setShowPin] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   if (!isOpen) return null;
@@ -11,16 +12,17 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, emplo
   const handleLogin = (e) => {
     e.preventDefault();
     const found = employees.find(
-      emp => emp.username.toLowerCase() === username.toLowerCase() && emp.pin === pin
+      emp => emp.username.toLowerCase() === username.toLowerCase() && String(emp.pin).trim() === pin.trim()
     );
 
     if (found) {
-      if (found.status === 'suspended') {
-        setErrorMsg('Akun ini sedang dinonaktifkan (suspended). Hubungi Owner.');
+      if (found.status === 'suspended' || found.status === 'inactive') {
+        setErrorMsg('Akun ini sedang dinonaktifkan. Hubungi Owner.');
         return;
       }
       onLoginSuccess(found);
       setErrorMsg('');
+      setPin('');
       onClose();
     } else {
       setErrorMsg('Username atau PIN salah! Silakan periksa kembali.');
@@ -42,8 +44,8 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, emplo
           <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto">
             <Lock className="w-5 h-5" />
           </div>
-          <h3 className="text-base font-bold text-zinc-100">Autentikasi Staf & Admin</h3>
-          <p className="text-xs text-zinc-400">Masuk untuk mengelola sistem Maharga Motor</p>
+          <h3 className="text-base font-bold text-zinc-100">Ganti Akun & Autentikasi</h3>
+          <p className="text-xs text-zinc-400">Pilih akun staf dan masukkan PIN</p>
         </div>
 
         {errorMsg && (
@@ -60,8 +62,8 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, emplo
               value={username}
               onChange={(e) => {
                 setUsername(e.target.value);
-                const emp = employees.find(u => u.username === e.target.value);
-                if (emp) setPin(emp.pin);
+                setPin('');
+                setErrorMsg('');
               }}
               className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-100 font-bold focus:outline-none focus:border-amber-400"
             >
@@ -77,17 +79,24 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, emplo
             <label className="text-zinc-300 block mb-1 font-medium">PIN Keamanan (4-6 Digit):</label>
             <div className="relative">
               <input
-                type="password"
+                type={showPin ? 'text' : 'password'}
                 required
                 maxLength={6}
+                inputMode="numeric"
+                placeholder="Ketik PIN..."
                 value={pin}
-                onChange={(e) => setPin(e.target.value)}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
                 className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-amber-400 font-mono font-bold tracking-widest text-center text-base focus:outline-none focus:border-amber-400"
               />
+              <button
+                type="button"
+                onClick={() => setShowPin(!showPin)}
+                aria-label={showPin ? 'Sembunyikan PIN' : 'Tampilkan PIN'}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-200 p-1"
+              >
+                {showPin ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
             </div>
-            <span className="text-[10px] text-zinc-500 mt-1 block text-center">
-              Default Owner PIN: <code className="text-amber-400 font-mono">8888</code> | Admin: <code className="text-amber-400 font-mono">1234</code>
-            </span>
           </div>
 
           <button

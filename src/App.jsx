@@ -13,6 +13,7 @@ import AdminLoginModal from './components/AdminLoginModal';
 import UnitDetailModal from './components/UnitDetailModal';
 import DocumentPrintModal from './components/DocumentPrintModal';
 import NewUnitModal from './components/NewUnitModal';
+import LoginScreen from './components/LoginScreen';
 
 import { 
   initialUnits, 
@@ -120,8 +121,15 @@ export default function App() {
     };
   }, []);
 
-  // Active User session (default Owner)
-  const [currentUser, setCurrentUser] = useState(initialEmployees[0]);
+  // Active User session (default: null -> Show Login Screen)
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('maharga_auth_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
 
@@ -207,10 +215,37 @@ export default function App() {
   };
 
   const handleLoginSuccess = (user) => {
+    try {
+      sessionStorage.setItem('maharga_auth_user', JSON.stringify(user));
+    } catch (e) {
+      console.warn('sessionStorage error', e);
+    }
     setCurrentUser(user);
     setActiveTab('dashboard');
     setIsAdminPanelOpen(false);
+    setIsLoginModalOpen(false);
   };
+
+  const handleLogout = () => {
+    try {
+      sessionStorage.removeItem('maharga_auth_user');
+    } catch (e) {
+      console.warn('sessionStorage error', e);
+    }
+    setCurrentUser(null);
+    setIsAdminPanelOpen(false);
+    setIsLoginModalOpen(false);
+  };
+
+  // Tampilkan Login Screen jika belum login
+  if (!currentUser) {
+    return (
+      <LoginScreen
+        employees={employees}
+        onLoginSuccess={handleLoginSuccess}
+      />
+    );
+  }
 
   const readyCount = units.filter(u => u.status === 'Tersedia').length;
   const tempoAlertCount = salesList.filter(s => s.paymentMethod === 'dp-tempo' && s.status === 'Tempo Aktif').length;
@@ -244,6 +279,7 @@ export default function App() {
         availableCount={readyCount}
         tempoAlertCount={tempoAlertCount}
         cloudSyncStatus={cloudSyncStatus}
+        onLogout={handleLogout}
       />
 
       {/* Main Workspace */}

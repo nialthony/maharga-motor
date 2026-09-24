@@ -13,7 +13,8 @@ import {
   X, 
   DollarSign,
   Settings,
-  Cloud
+  Cloud,
+  LogOut
 } from 'lucide-react';
 
 export default function Navbar({ 
@@ -25,7 +26,8 @@ export default function Navbar({
   onOpenAdminPanel,
   availableCount,
   tempoAlertCount,
-  cloudSyncStatus = 'synced'
+  cloudSyncStatus = 'synced',
+  onLogout
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isOwnerOrAdmin = currentUser.role === 'owner' || currentUser.role === 'admin';
@@ -157,6 +159,19 @@ export default function Navbar({
                 <KeyRound className="w-3 h-3 text-zinc-500" />
               </button>
 
+              {/* Logout Button */}
+              {onLogout && (
+                <button
+                  onClick={onLogout}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-rose-950/40 hover:text-rose-400 hover:border-rose-900/50 border border-zinc-800 transition-colors text-zinc-400 text-xs font-semibold"
+                  title="Keluar dari sistem"
+                  aria-label="Keluar dari sistem"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Keluar</span>
+                </button>
+              )}
+
               {/* Mobile Drawer Trigger */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -280,6 +295,18 @@ export default function Navbar({
             >
               Ganti Pengguna (Login)
             </button>
+            {onLogout && (
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  onLogout();
+                }}
+                className="w-full py-2.5 rounded-xl bg-rose-950/40 border border-rose-900/60 text-rose-300 text-xs font-bold flex items-center justify-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                Keluar dari Sistem
+              </button>
+            )}
           </div>
         </div>
       )}

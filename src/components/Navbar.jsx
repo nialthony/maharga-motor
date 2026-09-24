@@ -71,24 +71,27 @@ export default function Navbar({
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
             {/* Logo */}
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-700 flex items-center justify-center text-amber-400 font-bold text-sm tracking-wider font-mono shrink-0">
-                MM
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-bold text-zinc-100 tracking-tight font-mono">
-                    MAHARGA MOTOR
-                  </span>
-                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono font-bold ${
-                    isOwnerOrAdmin ? 'bg-amber-950 text-amber-400 border border-amber-800' : 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                  }`}>
-                    {currentUser.role.toUpperCase()}
-                  </span>
-                </div>
-                <p className="text-[10px] text-zinc-400 truncate max-w-[170px] sm:max-w-none">
-                  {isOwnerOrAdmin ? 'Portal Manajemen Showroom' : 'Sales Portal'}
-                </p>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setActiveTab('dashboard')}
+                className="flex items-center focus:outline-none"
+                aria-label="Kembali ke Dashboard"
+              >
+                <img 
+                  src="/logo.png" 
+                  alt="Maharga Motor Logo" 
+                  className="h-8 sm:h-9 w-auto object-contain transition-transform hover:scale-105"
+                />
+              </button>
+              <div className="flex items-center gap-1.5">
+                <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold ${
+                  isOwnerOrAdmin ? 'bg-amber-950 text-amber-400 border border-amber-800' : 'bg-emerald-950 text-emerald-400 border border-emerald-800'
+                }`}>
+                  {currentUser.role.toUpperCase()}
+                </span>
+                <span className="hidden lg:inline text-[10px] text-zinc-500 font-mono">
+                  • {isOwnerOrAdmin ? 'Portal Showroom' : 'Sales Portal'}
+                </span>
               </div>
             </div>
 

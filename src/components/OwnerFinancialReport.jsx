@@ -251,7 +251,7 @@ export default function OwnerFinancialReport({ salesList = [], employees = [], u
             <div className="p-6 bg-white text-zinc-900 space-y-4" id="printable-document">
               <div className="border-b-2 border-zinc-900 pb-3 flex justify-between items-start">
                 <div>
-                  <h2 className="text-lg font-black tracking-tight">MAHARGA MOTOR</h2>
+                  <img src="/logo.png" alt="Maharga Motor" className="h-8 w-auto object-contain mb-1" />
                   <p className="text-xs text-zinc-600">Jual Beli Motor Bekas Berkualitas & Cash-Tempo</p>
                 </div>
                 <div className="text-right">

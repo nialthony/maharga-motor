@@ -54,9 +54,7 @@ export default function DocumentPrintModal({ transaction, onClose }) {
           {/* Header */}
           <div className="border-b-2 border-zinc-900 pb-3 mb-5 flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-black tracking-tight text-zinc-950 font-mono">
-                MAHARGA MOTOR
-              </h1>
+              <img src="/logo.png" alt="Maharga Motor" className="h-10 w-auto object-contain mb-1.5" />
               <p className="text-xs text-zinc-600 font-medium">
                 Pusat Jual Beli Sepeda Motor Bekas Berkualitas & Bergaransi
               </p>

@@ -95,18 +95,15 @@ export default function LoginScreen({ employees = [], onLoginSuccess }) {
             SHOWROOM ERP SECURITY
           </div>
 
-          <div className="flex items-center justify-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-700 flex items-center justify-center text-amber-400 font-bold text-lg font-mono shadow-lg shrink-0">
-              MM
-            </div>
-            <div className="text-left">
-              <h1 className="text-2xl font-extrabold tracking-tight text-zinc-100 font-mono leading-none">
-                MAHARGA MOTOR
-              </h1>
-              <p className="text-xs text-zinc-400 mt-1">
-                Showroom Management System
-              </p>
-            </div>
+          <div className="flex flex-col items-center justify-center pt-2">
+            <img 
+              src="/logo.png" 
+              alt="Maharga Motor Logo" 
+              className="h-16 sm:h-20 w-auto object-contain drop-shadow-xl hover:scale-105 transition-transform" 
+            />
+            <p className="text-xs text-zinc-400 mt-2 font-mono tracking-wider">
+              SHOWROOM MANAGEMENT SYSTEM
+            </p>
           </div>
         </div>
 

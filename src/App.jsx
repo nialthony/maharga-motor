@@ -21,9 +21,16 @@ import {
   initialFiles,
   initialMechanics 
 } from './data/mockData';
+import { 
+  fetchCloudData, 
+  syncAllToCloud, 
+  saveNewUnitToCloud, 
+  saveTransactionToCloud, 
+  subscribeToCloudRealtime 
+} from './lib/cloudStore';
 
 export default function App() {
-  // Load initial states from localStorage if available, fallback to mockData (empty for production)
+  // Load initial states from localStorage if available, fallback to mockData
   const [units, setUnits] = useState(() => {
     try {
       const saved = localStorage.getItem('maharga_units_v3_clean');
@@ -45,8 +52,9 @@ export default function App() {
   const [employees, setEmployees] = useState(initialEmployees);
   const [files, setFiles] = useState(initialFiles);
   const [mechanics] = useState(initialMechanics);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState('syncing'); // 'synced' | 'syncing' | 'offline'
 
-  // Sync to localStorage
+  // Sync to localStorage as fast local cache
   useEffect(() => {
     try {
       localStorage.setItem('maharga_units_v3_clean', JSON.stringify(units));
@@ -63,6 +71,40 @@ export default function App() {
     }
   }, [salesList]);
 
+  // Cloud Sync on Mount & Realtime Subscription across all devices
+  useEffect(() => {
+    let isMounted = true;
+
+    // 1. Fetch latest data from Supabase Cloud
+    fetchCloudData().then(cloudData => {
+      if (isMounted && cloudData) {
+        if (cloudData.units?.length) setUnits(cloudData.units);
+        if (cloudData.salesList?.length) setSalesList(cloudData.salesList);
+        if (cloudData.employees?.length) setEmployees(cloudData.employees);
+        setCloudSyncStatus('synced');
+      } else if (isMounted) {
+        setCloudSyncStatus('offline');
+      }
+    }).catch(() => {
+      if (isMounted) setCloudSyncStatus('offline');
+    });
+
+    // 2. Subscribe to realtime changes from other devices
+    const unsubscribe = subscribeToCloudRealtime((remoteData) => {
+      if (isMounted && remoteData) {
+        if (remoteData.units) setUnits(remoteData.units);
+        if (remoteData.salesList) setSalesList(remoteData.salesList);
+        if (remoteData.employees) setEmployees(remoteData.employees);
+        setCloudSyncStatus('synced');
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
+
   // Active User session (default Owner)
   const [currentUser, setCurrentUser] = useState(initialEmployees[0]);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -75,7 +117,7 @@ export default function App() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [currentTransaction, setCurrentTransaction] = useState(null);
 
-  // Handlers
+  // Handlers with Cloud Push
   const handleSelectUnit = (unit) => {
     setSelectedUnit(unit);
     setIsDetailModalOpen(true);
@@ -87,14 +129,19 @@ export default function App() {
   };
 
   const handleTransactionComplete = (newTx, unitId, newStatus) => {
-    setUnits(prev => prev.map(u => u.id === unitId ? { ...u, status: newStatus } : u));
-    setSalesList(prev => [newTx, ...prev]);
+    const updatedUnits = units.map(u => u.id === unitId ? { ...u, status: newStatus } : u);
+    const updatedSales = [newTx, ...salesList];
+    setUnits(updatedUnits);
+    setSalesList(updatedSales);
     setCurrentTransaction(newTx);
     setIsPrintModalOpen(true);
+
+    // Kirim langsung ke Supabase Cloud
+    saveTransactionToCloud(newTx, unitId, newStatus, updatedUnits, updatedSales, employees);
   };
 
   const handleAddRepair = (unitId, repair) => {
-    setUnits(prev => prev.map(u => {
+    const updatedUnits = units.map(u => {
       if (u.id === unitId) {
         const updatedRepairs = [repair, ...(u.repairs || [])];
         const updatedRepairCost = (u.repairCost || 0) + repair.cost;
@@ -105,16 +152,23 @@ export default function App() {
         };
       }
       return u;
-    }));
+    });
+    setUnits(updatedUnits);
+    // Kirim update ke Supabase Cloud
+    syncAllToCloud(updatedUnits, salesList, employees);
   };
 
   const handleAddUnit = (newUnit) => {
-    setUnits(prev => [newUnit, ...prev]);
+    const updatedUnits = [newUnit, ...units];
+    setUnits(updatedUnits);
     setActiveTab('inventory');
+
+    // Kirim langsung ke Supabase Cloud
+    saveNewUnitToCloud(newUnit, updatedUnits, salesList, employees);
   };
 
   const handlePayRemaining = (txId) => {
-    setSalesList(prev => prev.map(tx => {
+    const updatedSales = salesList.map(tx => {
       if (tx.id === txId) {
         return {
           ...tx,
@@ -123,7 +177,15 @@ export default function App() {
         };
       }
       return tx;
-    }));
+    });
+    setSalesList(updatedSales);
+    // Kirim update ke Supabase Cloud
+    syncAllToCloud(units, updatedSales, employees);
+  };
+
+  const handleUpdateEmployees = (newEmployees) => {
+    setEmployees(newEmployees);
+    syncAllToCloud(units, salesList, newEmployees);
   };
 
   const handleLoginSuccess = (user) => {
@@ -163,6 +225,7 @@ export default function App() {
         onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
         availableCount={readyCount}
         tempoAlertCount={tempoAlertCount}
+        cloudSyncStatus={cloudSyncStatus}
       />
 
       {/* Main Workspace */}
@@ -236,7 +299,7 @@ export default function App() {
         {activeTab === 'employees' && (
           <EmployeeManagement
             employees={employees}
-            setEmployees={setEmployees}
+            setEmployees={handleUpdateEmployees}
             currentRole={currentUser.role}
             onSwitchUser={setCurrentUser}
           />

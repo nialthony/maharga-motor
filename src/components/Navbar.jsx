@@ -12,7 +12,8 @@ import {
   Menu, 
   X, 
   DollarSign,
-  Settings
+  Settings,
+  Cloud
 } from 'lucide-react';
 
 export default function Navbar({ 
@@ -23,7 +24,8 @@ export default function Navbar({
   onOpenLoginModal,
   onOpenAdminPanel,
   availableCount,
-  tempoAlertCount 
+  tempoAlertCount,
+  cloudSyncStatus = 'synced'
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isOwnerOrAdmin = currentUser.role === 'owner' || currentUser.role === 'admin';
@@ -90,6 +92,30 @@ export default function Navbar({
 
             {/* Desktop Action Buttons */}
             <div className="flex items-center gap-2">
+              {/* Cloud Sync Status Indicator */}
+              <div 
+                className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px] font-mono font-medium"
+                title="Status Sinkronisasi Cloud Supabase"
+              >
+                {cloudSyncStatus === 'syncing' ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    <span className="text-zinc-400">Sinkronisasi...</span>
+                  </>
+                ) : cloudSyncStatus === 'synced' ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <Cloud className="w-3 h-3 text-emerald-400" />
+                    <span className="text-emerald-400 font-bold">Cloud Live</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
+                    <span className="text-zinc-400">Offline Cache</span>
+                  </>
+                )}
+              </div>
+
               {isOwnerOrAdmin && (
                 <button
                   onClick={onOpenAdminPanel}

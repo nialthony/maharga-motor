@@ -153,3 +153,61 @@ VALUES (
         "default_commission": 200000
     }'::jsonb
 ) ON CONFLICT (key) DO NOTHING;
+
+-- ==============================================================================
+-- 10. ROW LEVEL SECURITY (RLS) & MULTI-DEVICE ACCESS POLICIES
+-- Wajib dijalankan agar API Client Frontend dapat Membaca & Menulis Data Cloud
+-- ==============================================================================
+ALTER TABLE employees ENABLE ROW LEVEL SECURITY;
+ALTER TABLE units ENABLE ROW LEVEL SECURITY;
+ALTER TABLE repairs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sales_transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE system_settings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public full access to employees" ON employees;
+CREATE POLICY "Public full access to employees" ON employees FOR ALL TO public USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public full access to units" ON units;
+CREATE POLICY "Public full access to units" ON units FOR ALL TO public USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public full access to repairs" ON repairs;
+CREATE POLICY "Public full access to repairs" ON repairs FOR ALL TO public USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public full access to sales_transactions" ON sales_transactions;
+CREATE POLICY "Public full access to sales_transactions" ON sales_transactions FOR ALL TO public USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public full access to system_settings" ON system_settings;
+CREATE POLICY "Public full access to system_settings" ON system_settings FOR ALL TO public USING (true) WITH CHECK (true);
+
+-- ==============================================================================
+-- 11. SUPABASE REALTIME REPLICATION
+-- Sinkronisasi instan antar-perangkat secara otomatis tanpa perlu refresh
+-- ==============================================================================
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'units'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE units;
+    END IF;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'sales_transactions'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE sales_transactions;
+    END IF;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'repairs'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE repairs;
+    END IF;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' AND tablename = 'employees'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE employees;
+    END IF;
+END $$;
+

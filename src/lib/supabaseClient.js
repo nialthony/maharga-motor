@@ -2,8 +2,10 @@ import { createClient } from '@supabase/supabase-js';
 
 // Get Supabase credentials from Vite ENV or Admin Panel LocalStorage setting
 export const getSupabaseConfig = () => {
-  const envUrl = import.meta.env?.VITE_SUPABASE_URL;
-  const envKey = import.meta.env?.VITE_SUPABASE_ANON_KEY;
+  const envUrl = import.meta.env?.VITE_SUPABASE_URL || import.meta.env?.SUPABASE_URL;
+  const envKey = import.meta.env?.VITE_SUPABASE_ANON_KEY || 
+                 import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY || 
+                 import.meta.env?.SUPABASE_PUBLISHABLE_KEY;
   
   try {
     const customUrl = localStorage.getItem('maharga_supabase_url');

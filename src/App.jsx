@@ -49,7 +49,14 @@ export default function App() {
     }
   });
 
-  const [employees, setEmployees] = useState(initialEmployees);
+  const [employees, setEmployees] = useState(() => {
+    try {
+      const saved = localStorage.getItem('maharga_employees_v3_clean');
+      return saved ? JSON.parse(saved) : initialEmployees;
+    } catch {
+      return initialEmployees;
+    }
+  });
   const [files, setFiles] = useState(initialFiles);
   const [mechanics] = useState(initialMechanics);
   const [cloudSyncStatus, setCloudSyncStatus] = useState('syncing'); // 'synced' | 'syncing' | 'offline'
@@ -70,6 +77,14 @@ export default function App() {
       console.warn('localStorage sync error', e);
     }
   }, [salesList]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('maharga_employees_v3_clean', JSON.stringify(employees));
+    } catch (e) {
+      console.warn('localStorage sync error for employees', e);
+    }
+  }, [employees]);
 
   // Cloud Sync on Mount & Realtime Subscription across all devices
   useEffect(() => {
@@ -92,9 +107,9 @@ export default function App() {
     // 2. Subscribe to realtime changes from other devices
     const unsubscribe = subscribeToCloudRealtime((remoteData) => {
       if (isMounted && remoteData) {
-        if (remoteData.units) setUnits(remoteData.units);
+        if (remoteData.units?.length) setUnits(remoteData.units);
         if (remoteData.salesList) setSalesList(remoteData.salesList);
-        if (remoteData.employees) setEmployees(remoteData.employees);
+        if (remoteData.employees?.length) setEmployees(remoteData.employees);
         setCloudSyncStatus('synced');
       }
     });
@@ -183,9 +198,12 @@ export default function App() {
     syncAllToCloud(units, updatedSales, employees);
   };
 
-  const handleUpdateEmployees = (newEmployees) => {
-    setEmployees(newEmployees);
-    syncAllToCloud(units, salesList, newEmployees);
+  const handleUpdateEmployees = (updaterOrArray) => {
+    setEmployees(prev => {
+      const nextEmployees = typeof updaterOrArray === 'function' ? updaterOrArray(prev) : updaterOrArray;
+      syncAllToCloud(units, salesList, nextEmployees);
+      return nextEmployees;
+    });
   };
 
   const handleLoginSuccess = (user) => {

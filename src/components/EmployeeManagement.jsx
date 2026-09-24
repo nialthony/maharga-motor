@@ -32,22 +32,30 @@ export default function EmployeeManagement({ employees, setEmployees, currentRol
 
   const handleCreateEmployee = (e) => {
     e.preventDefault();
-    if (!username.trim() || !name.trim()) return;
+    const cleanUsername = username.toLowerCase().trim().replace(/\s+/g, '_');
+    const cleanName = name.trim();
+    if (!cleanUsername || !cleanName) return;
+
+    if (employees.some(emp => emp.username.toLowerCase() === cleanUsername)) {
+      alert(`Username "${cleanUsername}" sudah digunakan! Silakan gunakan username unik lain.`);
+      return;
+    }
 
     const newEmp = {
       id: Date.now(),
-      username: username.toLowerCase().replace(/\s+/g, '_'),
-      name,
+      username: cleanUsername,
+      name: cleanName,
       role,
-      email,
-      phone,
-      pin,
+      email: email.trim(),
+      phone: phone.trim(),
+      pin: pin.trim() || '1234',
       status: 'active',
       joinedDate: new Date().toISOString().split('T')[0],
       permissions: role === 'owner' ? ['all_access'] : role === 'admin' ? ['inventory_manage', 'pos_access', 'file_manager'] : ['pos_access', 'view_catalog']
     };
 
-    setEmployees(prev => [...prev, newEmp]);
+    const nextEmployees = [...employees, newEmp];
+    setEmployees(nextEmployees);
     setIsModalOpen(false);
     setUsername('');
     setName('');
@@ -60,14 +68,17 @@ export default function EmployeeManagement({ employees, setEmployees, currentRol
     e.preventDefault();
     if (!targetEmployee || !newPin.trim()) return;
 
-    setEmployees(prev => prev.map(emp => emp.id === targetEmployee.id ? { ...emp, pin: newPin } : emp));
+    const nextEmployees = employees.map(emp => 
+      emp.id === targetEmployee.id ? { ...emp, pin: newPin.trim() } : emp
+    );
+    setEmployees(nextEmployees);
     setIsPinModalOpen(false);
     setNewPin('');
     setTargetEmployee(null);
   };
 
   const handleToggleStatus = (id) => {
-    setEmployees(prev => prev.map(emp => {
+    const nextEmployees = employees.map(emp => {
       if (emp.id === id) {
         return {
           ...emp,
@@ -75,12 +86,14 @@ export default function EmployeeManagement({ employees, setEmployees, currentRol
         };
       }
       return emp;
-    }));
+    });
+    setEmployees(nextEmployees);
   };
 
   const handleDeleteEmployee = (id) => {
     if (confirm('Yakin ingin menghapus akun staf/karyawan ini?')) {
-      setEmployees(prev => prev.filter(emp => emp.id !== id));
+      const nextEmployees = employees.filter(emp => emp.id !== id);
+      setEmployees(nextEmployees);
     }
   };
 

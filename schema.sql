@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS employees (
     email VARCHAR(100),
     phone VARCHAR(25),
     pin VARCHAR(10) NOT NULL DEFAULT '1234',
-    status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+    status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'suspended')),
     joined_date DATE DEFAULT CURRENT_DATE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -210,4 +210,9 @@ BEGIN
         ALTER PUBLICATION supabase_realtime ADD TABLE employees;
     END IF;
 END $$;
+
+-- 12. SINKRONISASI SEQUENCE PRIMARY KEY (Mencegah Duplicate Key Saat Insert Akun / Unit Baru)
+SELECT setval(pg_get_serial_sequence('employees', 'id'), COALESCE(MAX(id), 1)) FROM employees;
+SELECT setval(pg_get_serial_sequence('units', 'id'), COALESCE(MAX(id), 1)) FROM units;
+
 

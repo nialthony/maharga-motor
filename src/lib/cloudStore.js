@@ -68,6 +68,41 @@ export const unitFromDb = (row, repairs = []) => ({
 });
 
 /**
+ * Konversi karyawan dari UI (camelCase) ke Supabase (snake_case)
+ */
+export const employeeToDb = (emp) => ({
+  id: emp.id || Date.now(),
+  username: emp.username.toLowerCase().replace(/\s+/g, '_'),
+  name: emp.name,
+  role: emp.role || 'sales',
+  email: emp.email || '',
+  phone: emp.phone || '',
+  pin: String(emp.pin || '1234'),
+  status: emp.status === 'suspended' ? 'inactive' : (emp.status || 'active'),
+  joined_date: emp.joinedDate || new Date().toISOString().split('T')[0]
+});
+
+/**
+ * Konversi karyawan dari Supabase (snake_case) ke UI (camelCase)
+ */
+export const employeeFromDb = (row) => ({
+  id: row.id,
+  username: row.username,
+  name: row.name,
+  role: row.role,
+  email: row.email || '',
+  phone: row.phone || '',
+  pin: String(row.pin || '1234'),
+  status: row.status === 'inactive' ? 'suspended' : (row.status || 'active'),
+  joinedDate: row.joined_date || '',
+  permissions: row.role === 'owner' 
+    ? ['all_access'] 
+    : row.role === 'admin' 
+    ? ['inventory_manage', 'pos_access', 'file_manager'] 
+    : ['pos_access', 'view_catalog']
+});
+
+/**
  * Muat seluruh data dari Supabase Cloud (Units, Sales, Employees)
  */
 export const fetchCloudData = async () => {
@@ -76,23 +111,36 @@ export const fetchCloudData = async () => {
   }
 
   try {
-    // 1. Cek dulu apakah ada master snapshot di system_settings
+    // 1. Cek master snapshot di system_settings
     const { data: snapshotData } = await supabase
       .from('system_settings')
       .select('value')
       .eq('key', 'maharga_master_state')
       .single();
 
+    // 2. Baca tabel employees langsung dari Supabase
+    const { data: dbEmployees } = await supabase
+      .from('employees')
+      .select('*')
+      .order('id', { ascending: true });
+
+    let finalEmployees = initialEmployees;
+    if (dbEmployees && dbEmployees.length > 0) {
+      finalEmployees = dbEmployees.map(employeeFromDb);
+    } else if (snapshotData?.value?.employees?.length) {
+      finalEmployees = snapshotData.value.employees;
+    }
+
     if (snapshotData?.value?.units?.length) {
       return {
         units: snapshotData.value.units,
         salesList: snapshotData.value.salesList || [],
-        employees: snapshotData.value.employees || initialEmployees,
+        employees: finalEmployees,
         source: 'supabase_cloud'
       };
     }
 
-    // 2. Jika belum ada snapshot, baca dari tabel units langsung
+    // 3. Jika belum ada snapshot, baca dari tabel units
     const { data: dbUnits, error: unitErr } = await supabase
       .from('units')
       .select('*')
@@ -133,12 +181,12 @@ export const fetchCloudData = async () => {
       return {
         units: formattedUnits,
         salesList: formattedSales,
-        employees: initialEmployees,
+        employees: finalEmployees,
         source: 'supabase_cloud'
       };
     }
 
-    // 3. Jika database Supabase masih kosong, lakukan initial seed otomatis
+    // 4. Jika database Supabase masih kosong, lakukan initial seed
     await syncAllToCloud(initialUnits, initialSalesList, initialEmployees);
     return {
       units: initialUnits,
@@ -159,22 +207,30 @@ export const syncAllToCloud = async (units, salesList, employees) => {
   if (!isSupabaseConfigured() || !supabase) return false;
 
   try {
-    // 1. Simpan Master State Snapshot di system_settings (garansi sinkron 100% antar-device)
+    const validEmployees = Array.isArray(employees) ? employees : [];
+
+    // 1. Simpan Master State Snapshot di system_settings
     await supabase.from('system_settings').upsert({
       key: 'maharga_master_state',
       value: {
         units,
         salesList,
-        employees,
+        employees: validEmployees,
         lastUpdated: new Date().toISOString()
       },
       updated_at: new Date().toISOString()
     });
 
-    // 2. Simpan juga ke tabel units individual secara non-blocking
+    // 2. Simpan ke tabel units individual
     if (units && units.length > 0) {
       const dbRows = units.map(unitToDb);
       await supabase.from('units').upsert(dbRows, { onConflict: 'id' });
+    }
+
+    // 3. Simpan ke tabel employees individual
+    if (validEmployees.length > 0) {
+      const empRows = validEmployees.map(employeeToDb);
+      await supabase.from('employees').upsert(empRows, { onConflict: 'username' });
     }
 
     return true;
@@ -185,14 +241,44 @@ export const syncAllToCloud = async (units, salesList, employees) => {
 };
 
 /**
+ * Simpan akun staf / karyawan baru langsung ke Supabase Cloud
+ */
+export const saveNewEmployeeToCloud = async (newEmp, allEmployees, allUnits, allSales) => {
+  if (!isSupabaseConfigured() || !supabase) return;
+  try {
+    // 1. Insert ke tabel employees
+    const dbRow = employeeToDb(newEmp);
+    const { error } = await supabase.from('employees').upsert([dbRow], { onConflict: 'username' });
+    if (error) {
+      console.warn('Gagal upsert tabel employees, menggunakan master state fallback:', error);
+    }
+    // 2. Update master snapshot agar device lain langsung dapat
+    await syncAllToCloud(allUnits, allSales, allEmployees);
+  } catch (e) {
+    console.warn('Gagal menyimpan karyawan ke cloud:', e);
+  }
+};
+
+/**
+ * Hapus akun staf dari Supabase Cloud
+ */
+export const deleteEmployeeFromCloud = async (empId, allEmployees, allUnits, allSales) => {
+  if (!isSupabaseConfigured() || !supabase) return;
+  try {
+    await supabase.from('employees').delete().eq('id', empId);
+    await syncAllToCloud(allUnits, allSales, allEmployees);
+  } catch (e) {
+    console.warn('Gagal menghapus karyawan dari cloud:', e);
+  }
+};
+
+/**
  * Tambah unit motor baru ke Supabase Cloud
  */
 export const saveNewUnitToCloud = async (newUnit, allUnits, allSales, allEmployees) => {
   if (!isSupabaseConfigured() || !supabase) return;
   try {
-    // Upsert ke tabel units
     await supabase.from('units').upsert([unitToDb(newUnit)], { onConflict: 'id' });
-    // Update master snapshot
     await syncAllToCloud(allUnits, allSales, allEmployees);
   } catch (e) {
     console.warn('Gagal upload unit baru ke cloud:', e);
@@ -205,10 +291,8 @@ export const saveNewUnitToCloud = async (newUnit, allUnits, allSales, allEmploye
 export const saveTransactionToCloud = async (tx, unitId, newStatus, allUnits, allSales, allEmployees) => {
   if (!isSupabaseConfigured() || !supabase) return;
   try {
-    // Update status unit
     await supabase.from('units').update({ status: newStatus }).eq('id', unitId);
     
-    // Insert transaksi
     await supabase.from('sales_transactions').upsert([{
       id: tx.id,
       unit_id: unitId,
@@ -228,7 +312,6 @@ export const saveTransactionToCloud = async (tx, unitId, newStatus, allUnits, al
       tx_date: tx.date || new Date().toISOString().split('T')[0]
     }], { onConflict: 'id' });
 
-    // Update master snapshot
     await syncAllToCloud(allUnits, allSales, allEmployees);
   } catch (e) {
     console.warn('Gagal upload transaksi ke cloud:', e);
@@ -237,7 +320,6 @@ export const saveTransactionToCloud = async (tx, unitId, newStatus, allUnits, al
 
 /**
  * Langganan (Subscribe) perubahan realtime dari Supabase
- * Saat device A mengubah data, callback akan terpanggil di device B secara langsung
  */
 export const subscribeToCloudRealtime = (onRemoteUpdate) => {
   if (!isSupabaseConfigured() || !supabase) return () => {};
@@ -250,13 +332,24 @@ export const subscribeToCloudRealtime = (onRemoteUpdate) => {
       (payload) => {
         if (payload?.new?.key === 'maharga_master_state') {
           const val = payload.new.value;
-          if (val?.units) {
+          if (val?.units || val?.employees) {
             onRemoteUpdate({
-              units: val.units,
+              units: val.units || [],
               salesList: val.salesList || [],
               employees: val.employees || initialEmployees
             });
           }
+        }
+      }
+    )
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'employees' },
+      async () => {
+        // Jika ada perubahan langsung pada tabel employees
+        const { data } = await supabase.from('employees').select('*').order('id', { ascending: true });
+        if (data && data.length > 0) {
+          onRemoteUpdate({ employees: data.map(employeeFromDb) });
         }
       }
     )

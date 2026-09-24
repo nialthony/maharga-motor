@@ -1,12 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Get Supabase credentials from Vite ENV or Admin Panel LocalStorage setting
+const DEFAULT_SUPABASE_URL = 'https://ouuxgwskivkugrndgsiv.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_63sqg2cApl4sPTHttI299g_mdkynvk8';
+
+// Get Supabase credentials from Vite ENV, Admin Panel LocalStorage, or Cloud Default
 export const getSupabaseConfig = () => {
   const envUrl = import.meta.env?.VITE_SUPABASE_URL || import.meta.env?.SUPABASE_URL;
   const envKey = import.meta.env?.VITE_SUPABASE_ANON_KEY || 
                  import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY || 
                  import.meta.env?.SUPABASE_PUBLISHABLE_KEY;
   
+  if (envUrl && envKey) {
+    return { url: envUrl, anonKey: envKey, source: 'env' };
+  }
+
   try {
     const customUrl = localStorage.getItem('maharga_supabase_url');
     const customKey = localStorage.getItem('maharga_supabase_anon_key');
@@ -17,11 +24,12 @@ export const getSupabaseConfig = () => {
     // ignore
   }
 
-  if (envUrl && envKey) {
-    return { url: envUrl, anonKey: envKey, source: 'env' };
-  }
-
-  return { url: '', anonKey: '', source: 'none' };
+  // Cloud Live PostgreSQL Default (No Local Mode)
+  return { 
+    url: DEFAULT_SUPABASE_URL, 
+    anonKey: DEFAULT_SUPABASE_ANON_KEY, 
+    source: 'cloud_default' 
+  };
 };
 
 export const isSupabaseConfigured = () => {

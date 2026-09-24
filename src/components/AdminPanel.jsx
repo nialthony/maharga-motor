@@ -30,8 +30,7 @@ import { formatIDR } from '../data/mockData';
 import { 
   getSupabaseConfig, 
   saveSupabaseConfig, 
-  testSupabaseConnection, 
-  isSupabaseConfigured 
+  testSupabaseConnection 
 } from '../lib/supabaseClient';
 
 export default function AdminPanel({ 
@@ -410,17 +409,10 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
           </div>
 
           <div className="flex items-center gap-3 text-xs">
-            {isSupabaseConfigured() ? (
-              <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-mono font-bold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                POSTGRESQL CLOUD AKTIF
-              </span>
-            ) : (
-              <span className="px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700 text-[10px] font-mono font-bold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                LOCAL STORAGE MODE
-              </span>
-            )}
+            <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-mono font-bold flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              POSTGRESQL CLOUD AKTIF
+            </span>
           </div>
         </div>
       </header>
@@ -837,32 +829,18 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center pt-2">
-                  <p className="text-[11px] text-zinc-500">
-                    Bila kosong, sistem otomatis berjalan dengan penyimpanan lokal terenkripsi (*Local Storage*).
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-2">
+                  <p className="text-[11px] text-zinc-400">
+                    Endpoint aktif: <span className="text-amber-400 font-mono">ouuxgwskivkugrndgsiv.supabase.co</span> (PostgreSQL Cloud).
                   </p>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        saveSupabaseConfig('', '');
-                        setSupabaseUrl('');
-                        setSupabaseAnonKey('');
-                        setSupabaseTestStatus({ success: true, message: 'Kembali ke mode Local Storage Offline.' });
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 text-xs font-semibold"
-                    >
-                      Gunakan Local Mode
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isTestingSupabase || !supabaseUrl || !supabaseAnonKey}
-                      className="px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-zinc-950 font-bold text-xs flex items-center gap-1.5 shadow-sm"
-                    >
-                      {isTestingSupabase ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                      Test & Simpan Koneksi
-                    </button>
-                  </div>
+                  <button
+                    type="submit"
+                    disabled={isTestingSupabase || !supabaseUrl || !supabaseAnonKey}
+                    className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-zinc-950 font-bold text-xs flex items-center gap-1.5 shadow-sm"
+                  >
+                    {isTestingSupabase ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                    Test & Simpan Koneksi
+                  </button>
                 </div>
               </form>
             </div>

@@ -7,6 +7,7 @@ import {
   EyeOff, 
   Users
 } from 'lucide-react';
+import LogoLoadingOverlay from './LogoLoadingOverlay';
 
 export default function LoginScreen({ employees = [], onLoginSuccess }) {
   const [selectedUsername, setSelectedUsername] = useState(() => {
@@ -16,6 +17,8 @@ export default function LoginScreen({ employees = [], onLoginSuccess }) {
   const [showPin, setShowPin] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isLogoLoading, setIsLogoLoading] = useState(false);
+  const [authenticatedUser, setAuthenticatedUser] = useState(null);
 
   const selectedEmployee = employees.find(
     e => e.username.toLowerCase() === selectedUsername.toLowerCase()
@@ -56,12 +59,14 @@ export default function LoginScreen({ employees = [], onLoginSuccess }) {
       }
 
       if (String(found.pin).trim() === pin.trim()) {
-        onLoginSuccess(found);
+        // PIN Benar -> Tampilkan Animasi Logo 3 Detik (Grayscale ke Color)
+        setAuthenticatedUser(found);
+        setIsLogoLoading(true);
       } else {
         setErrorMsg('PIN yang Anda masukkan salah. Silakan coba kembali.');
         setIsLoading(false);
       }
-    }, 250);
+    }, 200);
   };
 
   const getRoleBadgeStyle = (role) => {
@@ -78,6 +83,17 @@ export default function LoginScreen({ employees = [], onLoginSuccess }) {
         return 'bg-zinc-800 text-zinc-300 border-zinc-700';
     }
   };
+
+  // Tampilkan Animasi Logo 3 Detik (Grayscale ke Colored dari Kiri ke Kanan) saat login sukses
+  if (isLogoLoading && authenticatedUser) {
+    return (
+      <LogoLoadingOverlay
+        user={authenticatedUser}
+        duration={3000}
+        onComplete={() => onLoginSuccess(authenticatedUser)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col justify-center items-center p-4 relative overflow-hidden font-sans">

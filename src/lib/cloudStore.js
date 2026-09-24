@@ -378,6 +378,25 @@ export const saveNewUnitToCloud = async (newUnit, allUnits, allSales, allEmploye
 };
 
 /**
+ * Hapus unit motor secara satuan dari Supabase Cloud
+ */
+export const deleteUnitFromCloud = async (unitId, allUnits, allSales, allEmployees) => {
+  if (!isSupabaseConfigured() || !supabase) return false;
+  try {
+    // 1. Hapus riwayat reparasi unit jika ada
+    await supabase.from('repairs').delete().eq('unit_id', unitId);
+    // 2. Hapus baris unit di tabel units
+    await supabase.from('units').delete().eq('id', unitId);
+    // 3. Update master snapshot di system_settings
+    await syncAllToCloud(allUnits, allSales, allEmployees);
+    return true;
+  } catch (e) {
+    console.warn('Gagal menghapus unit dari cloud:', e);
+    return false;
+  }
+};
+
+/**
  * Simpan transaksi penjualan ke Supabase Cloud
  */
 export const saveTransactionToCloud = async (tx, unitId, newStatus, allUnits, allSales, allEmployees) => {

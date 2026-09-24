@@ -1,0 +1,8 @@
+feat: add 3s colored logo wipe animation, single unit delete in admin panel, clean new unit modal, and UI micro-animations
+
+- Remove presets and Est. Servis from NewUnitModal
+- Add interactive document selection pills (STNK, BPKB, etc.) in NewUnitModal
+- Add single unit deletion feature with cloud sync in AdminPanel (per-unit and dedicated stock table module)
+- Replace 'AP Admin Panel' with official Maharga Motor logo in AdminPanel header
+- Add LogoLoadingOverlay: 3-second grayscale-to-color wipe animation during login
+- Add lightweight micro-animations (fadeIn, hover lifts, smooth transitions) across views

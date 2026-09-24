@@ -54,9 +54,9 @@ export default function Dashboard({
   const isEmpty = units.length === 0 && salesList.length === 0;
 
   return (
-    <div className="space-y-5 pb-20 md:pb-12">
+    <div className="space-y-5 pb-20 md:pb-12 animate-fadeIn">
       {/* Top Header & Quick Action Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-900/80 p-4 rounded-xl border border-zinc-800 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-900/80 p-4 rounded-xl border border-zinc-800 shadow-sm transition-all">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -77,7 +77,7 @@ export default function Dashboard({
             <button
               onClick={onOpenNewUnit}
               aria-label="Input unit motor baru ke showroom"
-              className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm min-h-[36px]"
+              className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm hover:scale-[1.02] active:scale-[0.98] min-h-[36px]"
             >
               <Plus className="w-3.5 h-3.5 stroke-[3]" />
               Input Motor Masuk
@@ -88,7 +88,7 @@ export default function Dashboard({
             <button
               onClick={() => setActiveTab('pos')}
               aria-label="Buka kasir transaksi penjualan"
-              className="px-3.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold flex items-center gap-1.5 border border-zinc-700 transition-colors min-h-[36px]"
+              className="px-3.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold flex items-center gap-1.5 border border-zinc-700 transition-all hover:scale-[1.02] active:scale-[0.98] min-h-[36px]"
             >
               <CreditCard className="w-3.5 h-3.5" />
               Kasir POS
@@ -102,7 +102,7 @@ export default function Dashboard({
         {/* Card 1: Unit Ready */}
         <div 
           onClick={() => setActiveTab('inventory')}
-          className="bg-zinc-900/90 hover:bg-zinc-850 p-4 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer space-y-2 shadow-sm"
+          className="bg-zinc-900/90 hover:bg-zinc-850 p-4 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all duration-200 hover:-translate-y-0.5 cursor-pointer space-y-2 shadow-sm"
         >
           <div className="flex items-center justify-between text-xs text-zinc-400">
             <span className="font-semibold uppercase tracking-wider text-[10px]">Unit Ready (Stok)</span>
@@ -120,7 +120,7 @@ export default function Dashboard({
         {/* Card 2: Terjual Bulan Ini */}
         <div 
           onClick={() => setActiveTab(isOwnerOrAdmin ? 'financial_report' : 'my_commission')}
-          className="bg-zinc-900/90 hover:bg-zinc-850 p-4 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer space-y-2 shadow-sm"
+          className="bg-zinc-900/90 hover:bg-zinc-850 p-4 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all duration-200 hover:-translate-y-0.5 cursor-pointer space-y-2 shadow-sm"
         >
           <div className="flex items-center justify-between text-xs text-zinc-400">
             <span className="font-semibold uppercase tracking-wider text-[10px]">Terjual Bulan Ini</span>
@@ -141,7 +141,7 @@ export default function Dashboard({
         {/* Card 3: Omset Penjualan / Laba */}
         <div 
           onClick={() => setActiveTab(role === 'owner' ? 'financial_report' : 'my_commission')}
-          className="bg-zinc-900/90 hover:bg-zinc-850 p-4 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer space-y-2 shadow-sm"
+          className="bg-zinc-900/90 hover:bg-zinc-850 p-4 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all duration-200 hover:-translate-y-0.5 cursor-pointer space-y-2 shadow-sm"
         >
           <div className="flex items-center justify-between text-xs text-zinc-400">
             <span className="font-semibold uppercase tracking-wider text-[10px]">
@@ -162,7 +162,7 @@ export default function Dashboard({
         {/* Card 4: Piutang Titip DP / Tempo */}
         <div 
           onClick={() => setActiveTab('tempo')}
-          className="bg-zinc-900/90 hover:bg-zinc-850 p-4 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer space-y-2 shadow-sm"
+          className="bg-zinc-900/90 hover:bg-zinc-850 p-4 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all duration-200 hover:-translate-y-0.5 cursor-pointer space-y-2 shadow-sm"
         >
           <div className="flex items-center justify-between text-xs text-zinc-400">
             <span className="font-semibold uppercase tracking-wider text-[10px]">Piutang Titip DP/Tempo</span>

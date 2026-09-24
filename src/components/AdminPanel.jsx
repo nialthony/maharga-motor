@@ -27,7 +27,7 @@ import {
   saveSupabaseConfig, 
   testSupabaseConnection 
 } from '../lib/supabaseClient';
-import { syncAllToCloud, clearShowroomDataInCloud } from '../lib/cloudStore';
+import { syncAllToCloud, clearShowroomDataInCloud, deleteUnitFromCloud } from '../lib/cloudStore';
 
 export default function AdminPanel({ 
   units = [], 
@@ -37,10 +37,15 @@ export default function AdminPanel({
   employees = [], 
   onBackToERP 
 }) {
-  // Hanya 3 Modul Esensial Showroom:
-  // 'photos' (Kelola Foto Motor) | 'db' (Koneksi Supabase Cloud) | 'backup' (Backup & Reset)
+  // Modul Showroom:
+  // 'photos' (Kelola Foto Motor) | 'stok' (Kelola & Hapus Stok Satuan) | 'db' (Koneksi Supabase Cloud) | 'backup' (Backup & Reset)
   const [activeModule, setActiveModule] = useState('photos');
   
+  // Single Unit Delete State
+  const [isDeletingUnit, setIsDeletingUnit] = useState(false);
+  const [deleteSuccessMsg, setDeleteSuccessMsg] = useState('');
+  const [stockSearch, setStockSearch] = useState('');
+
   // ==========================================
   // 1. PHOTO MANAGER STATE & CLOUD LOGIC
   // ==========================================
@@ -55,6 +60,36 @@ export default function AdminPanel({
   const jsonImportRef = useRef(null);
 
   const selectedUnit = units.find(u => u.id === Number(selectedUnitId)) || units[0];
+
+  const handleDeleteSingleUnit = async (unit) => {
+    if (!unit) return;
+    const confirmDelete = window.confirm(
+      `Apakah Anda yakin ingin menghapus stok motor ini?\n\n• Unit: ${unit.brand} ${unit.model} (${unit.year})\n• Plat: ${unit.plate}\n• Status: ${unit.status}\n\nData akan dihapus permanen dari sistem dan cloud.`
+    );
+    if (!confirmDelete) return;
+
+    setIsDeletingUnit(true);
+    setDeleteSuccessMsg('');
+    try {
+      const updatedUnits = units.filter(u => u.id !== unit.id);
+      setUnits(updatedUnits);
+
+      if (Number(selectedUnitId) === unit.id) {
+        setSelectedUnitId(updatedUnits[0]?.id || '');
+        setUploadPreview(null);
+        setNewImageUrl('');
+      }
+
+      await deleteUnitFromCloud(unit.id, updatedUnits, salesList, employees);
+      setDeleteSuccessMsg(`Stok ${unit.brand} ${unit.model} (${unit.plate}) berhasil dihapus.`);
+      setTimeout(() => setDeleteSuccessMsg(''), 4000);
+    } catch (err) {
+      console.error('Gagal menghapus unit:', err);
+      alert('Terjadi kesalahan saat menghapus unit.');
+    } finally {
+      setIsDeletingUnit(false);
+    }
+  };
 
   // Helper kompresi gambar client-side (Canvas) agar foto kamera HP/laptop cepat diupload dan aman di DB
   const compressImage = (file) => {
@@ -439,14 +474,14 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
               <ArrowLeft className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Kembali ke</span> Showroom
             </button>
-            <div className="w-7 h-7 rounded bg-amber-500 flex items-center justify-center text-zinc-950 font-black text-xs font-mono">
-              AP
-            </div>
-            <div>
-              <span className="font-bold text-sm tracking-tight text-zinc-100 font-mono">
-                Admin Panel <span className="text-amber-400">Showroom Control</span>
-              </span>
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="Maharga Motor Logo" 
+              className="h-8 sm:h-9 w-auto object-contain transition-transform hover:scale-105" 
+            />
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-950 text-amber-400 border border-amber-800">
+              ADMIN CONTROL
+            </span>
           </div>
 
           <div className="flex items-center gap-3 text-xs">
@@ -473,6 +508,21 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
           >
             <ImageIcon className="w-4 h-4" />
             <span>Kelola Foto & Galeri Motor</span>
+            <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-zinc-950/30">
+              {units.length} Unit
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveModule('stok')}
+            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
+              activeModule === 'stok' 
+                ? 'bg-amber-500 text-zinc-950 font-bold shadow-sm' 
+                : 'text-zinc-300 hover:text-white hover:bg-zinc-800'
+            }`}
+          >
+            <Trash2 className="w-4 h-4 text-rose-400" />
+            <span>Kelola & Hapus Stok Satuan</span>
             <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-zinc-950/30">
               {units.length} Unit
             </span>
@@ -528,6 +578,13 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
               <div className="p-3 rounded-lg bg-emerald-950 border border-emerald-800 text-emerald-300 text-xs font-bold flex items-center gap-2 animate-in fade-in">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
                 <span>{saveSuccessMsg}</span>
+              </div>
+            )}
+
+            {deleteSuccessMsg && (
+              <div className="p-3 rounded-lg bg-rose-950/60 border border-rose-800 text-rose-300 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+                <Trash2 className="w-4 h-4 shrink-0 text-rose-400" />
+                <span>{deleteSuccessMsg}</span>
               </div>
             )}
 
@@ -589,6 +646,19 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
                                 {(unit.images?.length || 1)} foto terdaftar
                               </span>
                             </div>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteSingleUnit(unit);
+                              }}
+                              disabled={isDeletingUnit}
+                              className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-950/60 transition-colors shrink-0"
+                              title={`Hapus ${unit.brand} ${unit.model} (${unit.plate})`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         );
                       })}
@@ -616,9 +686,21 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
                           </p>
                         </div>
 
-                        <span className="text-xs font-mono text-zinc-400">
-                          ID: #{selectedUnit.id}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono text-zinc-500">
+                            ID: #{selectedUnit.id}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSingleUnit(selectedUnit)}
+                            disabled={isDeletingUnit}
+                            className="px-2.5 py-1 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800 text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                            title="Hapus unit ini dari stok showroom"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                            <span>Hapus Unit</span>
+                          </button>
+                        </div>
                       </div>
 
                       {/* Uploader Dropzone / Input Area */}
@@ -794,6 +876,126 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
 
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* MODULE: KELOLA & HAPUS STOK SATUAN */}
+        {/* ========================================================= */}
+        {activeModule === 'stok' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="bg-gradient-to-r from-rose-950/40 via-zinc-900 to-zinc-900 border border-rose-900/40 rounded-xl p-4 sm:p-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-zinc-100 flex items-center gap-2">
+                    <Trash2 className="w-4 h-4 text-rose-400" />
+                    Kelola & Hapus Stok Motor Satuan
+                  </h3>
+                  <p className="text-xs text-zinc-400 leading-relaxed">
+                    Hapus unit motor tertentu dari database tanpa mereset data showroom lainnya. Perubahan otomatis disinkronkan ke Supabase Cloud dan seluruh perangkat staf.
+                  </p>
+                </div>
+                <span className="px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs font-mono text-amber-400 font-bold shrink-0">
+                  {units.length} Unit Terdaftar
+                </span>
+              </div>
+            </div>
+
+            {deleteSuccessMsg && (
+              <div className="p-3 rounded-lg bg-rose-950/60 border border-rose-800 text-rose-300 text-xs font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-rose-400" />
+                <span>{deleteSuccessMsg}</span>
+              </div>
+            )}
+
+            {/* Filter Search */}
+            <div className="flex items-center gap-2 bg-zinc-900 p-2.5 rounded-xl border border-zinc-800">
+              <input
+                type="text"
+                value={stockSearch}
+                onChange={(e) => setStockSearch(e.target.value)}
+                placeholder="Cari merk, model, plat nomor motor untuk dihapus..."
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-amber-400 font-medium"
+              />
+            </div>
+
+            {/* Table of Units */}
+            {units.length === 0 ? (
+              <div className="p-12 text-center text-zinc-400 text-xs bg-zinc-900/90 rounded-2xl border border-zinc-800 space-y-2">
+                <p className="font-bold text-zinc-200">Tidak ada stok motor terdaftar</p>
+                <p className="text-zinc-500">Semua unit telah dihapus atau belum ada input unit baru.</p>
+              </div>
+            ) : (
+              <div className="bg-zinc-900/90 rounded-xl border border-zinc-800 overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs text-zinc-300">
+                    <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] tracking-wider font-bold border-b border-zinc-800">
+                      <tr>
+                        <th className="py-3 px-4">Foto & Motor</th>
+                        <th className="py-3 px-4">Plat Nomor</th>
+                        <th className="py-3 px-4">Tahun / Warna</th>
+                        <th className="py-3 px-4">Status</th>
+                        <th className="py-3 px-4 font-mono">HPP Modal</th>
+                        <th className="py-3 px-4 font-mono">Harga Display</th>
+                        <th className="py-3 px-4 text-center">Aksi Hapus</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800/60">
+                      {units
+                        .filter(u => 
+                          u.model?.toLowerCase().includes(stockSearch.toLowerCase()) ||
+                          u.brand?.toLowerCase().includes(stockSearch.toLowerCase()) ||
+                          u.plate?.toLowerCase().includes(stockSearch.toLowerCase()) ||
+                          u.color?.toLowerCase().includes(stockSearch.toLowerCase())
+                        )
+                        .map((unit) => {
+                          const thumb = unit.images?.[0] || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=800&q=80';
+                          return (
+                            <tr key={unit.id} className="hover:bg-zinc-800/40 transition-colors">
+                              <td className="py-2.5 px-4 flex items-center gap-3">
+                                <img 
+                                  src={thumb} 
+                                  alt={unit.model} 
+                                  className="w-10 h-10 rounded-lg object-cover bg-zinc-950 border border-zinc-800 shrink-0" 
+                                />
+                                <div>
+                                  <div className="font-bold text-zinc-100">{unit.brand} {unit.model}</div>
+                                  <div className="text-[10px] text-zinc-500 font-mono">ID: #{unit.id}</div>
+                                </div>
+                              </td>
+                              <td className="py-2.5 px-4 font-mono font-bold text-amber-400">{unit.plate}</td>
+                              <td className="py-2.5 px-4">{unit.year} • {unit.color}</td>
+                              <td className="py-2.5 px-4">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  unit.status === 'Tersedia' 
+                                    ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' 
+                                    : 'bg-zinc-800 text-zinc-400'
+                                }`}>
+                                  {unit.status}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-4 font-mono text-zinc-300">{formatIDR(unit.buyPrice || 0)}</td>
+                              <td className="py-2.5 px-4 font-mono font-bold text-amber-400">{formatIDR(unit.displayPrice || 0)}</td>
+                              <td className="py-2.5 px-4 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteSingleUnit(unit)}
+                                  disabled={isDeletingUnit}
+                                  className="px-3 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 border border-rose-800/80 text-rose-300 text-xs font-bold transition-all flex items-center gap-1.5 mx-auto hover:scale-105 active:scale-95 disabled:opacity-50"
+                                  title={`Hapus ${unit.brand} ${unit.model}`}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                                  <span>Hapus Unit</span>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}

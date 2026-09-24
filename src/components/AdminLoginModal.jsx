@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { Lock, AlertCircle, X, Eye, EyeOff } from 'lucide-react';
+import LogoLoadingOverlay from './LogoLoadingOverlay';
 
 export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, employees }) {
   const [username, setUsername] = useState('owner');
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [isLogoLoading, setIsLogoLoading] = useState(false);
+  const [authenticatedUser, setAuthenticatedUser] = useState(null);
 
   if (!isOpen) return null;
 
@@ -20,14 +23,28 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, emplo
         setErrorMsg('Akun ini sedang dinonaktifkan. Hubungi Owner.');
         return;
       }
-      onLoginSuccess(found);
-      setErrorMsg('');
-      setPin('');
-      onClose();
+      setAuthenticatedUser(found);
+      setIsLogoLoading(true);
     } else {
       setErrorMsg('Username atau PIN salah! Silakan periksa kembali.');
     }
   };
+
+  if (isLogoLoading && authenticatedUser) {
+    return (
+      <LogoLoadingOverlay
+        user={authenticatedUser}
+        duration={3000}
+        onComplete={() => {
+          onLoginSuccess(authenticatedUser);
+          setErrorMsg('');
+          setPin('');
+          setIsLogoLoading(false);
+          onClose();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-zinc-950/85 backdrop-blur-sm">

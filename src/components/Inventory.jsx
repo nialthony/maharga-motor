@@ -44,7 +44,7 @@ export default function Inventory({
   });
 
   return (
-    <div className="space-y-5 pb-20 md:pb-12">
+    <div className="space-y-5 pb-20 md:pb-12 animate-fadeIn">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-900/80 p-4 rounded-xl border border-zinc-800">
         <div>

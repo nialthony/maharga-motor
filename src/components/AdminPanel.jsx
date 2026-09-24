@@ -27,7 +27,7 @@ import {
   saveSupabaseConfig, 
   testSupabaseConnection 
 } from '../lib/supabaseClient';
-import { syncAllToCloud } from '../lib/cloudStore';
+import { syncAllToCloud, clearShowroomDataInCloud } from '../lib/cloudStore';
 
 export default function AdminPanel({ 
   units = [], 
@@ -50,6 +50,7 @@ export default function AdminPanel({
   const [isCompressing, setIsCompressing] = useState(false);
   const [isSavingPhoto, setIsSavingPhoto] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
   const fileInputRef = useRef(null);
   const jsonImportRef = useRef(null);
 
@@ -395,11 +396,33 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
     reader.readAsText(file);
   };
 
-  const handleClearAllUnits = async () => {
-    if (confirm('PERINGATAN: Apakah Anda yakin ingin MENGOSONGKAN semua unit stok untuk showroom asli?')) {
+  const handleResetShowroomData = async () => {
+    const confirmed = confirm(
+      'PERINGATAN RESET SHOWROOM (FRESH START):\n\n' +
+      'Tindakan ini akan mengosongkan:\n' +
+      '1. Seluruh unit stok motor (katalog kembali 0 unit)\n' +
+      '2. Seluruh catatan transaksi penjualan & laporan keuangan (omset kembali Rp 0)\n' +
+      '3. Seluruh catatan piutang titip DP / tempo\n\n' +
+      'Data akun staf karyawan & koneksi Supabase tetap aman tersimpan.\n\n' +
+      'Apakah Anda yakin ingin mengosongkan stok dan keuangan?'
+    );
+    if (!confirmed) return;
+
+    setIsResetting(true);
+    try {
       setUnits([]);
-      await syncAllToCloud([], salesList, employees);
-      alert('Semua data unit stok telah dikosongkan.');
+      if (setSalesList) setSalesList([]);
+      
+      localStorage.setItem('maharga_units_v3_clean', JSON.stringify([]));
+      localStorage.setItem('maharga_sales_v3_clean', JSON.stringify([]));
+
+      await clearShowroomDataInCloud(employees);
+      alert('Sukses! Seluruh data stok motor dan catatan keuangan telah dikosongkan.');
+    } catch (err) {
+      console.error('Gagal reset showroom:', err);
+      alert('Gagal mengosongkan data di cloud: ' + (err.message || err));
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -953,17 +976,25 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="space-y-0.5">
                     <span className="font-bold text-rose-300 block text-xs">
-                      Kosongkan Semua Data Stok (Fresh Start Showroom Asli)
+                      Kosongkan Stok & Reset Catatan Keuangan (Fresh Start Showroom Asli)
                     </span>
                     <p className="text-zinc-400 text-[11px]">
-                      Hapus semua unit sampel untuk mulai memasukkan stok fisik motor showroom Anda dari nol.
+                      Hapus seluruh data stok sampel dan riwayat transaksi demo agar stok motor dan laporan keuangan mulai bersih dari nol (Stok 0, Omset Rp 0). Data akun staf tetap tersimpan.
                     </p>
                   </div>
                   <button
-                    onClick={handleClearAllUnits}
-                    className="px-4 py-2 rounded-lg bg-rose-950 hover:bg-rose-900 text-rose-200 font-bold text-xs border border-rose-800 shrink-0"
+                    onClick={handleResetShowroomData}
+                    disabled={isResetting}
+                    className="px-4 py-2 rounded-lg bg-rose-950 hover:bg-rose-900 disabled:opacity-50 text-rose-200 font-bold text-xs border border-rose-800 shrink-0 flex items-center gap-1.5"
                   >
-                    Kosongkan Stok
+                    {isResetting ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Mengosongkan...</span>
+                      </>
+                    ) : (
+                      <span>Kosongkan Stok & Keuangan</span>
+                    )}
                   </button>
                 </div>
               </div>

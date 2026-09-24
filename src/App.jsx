@@ -35,7 +35,7 @@ export default function App() {
   const [units, setUnits] = useState(() => {
     try {
       const saved = localStorage.getItem('maharga_units_v3_clean');
-      return saved ? JSON.parse(saved) : initialUnits;
+      return saved !== null ? JSON.parse(saved) : initialUnits;
     } catch {
       return initialUnits;
     }
@@ -44,7 +44,7 @@ export default function App() {
   const [salesList, setSalesList] = useState(() => {
     try {
       const saved = localStorage.getItem('maharga_sales_v3_clean');
-      return saved ? JSON.parse(saved) : initialSalesList;
+      return saved !== null ? JSON.parse(saved) : initialSalesList;
     } catch {
       return initialSalesList;
     }
@@ -53,7 +53,7 @@ export default function App() {
   const [employees, setEmployees] = useState(() => {
     try {
       const saved = localStorage.getItem('maharga_employees_v3_clean');
-      return saved ? JSON.parse(saved) : initialEmployees;
+      return saved !== null ? JSON.parse(saved) : initialEmployees;
     } catch {
       return initialEmployees;
     }
@@ -93,9 +93,9 @@ export default function App() {
     // 1. Fetch latest data from Supabase Cloud
     fetchCloudData().then(cloudData => {
       if (isMounted && cloudData) {
-        if (cloudData.units?.length) setUnits(cloudData.units);
-        if (cloudData.salesList?.length) setSalesList(cloudData.salesList);
-        if (cloudData.employees?.length) setEmployees(cloudData.employees);
+        if (Array.isArray(cloudData.units)) setUnits(cloudData.units);
+        if (Array.isArray(cloudData.salesList)) setSalesList(cloudData.salesList);
+        if (Array.isArray(cloudData.employees) && cloudData.employees.length > 0) setEmployees(cloudData.employees);
         setCloudSyncStatus('synced');
       } else if (isMounted) {
         setCloudSyncStatus('offline');
@@ -107,9 +107,9 @@ export default function App() {
     // 2. Subscribe to realtime changes from other devices
     const unsubscribe = subscribeToCloudRealtime((remoteData) => {
       if (isMounted && remoteData) {
-        if (remoteData.units?.length) setUnits(remoteData.units);
-        if (remoteData.salesList) setSalesList(remoteData.salesList);
-        if (remoteData.employees?.length) setEmployees(remoteData.employees);
+        if (Array.isArray(remoteData.units)) setUnits(remoteData.units);
+        if (Array.isArray(remoteData.salesList)) setSalesList(remoteData.salesList);
+        if (Array.isArray(remoteData.employees) && remoteData.employees.length > 0) setEmployees(remoteData.employees);
         setCloudSyncStatus('synced');
       }
     });

@@ -131,10 +131,11 @@ export const fetchCloudData = async () => {
       finalEmployees = snapshotData.value.employees;
     }
 
-    if (snapshotData?.value?.units?.length) {
+    // Jika master snapshot sudah ada di system_settings (meskipun units: [] atau salesList: []), gunakan data snapshot resmi
+    if (snapshotData?.value && Array.isArray(snapshotData.value.units)) {
       return {
         units: snapshotData.value.units,
-        salesList: snapshotData.value.salesList || [],
+        salesList: Array.isArray(snapshotData.value.salesList) ? snapshotData.value.salesList : [],
         employees: finalEmployees,
         source: 'supabase_cloud'
       };
@@ -186,7 +187,7 @@ export const fetchCloudData = async () => {
       };
     }
 
-    // 4. Jika database Supabase masih kosong, lakukan initial seed
+    // 4. Jika database Supabase benar-benar kosong pertama kali, lakukan initial seed
     await syncAllToCloud(initialUnits, initialSalesList, initialEmployees);
     return {
       units: initialUnits,
@@ -208,26 +209,37 @@ export const syncAllToCloud = async (units, salesList, employees) => {
 
   try {
     const validEmployees = Array.isArray(employees) ? employees : [];
+    const validUnits = Array.isArray(units) ? units : [];
+    const validSales = Array.isArray(salesList) ? salesList : [];
 
     // 1. Simpan Master State Snapshot di system_settings
     await supabase.from('system_settings').upsert({
       key: 'maharga_master_state',
       value: {
-        units,
-        salesList,
+        units: validUnits,
+        salesList: validSales,
         employees: validEmployees,
+        isInitialized: true,
         lastUpdated: new Date().toISOString()
       },
       updated_at: new Date().toISOString()
     });
 
-    // 2. Simpan ke tabel units individual
-    if (units && units.length > 0) {
-      const dbRows = units.map(unitToDb);
+    // 2. Simpan atau kosongkan tabel units individual
+    if (validUnits.length > 0) {
+      const dbRows = validUnits.map(unitToDb);
       await supabase.from('units').upsert(dbRows, { onConflict: 'id' });
+    } else {
+      // Jika memang sengaja dikosongkan, hapus semua row di tabel units
+      await supabase.from('units').delete().neq('id', -999999);
     }
 
-    // 3. Simpan ke tabel employees individual
+    // 3. Simpan atau kosongkan tabel sales_transactions
+    if (validSales.length === 0) {
+      await supabase.from('sales_transactions').delete().neq('id', '___empty___');
+    }
+
+    // 4. Simpan ke tabel employees individual
     if (validEmployees.length > 0) {
       const empRows = validEmployees.map(employeeToDb);
       await supabase.from('employees').upsert(empRows, { onConflict: 'username' });
@@ -236,6 +248,40 @@ export const syncAllToCloud = async (units, salesList, employees) => {
     return true;
   } catch (err) {
     console.error('Error sinkronisasi ke Supabase:', err);
+    return false;
+  }
+};
+
+/**
+ * Hapus seluruh stok motor dan riwayat transaksi/keuangan di Supabase Cloud (Fresh Start)
+ * Tetap mempertahankan data akun staf/karyawan
+ */
+export const clearShowroomDataInCloud = async (employees) => {
+  if (!isSupabaseConfigured() || !supabase) return false;
+  try {
+    const validEmployees = Array.isArray(employees) ? employees : [];
+
+    // 1. Hapus isi tabel fisik di Supabase
+    await supabase.from('repairs').delete().neq('id', -999999);
+    await supabase.from('sales_transactions').delete().neq('id', '___empty___');
+    await supabase.from('units').delete().neq('id', -999999);
+
+    // 2. Simpan master snapshot dengan units: [] dan salesList: []
+    await supabase.from('system_settings').upsert({
+      key: 'maharga_master_state',
+      value: {
+        units: [],
+        salesList: [],
+        employees: validEmployees,
+        isInitialized: true,
+        lastUpdated: new Date().toISOString()
+      },
+      updated_at: new Date().toISOString()
+    });
+
+    return true;
+  } catch (err) {
+    console.error('Gagal reset data showroom di cloud:', err);
     return false;
   }
 };

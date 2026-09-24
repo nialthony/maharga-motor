@@ -34,7 +34,7 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess, emplo
     return (
       <LogoLoadingOverlay
         user={authenticatedUser}
-        duration={3000}
+        duration={5000}
         onComplete={() => {
           onLoginSuccess(authenticatedUser);
           setErrorMsg('');

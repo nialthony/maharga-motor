@@ -84,12 +84,12 @@ export default function LoginScreen({ employees = [], onLoginSuccess }) {
     }
   };
 
-  // Tampilkan Animasi Logo 3 Detik (Grayscale ke Colored dari Kiri ke Kanan) saat login sukses
+  // Tampilkan Animasi Logo 5 Detik (Grayscale ke Colored dari Kiri ke Kanan) saat login sukses
   if (isLogoLoading && authenticatedUser) {
     return (
       <LogoLoadingOverlay
         user={authenticatedUser}
-        duration={3000}
+        duration={5000}
         onComplete={() => onLoginSuccess(authenticatedUser)}
       />
     );

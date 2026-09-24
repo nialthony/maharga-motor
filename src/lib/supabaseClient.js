@@ -11,7 +11,7 @@ export const getSupabaseConfig = () => {
     if (customUrl && customKey) {
       return { url: customUrl, anonKey: customKey, source: 'admin_panel' };
     }
-  } catch (e) {
+  } catch {
     // ignore
   }
 

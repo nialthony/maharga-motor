@@ -1,28 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   CreditCard, 
   Layers, 
   User, 
   DollarSign, 
   Clock, 
-  ShieldCheck, 
   FileText, 
   CheckCircle2, 
   AlertTriangle,
-  BadgePercent,
-  Wallet,
   Users,
   Plus
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatIDR, calculateUnitEconomics } from '../data/mockData';
 
+const generateTransactionId = () => `TX-${Date.now().toString().slice(-6)}`;
+
 export default function SalesPOS({ 
   units = [], 
   selectedUnit, 
   setSelectedUnit, 
   onTransactionComplete, 
-  role,
   currentUser,
   employees = [],
   onOpenNewUnit
@@ -63,11 +61,11 @@ export default function SalesPOS({
   const [guarantee, setGuarantee] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  useEffect(() => {
-    if (activeUnit) {
-      setDealPrice(activeUnit.displayPrice || 0);
-    }
-  }, [activeUnit]);
+  const [prevActiveUnitId, setPrevActiveUnitId] = useState(activeUnit?.id);
+  if (activeUnit && activeUnit.id !== prevActiveUnitId) {
+    setPrevActiveUnitId(activeUnit.id);
+    setDealPrice(activeUnit.displayPrice || 0);
+  }
 
   const handleUnitChange = (unitId) => {
     const unit = units.find(u => u.id === Number(unitId));
@@ -125,7 +123,7 @@ export default function SalesPOS({
     });
 
     const newTx = {
-      id: `TX-${Date.now().toString().slice(-6)}`,
+      id: generateTransactionId(),
       unitId: activeUnit.id,
       unitName: `${activeUnit.brand} ${activeUnit.model} (${activeUnit.year})`,
       plate: activeUnit.plate,

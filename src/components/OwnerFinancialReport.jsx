@@ -1,27 +1,27 @@
 import React, { useState } from 'react';
-import { 
-  DollarSign, 
-  TrendingUp, 
-  Download, 
-  Users, 
-  Wallet, 
-  Building, 
-  CheckCircle2, 
-  FileText,
-  Calendar
-} from 'lucide-react';
+import { Download, Printer, X } from 'lucide-react';
 import { formatIDR } from '../data/mockData';
 
-export default function OwnerFinancialReport({ salesList = [], employees = [] }) {
+export default function OwnerFinancialReport({ salesList = [], employees = [], units = [] }) {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [selectedSlipStaff, setSelectedSlipStaff] = useState(null);
 
   const filteredSales = salesList.filter(s => {
     return (!startDate || s.date >= startDate) && (!endDate || s.date <= endDate);
   });
 
   const totalOmset = filteredSales.reduce((acc, curr) => acc + (curr.dealPrice || 0), 0);
-  const totalModalHPP = totalOmset > 0 ? Math.round(totalOmset * 0.88) : 0;
+
+  // Real HPP calculation derived from registered units and repairs
+  const totalModalHPP = filteredSales.reduce((acc, tx) => {
+    const matchedUnit = units.find(u => u.id === tx.unitId);
+    if (matchedUnit) {
+      return acc + (matchedUnit.buyPrice || 0) + (matchedUnit.repairCost || 0);
+    }
+    return acc;
+  }, 0);
+
   const totalCommissionDisbursed = filteredSales.reduce((acc, curr) => acc + (curr.commission || 0), 0);
   const grossProfit = totalOmset - totalModalHPP;
   const netOperationalProfit = grossProfit - totalCommissionDisbursed;
@@ -41,6 +41,7 @@ export default function OwnerFinancialReport({ salesList = [], employees = [] })
       unitCount,
       omset,
       commission,
+      deals: staffDeals,
       status: unitCount > 0 ? 'Siap Dicairkan' : 'Belum Ada Penjualan'
     };
   });
@@ -55,11 +56,11 @@ export default function OwnerFinancialReport({ salesList = [], employees = [] })
               Laporan Finansial & Penggajian Komisi Showroom
             </h2>
             <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-950 text-amber-400 border border-amber-800">
-              👑 KHUSUS OWNER
+              PORTAL OWNER
             </span>
           </div>
           <p className="text-[11px] text-zinc-400 mt-0.5">
-            Laporan laba kotor, perputaran modal HPP, dan rekapitulasi beban komisi seluruh tim sales secara riil.
+            Laporan laba kotor, perputaran modal HPP riil, dan rekapitulasi komisi seluruh tim sales.
           </p>
         </div>
 
@@ -67,6 +68,7 @@ export default function OwnerFinancialReport({ salesList = [], employees = [] })
           <div className="flex items-center bg-zinc-950 p-1 rounded-lg border border-zinc-800 text-xs">
             <input
               type="date"
+              aria-label="Tanggal mulai laporan"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               className="bg-transparent px-1.5 py-0.5 text-zinc-200 focus:outline-none font-mono text-[11px] sm:text-xs"
@@ -74,6 +76,7 @@ export default function OwnerFinancialReport({ salesList = [], employees = [] })
             <span className="text-zinc-600 px-0.5">-</span>
             <input
               type="date"
+              aria-label="Tanggal akhir laporan"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               className="bg-transparent px-1.5 py-0.5 text-zinc-200 focus:outline-none font-mono text-[11px] sm:text-xs"
@@ -82,7 +85,8 @@ export default function OwnerFinancialReport({ salesList = [], employees = [] })
 
           <button
             onClick={() => window.print()}
-            className="p-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 flex items-center gap-1 transition-colors shrink-0"
+            aria-label="Cetak rekap laporan"
+            className="p-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 flex items-center gap-1 transition-colors shrink-0 min-h-[36px]"
           >
             <Download className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Cetak Rekap</span>
@@ -95,11 +99,11 @@ export default function OwnerFinancialReport({ salesList = [], employees = [] })
         <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-900/90 border border-zinc-800 space-y-1">
           <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Total Omset Showroom</span>
           <h3 className="text-xl sm:text-2xl font-black font-mono text-zinc-100">{formatIDR(totalOmset)}</h3>
-          <p className="text-[10px] text-zinc-500">Total deal penjualan masuk</p>
+          <p className="text-[10px] text-zinc-500">Total deal transaksi masuk</p>
         </div>
 
         <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-900/90 border border-zinc-800 space-y-1">
-          <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Total Modal HPP Motor</span>
+          <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Total Modal HPP Riil</span>
           <h3 className="text-xl sm:text-2xl font-black font-mono text-zinc-300">{formatIDR(totalModalHPP)}</h3>
           <p className="text-[10px] text-zinc-500">Harga beli + perbaikan servis</p>
         </div>
@@ -107,13 +111,13 @@ export default function OwnerFinancialReport({ salesList = [], employees = [] })
         <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-900/90 border border-zinc-800 space-y-1">
           <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Estimasi Laba Kotor</span>
           <h3 className="text-xl sm:text-2xl font-black font-mono text-amber-400">{formatIDR(grossProfit)}</h3>
-          <p className="text-[10px] text-zinc-500">Omset dikurangi modal</p>
+          <p className="text-[10px] text-zinc-500">Omset dikurangi modal unit</p>
         </div>
 
         <div className="p-3.5 sm:p-4 rounded-xl bg-emerald-950/30 border border-emerald-800/60 space-y-1">
           <span className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider">Laba Bersih Showroom</span>
           <h3 className="text-xl sm:text-2xl font-black font-mono text-emerald-400">{formatIDR(netOperationalProfit)}</h3>
-          <p className="text-[10px] text-emerald-300/80">Setelah dipotong komisi sales</p>
+          <p className="text-[10px] text-emerald-300/80">Setelah komisi tim sales</p>
         </div>
       </div>
 
@@ -166,9 +170,10 @@ export default function OwnerFinancialReport({ salesList = [], employees = [] })
                   </td>
                   <td className="py-2.5 px-4 text-center">
                     <button
-                      onClick={() => alert(`Slip komisi ${staff.name} (${formatIDR(staff.commission)}) telah dicetak.`)}
+                      onClick={() => setSelectedSlipStaff(staff)}
                       disabled={staff.unitCount === 0}
-                      className="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 text-zinc-200 text-[11px] font-sans font-semibold border border-zinc-700"
+                      aria-label={`Buka slip komisi ${staff.name}`}
+                      className="px-2.5 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 text-zinc-200 text-[11px] font-sans font-semibold border border-zinc-700 min-h-[32px] transition-colors"
                     >
                       Cetak Slip
                     </button>
@@ -182,7 +187,7 @@ export default function OwnerFinancialReport({ salesList = [], employees = [] })
         {/* Mobile Cards */}
         <div className="md:hidden divide-y divide-zinc-800">
           {salesSummary.map((staff) => (
-            <div key={staff.id} className="p-3 space-y-2 text-xs">
+            <div key={staff.id} className="p-3.5 space-y-2.5 text-xs">
               <div className="flex items-start justify-between">
                 <div>
                   <h4 className="font-bold text-zinc-100">{staff.name}</h4>
@@ -194,7 +199,7 @@ export default function OwnerFinancialReport({ salesList = [], employees = [] })
                 </div>
               </div>
 
-              <div className="flex justify-between items-center text-[11px] text-zinc-400 border-t border-zinc-800/60 pt-1.5">
+              <div className="flex justify-between items-center text-[11px] text-zinc-400 border-t border-zinc-800/60 pt-2">
                 <span>Unit Terjual: <strong>{staff.unitCount} Unit</strong></span>
                 <span>Omset: {formatIDR(staff.omset)}</span>
               </div>
@@ -202,9 +207,11 @@ export default function OwnerFinancialReport({ salesList = [], employees = [] })
               {staff.unitCount > 0 && (
                 <div className="pt-1 flex justify-end">
                   <button
-                    onClick={() => alert(`Slip komisi ${staff.name} telah dicetak.`)}
-                    className="px-3 py-1 rounded bg-zinc-800 text-zinc-200 font-semibold text-[11px] border border-zinc-700"
+                    onClick={() => setSelectedSlipStaff(staff)}
+                    aria-label={`Buka slip komisi ${staff.name}`}
+                    className="px-3.5 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold text-xs border border-zinc-700 min-h-[44px] flex items-center gap-1.5 transition-colors"
                   >
+                    <Printer className="w-3.5 h-3.5" />
                     Cetak Slip Komisi
                   </button>
                 </div>
@@ -213,6 +220,105 @@ export default function OwnerFinancialReport({ salesList = [], employees = [] })
           ))}
         </div>
       </div>
+
+      {/* Real Slip Modal */}
+      {selectedSlipStaff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-zinc-950/85 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-xl bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl my-6">
+            <div className="p-3.5 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between no-print">
+              <h3 className="text-xs font-bold text-zinc-100 uppercase tracking-wider">
+                Slip Komisi Penjualan
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.print()}
+                  aria-label="Cetak slip komisi sekarang"
+                  className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center gap-1.5 shadow-sm transition-colors min-h-[36px]"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  Cetak PDF
+                </button>
+                <button
+                  onClick={() => setSelectedSlipStaff(null)}
+                  aria-label="Tutup slip komisi"
+                  className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 min-h-[36px] min-w-[36px] flex items-center justify-center"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 bg-white text-zinc-900 space-y-4" id="printable-document">
+              <div className="border-b-2 border-zinc-900 pb-3 flex justify-between items-start">
+                <div>
+                  <h2 className="text-lg font-black tracking-tight">MAHARGA MOTOR</h2>
+                  <p className="text-xs text-zinc-600">Jual Beli Motor Bekas Berkualitas & Cash-Tempo</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs font-mono font-bold px-2 py-0.5 bg-zinc-100 border border-zinc-300 rounded">
+                    SLIP KOMISI RESMI
+                  </span>
+                  <p className="text-[11px] text-zinc-500 mt-1 font-mono">{new Date().toLocaleDateString('id-ID')}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs bg-zinc-50 p-3 rounded border border-zinc-200">
+                <div>
+                  <span className="text-zinc-500 block text-[10px]">Penerima Komisi:</span>
+                  <strong className="text-zinc-900 text-sm">{selectedSlipStaff.name}</strong>
+                  <span className="text-zinc-500 block text-[11px] font-mono">@{selectedSlipStaff.username}</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-zinc-500 block text-[10px]">Total Unit Terjual:</span>
+                  <strong className="text-zinc-900 text-sm font-mono">{selectedSlipStaff.unitCount} Unit</strong>
+                  <span className="text-zinc-500 block text-[11px]">Total Omset: {formatIDR(selectedSlipStaff.omset)}</span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-bold text-zinc-700 uppercase tracking-wider block">Rincian Penjualan:</span>
+                <table className="w-full text-left text-xs border border-zinc-300">
+                  <thead className="bg-zinc-100 text-zinc-700 font-bold border-b border-zinc-300">
+                    <tr>
+                      <th className="p-2">Unit Motor</th>
+                      <th className="p-2">Plat</th>
+                      <th className="p-2 text-end">Harga Deal</th>
+                      <th className="p-2 text-end">Komisi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200 font-mono">
+                    {selectedSlipStaff.deals.map((deal) => (
+                      <tr key={deal.id}>
+                        <td className="p-2 font-sans font-medium text-zinc-900">{deal.unitName}</td>
+                        <td className="p-2 text-zinc-700">{deal.plate}</td>
+                        <td className="p-2 text-end">{formatIDR(deal.dealPrice)}</td>
+                        <td className="p-2 text-end font-bold text-emerald-700">+{formatIDR(deal.commission)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="bg-zinc-100 font-bold border-t-2 border-zinc-900">
+                    <tr>
+                      <td colSpan={3} className="p-2 text-end text-zinc-800 uppercase font-sans text-xs">Total Komisi Diterima:</td>
+                      <td className="p-2 text-end font-mono text-emerald-700 text-sm">{formatIDR(selectedSlipStaff.commission)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              <div className="pt-6 grid grid-cols-2 gap-4 text-center text-xs">
+                <div>
+                  <p className="text-zinc-500 mb-10">Penerima (Sales),</p>
+                  <p className="font-bold underline text-zinc-900">{selectedSlipStaff.name}</p>
+                </div>
+                <div>
+                  <p className="text-zinc-500 mb-10">Mengetahui (Owner),</p>
+                  <p className="font-bold underline text-zinc-900">H. Maharga</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,15 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  Wrench, 
-  Layers, 
-  Plus, 
-  CheckCircle2, 
-  DollarSign, 
-  User, 
-  Calendar, 
-  Clock,
-  AlertCircle
-} from 'lucide-react';
+import { Wrench, Plus } from 'lucide-react';
 import { formatIDR } from '../data/mockData';
 
 export default function WorkshopService({ units = [], onAddRepair, mechanics = [] }) {

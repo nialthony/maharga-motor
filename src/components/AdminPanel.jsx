@@ -1,11 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { 
   Folder, 
-  FileText, 
   Database, 
   Globe, 
   ShieldCheck, 
-  HardDrive, 
   Download, 
   Upload, 
   Plus, 
@@ -13,14 +11,10 @@ import {
   Edit3, 
   Save, 
   X, 
-  Search, 
   CheckCircle2, 
   Play, 
-  Server, 
-  Activity, 
   ArrowLeft,
   Image as ImageIcon,
-  Camera,
   Layers,
   Sparkles,
   Link2,
@@ -30,10 +24,9 @@ import {
   RotateCcw,
   FileSpreadsheet,
   Copy,
-  ExternalLink,
   Zap
 } from 'lucide-react';
-import { formatIDR, initialUnits, initialSalesList } from '../data/mockData';
+import { formatIDR } from '../data/mockData';
 import { 
   getSupabaseConfig, 
   saveSupabaseConfig, 
@@ -65,15 +58,6 @@ export default function AdminPanel({
   const jsonImportRef = useRef(null);
 
   const selectedUnit = units.find(u => u.id === Number(selectedUnitId)) || units[0];
-
-  // Preset photo gallery for easy 1-click selection
-  const presetPhotos = [
-    { title: 'Honda Vario 160 / 125 Black', url: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=800&q=80' },
-    { title: 'Yamaha NMAX / Aerox Silver', url: 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=800&q=80' },
-    { title: 'Honda Scoopy / Fazzio Retro', url: 'https://images.unsplash.com/photo-1558980394-4c7c9299fe96?auto=format&fit=crop&w=800&q=80' },
-    { title: 'Honda PCX / Maxi Luxury', url: 'https://images.unsplash.com/photo-1591637333184-19aa84b3e01f?auto=format&fit=crop&w=800&q=80' },
-    { title: 'Sport / Trail / KLX Green', url: 'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=800&q=80' }
-  ];
 
   // Handle direct file upload from PC / HP Camera
   const handleFileUpload = (e) => {
@@ -186,7 +170,7 @@ export default function AdminPanel({
           setSalesList(parsed.salesList);
         }
         alert('Data showroom berhasil diimpor!');
-      } catch (err) {
+      } catch {
         alert('Format file JSON tidak valid.');
       }
     };
@@ -303,24 +287,12 @@ export default function AdminPanel({
   const [editContent, setEditContent] = useState(files[0]?.content || '');
   const [isNewFileModal, setIsNewFileModal] = useState(false);
   const [newFileName, setNewFileName] = useState('');
-  const [newFilePath, setNewFilePath] = useState('/public_html/');
-  const [newFileType, setNewFileType] = useState('text');
+  const [newFilePath] = useState('/public_html/');
   const [newFileContent, setNewFileContent] = useState('');
 
   const [selectedTable, setSelectedTable] = useState('units');
   const [sqlQuery, setSqlQuery] = useState('SELECT * FROM units;');
-  const [sqlResult, setSqlResult] = useState(null);
   const [sqlMsg, setSqlMsg] = useState('');
-
-  const serverStats = {
-    domain: 'mahargamotor.com',
-    ip: '103.147.154.21',
-    serverName: 'PostgreSQL 16 / Supabase Cloud',
-    homeDir: '/home/maharga/public_html',
-    adminVersion: 'Admin Suite v2.4 (2026)',
-    dbEngine: 'PostgreSQL Relational DB',
-    sslStatus: 'Let’s Encrypt Wildcard (Aktif)'
-  };
 
   const handleRunSQL = (e) => {
     e.preventDefault();
@@ -328,19 +300,15 @@ export default function AdminPanel({
 
     if (query.includes('from units')) {
       setSelectedTable('units');
-      setSqlResult(units);
       setSqlMsg(`Showing ${units.length} rows`);
     } else if (query.includes('from sales')) {
       setSelectedTable('sales');
-      setSqlResult(salesList);
       setSqlMsg(`Showing ${salesList.length} rows`);
     } else if (query.includes('from employees') || query.includes('from users')) {
       setSelectedTable('employees');
-      setSqlResult(employees);
       setSqlMsg(`Showing ${employees.length} rows`);
     } else {
       setSelectedTable('units');
-      setSqlResult(units);
       setSqlMsg(`Query executed successfully.`);
     }
   };
@@ -1375,7 +1343,7 @@ RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # Block direct access to config files
-<FilesMatch "^(config\.json|\.env|\.git)">
+<FilesMatch "^(config\\.json|\\.env|\\.git)">
     Order allow,deny
     Deny from all
 </FilesMatch>

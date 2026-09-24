@@ -1,10 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  X, 
-  Printer, 
-  FileText, 
-  CheckCircle2
-} from 'lucide-react';
+import { X, Printer } from 'lucide-react';
 import { formatIDR } from '../data/mockData';
 
 export default function DocumentPrintModal({ transaction, onClose }) {
@@ -46,7 +41,8 @@ export default function DocumentPrintModal({ transaction, onClose }) {
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
+              aria-label="Tutup pratinjau dokumen"
+              className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>

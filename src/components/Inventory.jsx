@@ -2,18 +2,9 @@ import React, { useState } from 'react';
 import { 
   Layers, 
   Search, 
-  Filter, 
-  CreditCard, 
-  Eye, 
   Plus, 
   Grid3X3, 
-  List, 
-  Clock, 
-  CheckCircle2,
-  AlertTriangle,
-  Bike,
-  Sparkles,
-  ArrowRight
+  List
 } from 'lucide-react';
 import { formatIDR, calculateUnitEconomics } from '../data/mockData';
 
@@ -85,6 +76,7 @@ export default function Inventory({
           <div className="flex items-center bg-zinc-950 p-0.5 rounded-lg border border-zinc-800">
             <button
               onClick={() => setViewMode('table')}
+              aria-label="Tampilan tabel"
               className={`p-1.5 rounded-md transition-colors ${
                 viewMode === 'table' ? 'bg-zinc-800 text-amber-400 font-bold' : 'text-zinc-400 hover:text-zinc-200'
               }`}
@@ -94,6 +86,7 @@ export default function Inventory({
             </button>
             <button
               onClick={() => setViewMode('grid')}
+              aria-label="Tampilan grid katalog"
               className={`p-1.5 rounded-md transition-colors ${
                 viewMode === 'grid' ? 'bg-zinc-800 text-amber-400 font-bold' : 'text-zinc-400 hover:text-zinc-200'
               }`}

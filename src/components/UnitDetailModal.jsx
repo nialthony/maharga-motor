@@ -1,12 +1,5 @@
 import React from 'react';
-import { 
-  X, 
-  Layers, 
-  ShieldCheck, 
-  DollarSign, 
-  CreditCard, 
-  Wrench
-} from 'lucide-react';
+import { X, CreditCard } from 'lucide-react';
 import { formatIDR, calculateUnitEconomics } from '../data/mockData';
 
 export default function UnitDetailModal({ unit, role, onClose, onOpenPOS }) {
@@ -28,6 +21,7 @@ export default function UnitDetailModal({ unit, role, onClose, onOpenPOS }) {
 
           <button
             onClick={onClose}
+            aria-label="Tutup detail unit"
             className="p-1 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
           >
             <X className="w-4 h-4" />

@@ -9,7 +9,6 @@ import {
   Plus, 
   Users, 
   KeyRound, 
-  ShieldAlert, 
   Menu, 
   X, 
   DollarSign,

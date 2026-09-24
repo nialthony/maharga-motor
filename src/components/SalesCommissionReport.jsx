@@ -1,12 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  BarChart3, 
-  Wallet, 
-  Bike, 
-  Calendar,
-  Download,
-  DollarSign
-} from 'lucide-react';
+import { Wallet, Download } from 'lucide-react';
 import { formatIDR } from '../data/mockData';
 
 export default function SalesCommissionReport({ salesList, currentUser }) {

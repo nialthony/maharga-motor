@@ -44,7 +44,7 @@ export default function App() {
 
   const [employees, setEmployees] = useState(initialEmployees);
   const [files, setFiles] = useState(initialFiles);
-  const [mechanics, setMechanics] = useState(initialMechanics);
+  const [mechanics] = useState(initialMechanics);
 
   // Sync to localStorage
   useEffect(() => {
@@ -195,7 +195,6 @@ export default function App() {
             selectedUnit={selectedUnit}
             setSelectedUnit={setSelectedUnit}
             onTransactionComplete={handleTransactionComplete}
-            role={currentUser.role}
             currentUser={currentUser}
             employees={employees}
             onOpenNewUnit={() => setIsNewUnitModalOpen(true)}
@@ -222,6 +221,7 @@ export default function App() {
           <OwnerFinancialReport
             salesList={salesList}
             employees={employees}
+            units={units}
           />
         )}
 

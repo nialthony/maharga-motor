@@ -1,18 +1,14 @@
 import React, { useState, useRef } from 'react';
 import { 
   X, 
-  Plus, 
   Calculator,
   Upload,
   Image as ImageIcon,
-  Link2,
   Check
 } from 'lucide-react';
 import { formatIDR } from '../data/mockData';
 
 export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
-  if (!isOpen) return null;
-
   const [brand, setBrand] = useState('Honda');
   const [model, setModel] = useState('');
   const [year, setYear] = useState(2023);
@@ -92,6 +88,8 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
     onClose();
   };
 
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-zinc-950/85 backdrop-blur-sm overflow-y-auto">
       <div className="relative w-full max-w-xl bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl my-6">
@@ -101,7 +99,11 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
             <h3 className="text-sm font-bold text-zinc-100">Input Data Motor Masuk & Foto</h3>
             <p className="text-[11px] text-zinc-400">Langsung tampil di katalog showroom tanpa perlu redeploy</p>
           </div>
-          <button onClick={onClose} className="p-1 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800">
+          <button 
+            onClick={onClose} 
+            aria-label="Tutup modal input unit"
+            className="p-1.5 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -252,6 +254,31 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
                 <option value="Mati Pajak">Pajak Mati</option>
               </select>
             </div>
+
+            {taxStatus === 'Hidup' ? (
+              <div>
+                <label className="font-medium text-zinc-300 block mb-1">Pajak Berlaku Hingga</label>
+                <input
+                  type="date"
+                  value={taxValidUntil}
+                  onChange={(e) => setTaxValidUntil(e.target.value)}
+                  className="w-full px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400 font-mono"
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="font-medium text-zinc-300 block mb-1">Mati Pajak (Tahun)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={taxDeadYears}
+                  onChange={(e) => setTaxDeadYears(Number(e.target.value))}
+                  placeholder="Jumlah tahun mati"
+                  className="w-full px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400 font-mono"
+                />
+              </div>
+            )}
 
             <div>
               <label className="font-medium text-zinc-300 block mb-1">Kondisi Singkat</label>

@@ -16,7 +16,6 @@ export default function SalesCommissionReport({ salesList, currentUser }) {
   const totalUnitSold = mySales.length;
   const totalOmset = mySales.reduce((acc, curr) => acc + (curr.dealPrice || 0), 0);
   const totalCommission = mySales.reduce((acc, curr) => acc + (curr.commission || 0), 0);
-  const commissionRate = totalUnitSold > 0 ? Math.round(totalCommission / totalUnitSold) : 350000;
 
   return (
     <div className="space-y-4 pb-20 md:pb-12">
@@ -28,7 +27,7 @@ export default function SalesCommissionReport({ salesList, currentUser }) {
               Laporan Komisi Saya
             </h2>
             <span className="px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
-              Komisi: {formatIDR(commissionRate)} / Unit
+              Skema Komisi: Rp 100.000 / Rp 200.000 per Unit
             </span>
           </div>
           <p className="text-[11px] text-zinc-400 mt-0.5">

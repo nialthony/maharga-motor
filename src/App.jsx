@@ -14,6 +14,7 @@ import UnitDetailModal from './components/UnitDetailModal';
 import DocumentPrintModal from './components/DocumentPrintModal';
 import NewUnitModal from './components/NewUnitModal';
 import LoginScreen from './components/LoginScreen';
+import UserProfileModal from './components/UserProfileModal';
 
 import { 
   initialUnits, 
@@ -27,6 +28,7 @@ import {
   saveNewUnitToCloud, 
   saveTransactionToCloud, 
   saveSettlementToCloud,
+  saveEmployeeProfileToCloud,
   subscribeToCloudRealtime 
 } from './lib/cloudStore';
 
@@ -131,6 +133,7 @@ export default function App() {
   });
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const [selectedUnit, setSelectedUnit] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -227,6 +230,34 @@ export default function App() {
     saveSettlementToCloud(txId, targetUnitId, updatedUnits, updatedSales, employees);
   };
 
+  const isOwnerOrAdmin = currentUser?.role === 'owner' || currentUser?.role === 'admin';
+
+  const handleOpenAdminPanel = () => {
+    if (isOwnerOrAdmin) {
+      setIsAdminPanelOpen(true);
+    }
+  };
+
+  const handleOpenNewUnit = () => {
+    if (isOwnerOrAdmin) {
+      setIsNewUnitModalOpen(true);
+    }
+  };
+
+  const handleUpdateProfile = async (updatedUser) => {
+    setCurrentUser(updatedUser);
+    try {
+      sessionStorage.setItem('maharga_auth_user', JSON.stringify(updatedUser));
+    } catch (e) {
+      console.warn('sessionStorage update error', e);
+    }
+
+    const nextEmployees = employees.map(emp => emp.id === updatedUser.id ? updatedUser : emp);
+    setEmployees(nextEmployees);
+
+    await saveEmployeeProfileToCloud(updatedUser, nextEmployees, units, salesList);
+  };
+
   const handleUpdateEmployees = (updaterOrArray) => {
     setEmployees(prev => {
       const nextEmployees = typeof updaterOrArray === 'function' ? updaterOrArray(prev) : updaterOrArray;
@@ -271,8 +302,8 @@ export default function App() {
   const readyCount = units.filter(u => u.status === 'Tersedia').length;
   const tempoAlertCount = salesList.filter(s => s.paymentMethod === 'dp-tempo' && s.status === 'Tempo Aktif').length;
 
-  // Dedicated Admin Panel Full View
-  if (isAdminPanelOpen) {
+  // Dedicated Admin Panel Full View (Hanya untuk Owner dan Admin)
+  if (isAdminPanelOpen && isOwnerOrAdmin) {
     return (
       <AdminPanel
         units={units}
@@ -292,9 +323,10 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         currentUser={currentUser}
-        onOpenNewUnit={() => setIsNewUnitModalOpen(true)}
+        onOpenNewUnit={handleOpenNewUnit}
         onOpenLoginModal={() => setIsLoginModalOpen(true)}
-        onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
+        onOpenAdminPanel={handleOpenAdminPanel}
+        onOpenProfile={() => setIsProfileModalOpen(true)}
         availableCount={readyCount}
         tempoAlertCount={tempoAlertCount}
         cloudSyncStatus={cloudSyncStatus}
@@ -311,7 +343,7 @@ export default function App() {
             setActiveTab={setActiveTab}
             onSelectUnit={handleSelectUnit}
             onOpenPOS={handleOpenPOS}
-            onOpenNewUnit={() => setIsNewUnitModalOpen(true)}
+            onOpenNewUnit={handleOpenNewUnit}
           />
         )}
 
@@ -321,7 +353,7 @@ export default function App() {
             role={currentUser.role}
             onSelectUnit={handleSelectUnit}
             onOpenPOS={handleOpenPOS}
-            onOpenNewUnit={() => setIsNewUnitModalOpen(true)}
+            onOpenNewUnit={handleOpenNewUnit}
           />
         )}
 
@@ -426,13 +458,36 @@ export default function App() {
         />
       )}
 
+      {isProfileModalOpen && (
+        <UserProfileModal
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
+          currentUser={currentUser}
+          onSaveProfile={handleUpdateProfile}
+          onSwitchAccount={() => {
+            setIsProfileModalOpen(false);
+            setIsLoginModalOpen(true);
+          }}
+        />
+      )}
+
       {/* Clean Footer */}
       <footer className="border-t border-zinc-900 bg-zinc-950 py-4 text-center text-xs text-zinc-500 hidden md:block">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <p>© 2026 <strong>Maharga Motor Showroom System</strong> • Cash & Titip DP Management.</p>
           <div className="flex items-center gap-3 text-zinc-400 font-mono text-[11px]">
             <span>Login: {currentUser.name} ({currentUser.role.toUpperCase()})</span>
-            <span>Admin Suite: <button onClick={() => setIsAdminPanelOpen(true)} className="text-amber-400 font-bold hover:underline">Buka Admin Panel</button></span>
+            {isOwnerOrAdmin && (
+              <span>
+                Admin Suite:{' '}
+                <button 
+                  onClick={handleOpenAdminPanel} 
+                  className="text-amber-400 font-bold hover:underline"
+                >
+                  Buka Admin Panel
+                </button>
+              </span>
+            )}
           </div>
         </div>
       </footer>

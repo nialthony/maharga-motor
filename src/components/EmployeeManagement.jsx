@@ -208,8 +208,16 @@ export default function EmployeeManagement({ employees, setEmployees, currentRol
                 filteredEmployees.map((emp) => (
                   <tr key={emp.id} className="hover:bg-zinc-800/40 transition-colors">
                     <td className="py-3 px-4 font-bold text-zinc-100 flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-[10px] font-mono font-bold text-amber-400">
-                        {emp.username.slice(0, 2).toUpperCase()}
+                      <div className="w-6 h-6 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center text-[10px] font-mono font-bold text-amber-400 shrink-0">
+                        {emp.avatar ? (
+                          <img 
+                            src={emp.avatar} 
+                            alt={emp.name} 
+                            className="w-full h-full object-cover" 
+                          />
+                        ) : (
+                          <span>{emp.username.slice(0, 2).toUpperCase()}</span>
+                        )}
                       </div>
                       <span>{emp.name}</span>
                     </td>

@@ -15,11 +15,15 @@ CREATE TABLE IF NOT EXISTS employees (
     email VARCHAR(100),
     phone VARCHAR(25),
     pin VARCHAR(10) NOT NULL DEFAULT '1234',
+    avatar TEXT,
     status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'suspended')),
     joined_date DATE DEFAULT CURRENT_DATE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Idempotent patch jika tabel sudah terlanjur ada di database Supabase
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS avatar TEXT;
 
 -- 3. TABLE: units (Katalog & Stok Unit Motor)
 CREATE TABLE IF NOT EXISTS units (

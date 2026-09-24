@@ -78,6 +78,7 @@ export const employeeToDb = (emp) => ({
   email: emp.email || '',
   phone: emp.phone || '',
   pin: String(emp.pin || '1234'),
+  avatar: emp.avatar || '',
   status: emp.status === 'suspended' ? 'inactive' : (emp.status || 'active'),
   joined_date: emp.joinedDate || new Date().toISOString().split('T')[0]
 });
@@ -93,6 +94,7 @@ export const employeeFromDb = (row) => ({
   email: row.email || '',
   phone: row.phone || '',
   pin: String(row.pin || '1234'),
+  avatar: row.avatar || '',
   status: row.status === 'inactive' ? 'suspended' : (row.status || 'active'),
   joinedDate: row.joined_date || '',
   permissions: row.role === 'owner' 
@@ -302,6 +304,50 @@ export const saveNewEmployeeToCloud = async (newEmp, allEmployees, allUnits, all
     await syncAllToCloud(allUnits, allSales, allEmployees);
   } catch (e) {
     console.warn('Gagal menyimpan karyawan ke cloud:', e);
+  }
+};
+
+/**
+ * Simpan update profil karyawan (avatar, phone, email, pin, name) ke Supabase Cloud
+ */
+export const saveEmployeeProfileToCloud = async (updatedEmp, allEmployees, allUnits, allSales) => {
+  if (!isSupabaseConfigured() || !supabase) return;
+  try {
+    const dbRow = employeeToDb(updatedEmp);
+    
+    // 1. Coba update kolom tabel employees (dengan fallback jika kolom avatar belum dimigrasi di SQL)
+    try {
+      const { error: fullUpdateErr } = await supabase
+        .from('employees')
+        .update({
+          name: dbRow.name,
+          email: dbRow.email,
+          phone: dbRow.phone,
+          pin: dbRow.pin,
+          avatar: dbRow.avatar
+        })
+        .eq('id', updatedEmp.id);
+
+      if (fullUpdateErr) {
+        // Fallback update tanpa kolom avatar
+        await supabase
+          .from('employees')
+          .update({
+            name: dbRow.name,
+            email: dbRow.email,
+            phone: dbRow.phone,
+            pin: dbRow.pin
+          })
+          .eq('id', updatedEmp.id);
+      }
+    } catch (colErr) {
+      console.warn('Fallback update employee table:', colErr);
+    }
+
+    // 2. Simpan master snapshot di system_settings (selalu menyimpan avatar secara utuh)
+    await syncAllToCloud(allUnits, allSales, allEmployees);
+  } catch (e) {
+    console.warn('Gagal simpan profil ke cloud:', e);
   }
 };
 

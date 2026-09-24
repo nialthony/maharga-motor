@@ -145,8 +145,16 @@ export default function LoginScreen({ employees = [], onLoginSuccess }) {
               {selectedEmployee && (
                 <div className="mt-2.5 p-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800/70 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs font-bold text-amber-400 font-mono">
-                      {selectedEmployee.username.slice(0, 2).toUpperCase()}
+                    <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center text-xs font-bold text-amber-400 font-mono shrink-0">
+                      {selectedEmployee.avatar ? (
+                        <img 
+                          src={selectedEmployee.avatar} 
+                          alt={selectedEmployee.name} 
+                          className="w-full h-full object-cover" 
+                        />
+                      ) : (
+                        <span>{selectedEmployee.username.slice(0, 2).toUpperCase()}</span>
+                      )}
                     </div>
                     <div>
                       <p className="text-xs font-bold text-zinc-200 leading-tight">

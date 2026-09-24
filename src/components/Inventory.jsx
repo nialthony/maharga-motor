@@ -63,7 +63,7 @@ export default function Inventory({
         </div>
 
         <div className="flex items-center gap-2">
-          {role === 'owner' && (
+          {isOwnerOrAdmin && (
             <button
               onClick={onOpenNewUnit}
               className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs shadow-sm transition-all flex items-center gap-1.5"
@@ -184,15 +184,17 @@ export default function Inventory({
               Belum ada data unit motor yang dimasukkan. Anda dapat mulai mencatat motor pertama masuk untuk showroom Anda sekarang.
             </p>
           </div>
-          <div className="pt-2">
-            <button
-              onClick={onOpenNewUnit}
-              className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center gap-2 mx-auto shadow-md transition-transform hover:scale-105"
-            >
-              <Plus className="w-4 h-4 stroke-[3]" />
-              Input Motor Pertama
-            </button>
-          </div>
+          {isOwnerOrAdmin && (
+            <div className="pt-2">
+              <button
+                onClick={onOpenNewUnit}
+                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center gap-2 mx-auto shadow-md transition-transform hover:scale-105"
+              >
+                <Plus className="w-4 h-4 stroke-[3]" />
+                Input Motor Pertama
+              </button>
+            </div>
+          )}
         </div>
       ) : filteredUnits.length === 0 ? (
         <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-8 text-center text-xs text-zinc-400 space-y-2">

@@ -46,9 +46,8 @@ export default function SalesPOS({
   const [selectedSalesId, setSelectedSalesId] = useState(defaultSalesId);
   const [customSalesName, setCustomSalesName] = useState('');
 
-  // Commission Preset Settings (100rb, 200rb, 350rb, Custom)
+  // Sistem Komisi Resmi: 2 jenis pilihan (100rb & 200rb)
   const [commissionAmount, setCommissionAmount] = useState(200000);
-  const [isCustomCommission, setIsCustomCommission] = useState(false);
 
   // Form State
   const [dealPrice, setDealPrice] = useState(activeUnit ? activeUnit.displayPrice : 0);
@@ -280,88 +279,40 @@ export default function SalesPOS({
               {/* Commission Tier Settings */}
               <div>
                 <label className="text-xs font-medium text-zinc-300 block mb-1">
-                  Nominal Komisi Sales *
+                  Skema Komisi Sales (Sistem 100rb & 200rb) *
                 </label>
                 
-                {/* Preset Quick Buttons: 100rb, 200rb, 350rb, Custom */}
-                <div className="grid grid-cols-4 gap-1.5 mb-2">
+                {/* 2 Jenis Komisi Resmi Showroom: 100rb dan 200rb */}
+                <div className="grid grid-cols-2 gap-2 mb-2">
                   <button
                     type="button"
-                    onClick={() => {
-                      setCommissionAmount(100000);
-                      setIsCustomCommission(false);
-                    }}
-                    className={`py-1.5 px-1 rounded-lg text-center font-mono text-[11px] font-bold transition-all ${
-                      commissionAmount === 100000 && !isCustomCommission
+                    onClick={() => setCommissionAmount(100000)}
+                    className={`py-2 px-3 rounded-lg text-center font-mono text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                      commissionAmount === 100000
                         ? 'bg-amber-500 text-zinc-950 shadow-sm'
                         : 'bg-zinc-950 text-zinc-300 hover:bg-zinc-800 border border-zinc-800'
                     }`}
                   >
-                    100 Rb
+                    <span>Rp 100.000 / Unit</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setCommissionAmount(200000);
-                      setIsCustomCommission(false);
-                    }}
-                    className={`py-1.5 px-1 rounded-lg text-center font-mono text-[11px] font-bold transition-all ${
-                      commissionAmount === 200000 && !isCustomCommission
+                    onClick={() => setCommissionAmount(200000)}
+                    className={`py-2 px-3 rounded-lg text-center font-mono text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                      commissionAmount === 200000
                         ? 'bg-amber-500 text-zinc-950 shadow-sm'
                         : 'bg-zinc-950 text-zinc-300 hover:bg-zinc-800 border border-zinc-800'
                     }`}
                   >
-                    200 Rb
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCommissionAmount(350000);
-                      setIsCustomCommission(false);
-                    }}
-                    className={`py-1.5 px-1 rounded-lg text-center font-mono text-[11px] font-bold transition-all ${
-                      commissionAmount === 350000 && !isCustomCommission
-                        ? 'bg-amber-500 text-zinc-950 shadow-sm'
-                        : 'bg-zinc-950 text-zinc-300 hover:bg-zinc-800 border border-zinc-800'
-                    }`}
-                  >
-                    350 Rb
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsCustomCommission(true);
-                    }}
-                    className={`py-1.5 px-1 rounded-lg text-center font-mono text-[11px] font-bold transition-all ${
-                      isCustomCommission
-                        ? 'bg-amber-500 text-zinc-950 shadow-sm'
-                        : 'bg-zinc-950 text-zinc-300 hover:bg-zinc-800 border border-zinc-800'
-                    }`}
-                  >
-                    Custom
+                    <span>Rp 200.000 / Unit</span>
                   </button>
                 </div>
 
-                {isCustomCommission ? (
-                  <div className="relative">
-                    <span className="absolute left-3 top-2 text-xs font-mono text-zinc-500">Rp</span>
-                    <input
-                      type="number"
-                      placeholder="Masukkan nominal komisi"
-                      value={commissionAmount}
-                      onChange={(e) => setCommissionAmount(Number(e.target.value))}
-                      className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-zinc-950 border border-amber-500/60 text-emerald-400 font-mono font-bold text-xs focus:outline-none"
-                    />
-                  </div>
-                ) : (
-                  <div className="px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 flex justify-between items-center text-xs">
-                    <span className="text-zinc-400">Komisi Disetel:</span>
-                    <span className="font-mono font-bold text-emerald-400">{formatIDR(commissionAmount)}</span>
-                  </div>
-                )}
+                <div className="px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 flex justify-between items-center text-xs">
+                  <span className="text-zinc-400">Komisi Disetel:</span>
+                  <span className="font-mono font-bold text-emerald-400">{formatIDR(commissionAmount)}</span>
+                </div>
               </div>
             </div>
           </div>

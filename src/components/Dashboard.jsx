@@ -30,6 +30,15 @@ export default function Dashboard({
   const totalOmset = salesList.reduce((acc, curr) => acc + (curr.dealPrice || 0), 0);
   const totalReceivables = tempoUnits.reduce((acc, curr) => acc + (curr.remainingAmount || 0), 0);
   
+  // Perhitungan Unit Terjual Bulan Ini
+  const now = new Date();
+  const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const currentMonthName = now.toLocaleString('id-ID', { month: 'long' });
+  const soldThisMonth = soldUnits.filter(s => {
+    if (!s.date) return false;
+    return s.date.startsWith(currentYearMonth);
+  });
+
   // Gross Profit calculation from real sold units
   const totalSoldModal = salesList.reduce((acc, tx) => {
     const matchedUnit = units.find(u => u.id === tx.unitId);
@@ -64,7 +73,7 @@ export default function Dashboard({
         </div>
 
         <div className="flex items-center gap-2">
-          {role === 'owner' && (
+          {isOwnerOrAdmin && (
             <button
               onClick={onOpenNewUnit}
               aria-label="Input unit motor baru ke showroom"
@@ -75,14 +84,16 @@ export default function Dashboard({
             </button>
           )}
 
-          <button
-            onClick={() => setActiveTab('pos')}
-            aria-label="Buka kasir transaksi penjualan"
-            className="px-3.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold flex items-center gap-1.5 border border-zinc-700 transition-colors min-h-[36px]"
-          >
-            <CreditCard className="w-3.5 h-3.5" />
-            Kasir POS
-          </button>
+          {isOwnerOrAdmin && (
+            <button
+              onClick={() => setActiveTab('pos')}
+              aria-label="Buka kasir transaksi penjualan"
+              className="px-3.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold flex items-center gap-1.5 border border-zinc-700 transition-colors min-h-[36px]"
+            >
+              <CreditCard className="w-3.5 h-3.5" />
+              Kasir POS
+            </button>
+          )}
         </div>
       </div>
 
@@ -106,22 +117,25 @@ export default function Dashboard({
           <p className="text-[11px] text-zinc-500">Motor tersedia untuk dijual</p>
         </div>
 
-        {/* Card 2: Terjual */}
+        {/* Card 2: Terjual Bulan Ini */}
         <div 
-          onClick={() => setActiveTab(role === 'owner' ? 'financial_report' : 'my_commission')}
+          onClick={() => setActiveTab(isOwnerOrAdmin ? 'financial_report' : 'my_commission')}
           className="bg-zinc-900/90 hover:bg-zinc-850 p-4 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer space-y-2 shadow-sm"
         >
           <div className="flex items-center justify-between text-xs text-zinc-400">
-            <span className="font-semibold uppercase tracking-wider text-[10px]">Unit Terjual</span>
+            <span className="font-semibold uppercase tracking-wider text-[10px]">Terjual Bulan Ini</span>
             <TrendingUp className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl sm:text-3xl font-black font-mono text-emerald-400">
-              {soldUnits.length}
+              {soldThisMonth.length}
             </span>
-            <span className="text-[11px] font-semibold text-zinc-500">Deal</span>
+            <span className="text-[11px] font-semibold text-zinc-500">Unit ({currentMonthName})</span>
           </div>
-          <p className="text-[11px] text-zinc-500">Total unit berhasil terjual</p>
+          <p className="text-[11px] text-zinc-400 flex items-center justify-between">
+            <span>Bulan {currentMonthName}</span>
+            <span className="font-mono text-zinc-500">Total: {soldUnits.length}</span>
+          </p>
         </div>
 
         {/* Card 3: Omset Penjualan / Laba */}

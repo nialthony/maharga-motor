@@ -8,6 +8,7 @@ import {
   BarChart3, 
   Plus, 
   Users, 
+  User,
   KeyRound, 
   Menu, 
   X, 
@@ -24,6 +25,7 @@ export default function Navbar({
   onOpenNewUnit,
   onOpenLoginModal,
   onOpenAdminPanel,
+  onOpenProfile,
   availableCount,
   tempoAlertCount,
   cloudSyncStatus = 'synced',
@@ -143,7 +145,7 @@ export default function Navbar({
                 </button>
               )}
 
-              {currentUser.role === 'owner' && (
+              {isOwnerOrAdmin && (
                 <button
                   onClick={onOpenNewUnit}
                   className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs shadow-sm transition-all"
@@ -153,24 +155,40 @@ export default function Navbar({
                 </button>
               )}
 
-              {/* User Switcher */}
+              {/* User Profile Pill */}
               <button
-                onClick={onOpenLoginModal}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors text-left"
-                title="Ganti Akun"
+                onClick={onOpenProfile}
+                className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition-colors text-left group"
+                title="Buka Profil Saya & Kontak WhatsApp/Email"
               >
-                <div className="w-6 h-6 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-[10px] font-bold text-amber-400 font-mono">
-                  {currentUser.username.slice(0, 2).toUpperCase()}
+                <div className="w-7 h-7 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center text-[10px] font-bold text-amber-400 font-mono shrink-0 shadow-inner">
+                  {currentUser.avatar ? (
+                    <img 
+                      src={currentUser.avatar} 
+                      alt={currentUser.name} 
+                      className="w-full h-full object-cover" 
+                    />
+                  ) : (
+                    <span>{currentUser.username.slice(0, 2).toUpperCase()}</span>
+                  )}
                 </div>
                 <div className="hidden lg:block">
-                  <span className="font-semibold text-zinc-200 block text-xs leading-tight">
+                  <span className="font-semibold text-zinc-200 block text-xs leading-tight group-hover:text-amber-300 transition-colors">
                     {currentUser.name}
                   </span>
                   <span className="text-[9px] text-zinc-400 font-mono uppercase">
                     {currentUser.role}
                   </span>
                 </div>
-                <KeyRound className="w-3 h-3 text-zinc-500" />
+              </button>
+
+              {/* Ganti Akun Quick Button */}
+              <button
+                onClick={onOpenLoginModal}
+                className="hidden sm:flex items-center gap-1 px-2 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs font-medium transition-colors"
+                title="Ganti Akun Staf"
+              >
+                <KeyRound className="w-3.5 h-3.5 text-zinc-500" />
               </button>
 
               {/* Logout Button */}
@@ -244,15 +262,35 @@ export default function Navbar({
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 md:hidden bg-zinc-950/90 backdrop-blur-md flex flex-col pt-16 p-4">
           <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-amber-400 font-mono font-bold text-xs">
-                {currentUser.username.slice(0, 2).toUpperCase()}
+            <button
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                onOpenProfile?.();
+              }}
+              className="flex items-center gap-2.5 text-left p-1 -m-1 rounded-xl hover:bg-zinc-900 transition-colors"
+              title="Edit Profil Staf"
+            >
+              <div className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center text-amber-400 font-mono font-bold text-xs shrink-0">
+                {currentUser.avatar ? (
+                  <img 
+                    src={currentUser.avatar} 
+                    alt={currentUser.name} 
+                    className="w-full h-full object-cover" 
+                  />
+                ) : (
+                  <span>{currentUser.username.slice(0, 2).toUpperCase()}</span>
+                )}
               </div>
               <div>
-                <h4 className="text-xs font-bold text-zinc-100">{currentUser.name}</h4>
-                <span className="text-[10px] text-amber-400 font-mono uppercase">{currentUser.role}</span>
+                <h4 className="text-xs font-bold text-zinc-100 flex items-center gap-1.5">
+                  <span>{currentUser.name}</span>
+                </h4>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[10px] text-amber-400 font-mono uppercase font-bold">{currentUser.role}</span>
+                  <span className="text-[10px] text-zinc-400">• Edit Profil</span>
+                </div>
               </div>
-            </div>
+            </button>
             <button 
               onClick={() => setIsMobileMenuOpen(false)}
               className="p-1 rounded-md text-zinc-400 hover:text-white"
@@ -288,7 +326,7 @@ export default function Navbar({
           </div>
 
           <div className="pt-3 border-t border-zinc-800 space-y-2">
-            {currentUser.role === 'owner' && (
+            {isOwnerOrAdmin && (
               <button
                 onClick={() => {
                   onOpenNewUnit();
@@ -296,16 +334,26 @@ export default function Navbar({
                 }}
                 className="w-full py-2.5 rounded-xl bg-amber-500 text-zinc-950 font-bold text-xs flex items-center justify-center gap-1.5"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-4 h-4 stroke-[3]" />
                 Input Unit Motor Baru
               </button>
             )}
             <button
               onClick={() => {
+                onOpenProfile?.();
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-200 text-xs font-semibold flex items-center justify-center gap-2 hover:bg-zinc-850 transition-colors"
+            >
+              <User className="w-4 h-4 text-amber-400" />
+              <span>Profil Saya & Kontak</span>
+            </button>
+            <button
+              onClick={() => {
                 onOpenLoginModal();
                 setIsMobileMenuOpen(false);
               }}
-              className="w-full py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs font-semibold"
+              className="w-full py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 text-xs font-semibold hover:text-zinc-200 transition-colors"
             >
               Ganti Pengguna (Login)
             </button>

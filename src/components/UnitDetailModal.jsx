@@ -128,7 +128,7 @@ export default function UnitDetailModal({ unit, role, onClose, onOpenPOS }) {
 
         {/* Footer */}
         <div className="p-3.5 bg-zinc-950 border-t border-zinc-800 flex items-center justify-end gap-2">
-          {unit.status === 'Tersedia' && (
+          {(role === 'owner' || role === 'admin') && unit.status === 'Tersedia' && (
             <button
               onClick={() => {
                 onClose();

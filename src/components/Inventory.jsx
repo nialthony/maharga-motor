@@ -15,6 +15,7 @@ export default function Inventory({
   onOpenPOS, 
   onOpenNewUnit 
 }) {
+  const isOwnerOrAdmin = role === 'owner' || role === 'admin';
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState('All');
@@ -274,7 +275,7 @@ export default function Inventory({
                           >
                             Detail
                           </button>
-                          {unit.status === 'Tersedia' && (
+                          {isOwnerOrAdmin && unit.status === 'Tersedia' && (
                             <button
                               onClick={() => onOpenPOS(unit)}
                               className="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-zinc-950 text-[11px] font-bold transition-colors"
@@ -366,7 +367,7 @@ export default function Inventory({
                       >
                         Detail
                       </button>
-                      {unit.status === 'Tersedia' && (
+                      {isOwnerOrAdmin && unit.status === 'Tersedia' && (
                         <button
                           onClick={() => onOpenPOS(unit)}
                           className="px-3 py-1 rounded bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold"

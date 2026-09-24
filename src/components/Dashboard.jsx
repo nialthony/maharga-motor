@@ -24,6 +24,7 @@ export default function Dashboard({
   const readyUnits = units.filter(u => u.status === 'Tersedia');
   const soldUnits = salesList.filter(s => s.status === 'Lunas' || s.status === 'Terjual');
   const tempoUnits = salesList.filter(s => s.paymentMethod === 'dp-tempo' && s.status === 'Tempo Aktif');
+  const isOwnerOrAdmin = role === 'owner' || role === 'admin';
 
   // Dynamic Calculations
   const totalOmset = salesList.reduce((acc, curr) => acc + (curr.dealPrice || 0), 0);
@@ -322,13 +323,15 @@ export default function Dashboard({
                             >
                               Detail
                             </button>
-                            <button
-                              onClick={() => onOpenPOS(unit)}
-                              aria-label={`Jual unit ${unit.brand} ${unit.model}`}
-                              className="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-zinc-950 text-[11px] font-bold transition-colors min-h-[30px]"
-                            >
-                              Jual
-                            </button>
+                            {isOwnerOrAdmin && (
+                              <button
+                                onClick={() => onOpenPOS(unit)}
+                                aria-label={`Jual unit ${unit.brand} ${unit.model}`}
+                                className="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-zinc-950 text-[11px] font-bold transition-colors min-h-[30px]"
+                              >
+                                Jual
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -382,13 +385,15 @@ export default function Dashboard({
                       >
                         Detail Unit
                       </button>
-                      <button
-                        onClick={() => onOpenPOS(unit)}
-                        aria-label={`Jual unit ${unit.brand} ${unit.model}`}
-                        className="flex-1 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs transition-colors min-h-[44px]"
-                      >
-                        Jual Sekarang
-                      </button>
+                      {isOwnerOrAdmin && (
+                        <button
+                          onClick={() => onOpenPOS(unit)}
+                          aria-label={`Jual unit ${unit.brand} ${unit.model}`}
+                          className="flex-1 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs transition-colors min-h-[44px]"
+                        >
+                          Jual Sekarang
+                        </button>
+                      )}
                     </div>
                   </div>
                 );

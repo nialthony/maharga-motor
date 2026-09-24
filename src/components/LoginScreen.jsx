@@ -5,8 +5,6 @@ import {
   ArrowRight, 
   Eye, 
   EyeOff, 
-  ShieldCheck,
-  CheckCircle2,
   Users
 } from 'lucide-react';
 
@@ -89,22 +87,12 @@ export default function LoginScreen({ employees = [], onLoginSuccess }) {
 
       <div className="relative w-full max-w-md space-y-6">
         {/* Brand Header */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-mono font-medium text-amber-400 mb-2">
-            <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-            SHOWROOM ERP SECURITY
-          </div>
-
-          <div className="flex flex-col items-center justify-center pt-2">
-            <img 
-              src="/logo.png" 
-              alt="Maharga Motor Logo" 
-              className="h-16 sm:h-20 w-auto object-contain drop-shadow-xl hover:scale-105 transition-transform" 
-            />
-            <p className="text-xs text-zinc-400 mt-2 font-mono tracking-wider">
-              SHOWROOM MANAGEMENT SYSTEM
-            </p>
-          </div>
+        <div className="text-center pb-2">
+          <img 
+            src="/logo.png" 
+            alt="Maharga Motor Logo" 
+            className="h-16 sm:h-20 w-auto object-contain mx-auto transition-transform hover:scale-105 drop-shadow-md" 
+          />
         </div>
 
         {/* Login Card */}
@@ -112,10 +100,10 @@ export default function LoginScreen({ employees = [], onLoginSuccess }) {
           <div>
             <h2 className="text-sm font-bold text-zinc-100 flex items-center gap-2">
               <Lock className="w-4 h-4 text-amber-400" />
-              Autentikasi Staf Showroom
+              Autentikasi Staf
             </h2>
             <p className="text-xs text-zinc-400 mt-0.5">
-              Pilih akun staf Anda dan masukkan PIN keamanan untuk mengakses sistem.
+              Pilih akun staf Anda dan masukkan PIN untuk masuk ke sistem.
             </p>
           </div>
 
@@ -130,9 +118,9 @@ export default function LoginScreen({ employees = [], onLoginSuccess }) {
             {/* Account Selector */}
             <div>
               <label className="text-xs font-semibold text-zinc-300 block mb-1.5 flex items-center justify-between">
-                <span>Pilih Akun / Karyawan:</span>
+                <span>Pilih Akun:</span>
                 <span className="text-[10px] text-zinc-500 font-mono">
-                  {employees.length} Akun Tersedia
+                  {employees.length} Akun
                 </span>
               </label>
 
@@ -179,8 +167,8 @@ export default function LoginScreen({ employees = [], onLoginSuccess }) {
             {/* PIN Input (No Hint) */}
             <div>
               <label className="text-xs font-semibold text-zinc-300 block mb-1.5 flex items-center justify-between">
-                <span>PIN Keamanan (4-6 Digit):</span>
-                <span className="text-[10px] text-zinc-500 font-mono">Kerahasiaan Terenkripsi</span>
+                <span>PIN Keamanan:</span>
+                <span className="text-[10px] text-zinc-500 font-mono">4-6 Digit</span>
               </label>
 
               <div className="relative">
@@ -217,25 +205,11 @@ export default function LoginScreen({ employees = [], onLoginSuccess }) {
               disabled={isLoading || !pin.trim()}
               className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-950 font-bold text-sm transition-all shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2 min-h-[48px] mt-2 active:scale-[0.99]"
             >
-              <span>{isLoading ? 'Memverifikasi...' : 'Buka Sistem Showroom'}</span>
+              <span>{isLoading ? 'Memverifikasi...' : 'Masuk ke Sistem'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
-
-          {/* Cloud Status Footer */}
-          <div className="pt-3 border-t border-zinc-800/80 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
-            <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              PostgreSQL Cloud Live
-            </span>
-            <span>Maharga Motor v3.0</span>
-          </div>
         </div>
-
-        {/* Security Notice */}
-        <p className="text-center text-[11px] text-zinc-400 font-mono">
-          Akses terbatas hanya untuk staf & manajemen resmi Maharga Motor.
-        </p>
       </div>
     </div>
   );

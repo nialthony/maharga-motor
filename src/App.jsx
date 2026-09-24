@@ -19,7 +19,6 @@ import {
   initialUnits, 
   initialSalesList, 
   initialEmployees,
-  initialFiles,
   initialMechanics 
 } from './data/mockData';
 import { 
@@ -27,6 +26,7 @@ import {
   syncAllToCloud, 
   saveNewUnitToCloud, 
   saveTransactionToCloud, 
+  saveSettlementToCloud,
   subscribeToCloudRealtime 
 } from './lib/cloudStore';
 
@@ -58,7 +58,6 @@ export default function App() {
       return initialEmployees;
     }
   });
-  const [files, setFiles] = useState(initialFiles);
   const [mechanics] = useState(initialMechanics);
   const [cloudSyncStatus, setCloudSyncStatus] = useState('syncing'); // 'synced' | 'syncing' | 'offline'
 
@@ -147,6 +146,10 @@ export default function App() {
   };
 
   const handleOpenPOS = (unit) => {
+    if (currentUser?.role !== 'owner' && currentUser?.role !== 'admin') {
+      alert('Kasir hanya dapat diakses oleh Owner dan Admin Showroom.');
+      return;
+    }
     setSelectedUnit(unit);
     setActiveTab('pos');
   };
@@ -191,19 +194,37 @@ export default function App() {
   };
 
   const handlePayRemaining = (txId) => {
+    const targetTx = salesList.find(tx => tx.id === txId);
     const updatedSales = salesList.map(tx => {
       if (tx.id === txId) {
         return {
           ...tx,
           status: 'Lunas',
-          remainingAmount: 0
+          remainingAmount: 0,
+          remainingPayment: 0
         };
       }
       return tx;
     });
+
+    // Otomatis ubah status unit motor menjadi 'Terjual'
+    const targetUnitId = targetTx?.unitId;
+    const targetPlate = targetTx?.plate;
+    const updatedUnits = units.map(u => {
+      if ((targetUnitId && u.id === targetUnitId) || (targetPlate && u.plate === targetPlate)) {
+        return {
+          ...u,
+          status: 'Terjual'
+        };
+      }
+      return u;
+    });
+
     setSalesList(updatedSales);
-    // Kirim update ke Supabase Cloud
-    syncAllToCloud(units, updatedSales, employees);
+    setUnits(updatedUnits);
+
+    // Kirim update pelunasan ke Supabase Cloud
+    saveSettlementToCloud(txId, targetUnitId, updatedUnits, updatedSales, employees);
   };
 
   const handleUpdateEmployees = (updaterOrArray) => {
@@ -259,8 +280,6 @@ export default function App() {
         salesList={salesList}
         setSalesList={setSalesList}
         employees={employees}
-        files={files}
-        setFiles={setFiles}
         onBackToERP={() => setIsAdminPanelOpen(false)}
       />
     );
@@ -307,15 +326,28 @@ export default function App() {
         )}
 
         {activeTab === 'pos' && (
-          <SalesPOS
-            units={units}
-            selectedUnit={selectedUnit}
-            setSelectedUnit={setSelectedUnit}
-            onTransactionComplete={handleTransactionComplete}
-            currentUser={currentUser}
-            employees={employees}
-            onOpenNewUnit={() => setIsNewUnitModalOpen(true)}
-          />
+          (currentUser.role === 'owner' || currentUser.role === 'admin') ? (
+            <SalesPOS
+              units={units}
+              selectedUnit={selectedUnit}
+              setSelectedUnit={setSelectedUnit}
+              onTransactionComplete={handleTransactionComplete}
+              currentUser={currentUser}
+              employees={employees}
+              onOpenNewUnit={() => setIsNewUnitModalOpen(true)}
+            />
+          ) : (
+            <div className="p-8 text-center bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md mx-auto my-12 space-y-3">
+              <h3 className="text-base font-bold text-zinc-100">Akses Terbatas</h3>
+              <p className="text-xs text-zinc-400">Modul kasir hanya dapat diakses oleh Owner dan Admin Showroom.</p>
+              <button 
+                onClick={() => setActiveTab('dashboard')} 
+                className="px-4 py-2 bg-amber-500 text-zinc-950 font-bold text-xs rounded-xl hover:bg-amber-400 transition-colors"
+              >
+                Kembali ke Dashboard
+              </button>
+            </div>
+          )
         )}
 
         {activeTab === 'tempo' && (

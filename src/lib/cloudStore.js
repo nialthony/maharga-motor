@@ -319,6 +319,27 @@ export const saveTransactionToCloud = async (tx, unitId, newStatus, allUnits, al
 };
 
 /**
+ * Simpan pelunasan transaksi titip DP / tempo ke Supabase Cloud
+ * Otomatis ubah status unit menjadi 'Terjual' dan transaksi menjadi 'Lunas'
+ */
+export const saveSettlementToCloud = async (txId, unitId, allUnits, allSales, allEmployees) => {
+  if (!isSupabaseConfigured() || !supabase) return;
+  try {
+    if (unitId) {
+      await supabase.from('units').update({ status: 'Terjual' }).eq('id', unitId);
+    }
+    await supabase.from('sales_transactions').update({
+      status: 'Lunas',
+      remaining_amount: 0
+    }).eq('id', txId);
+
+    await syncAllToCloud(allUnits, allSales, allEmployees);
+  } catch (e) {
+    console.warn('Gagal simpan pelunasan ke cloud:', e);
+  }
+};
+
+/**
  * Langganan (Subscribe) perubahan realtime dari Supabase
  */
 export const subscribeToCloudRealtime = (onRemoteUpdate) => {

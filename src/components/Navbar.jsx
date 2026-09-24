@@ -32,6 +32,7 @@ export default function Navbar({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isOwnerOrAdmin = currentUser.role === 'owner' || currentUser.role === 'admin';
   const isSales = currentUser.role === 'sales';
+  const isMechanic = currentUser.role === 'mechanic' || currentUser.role === 'mekanik';
 
   // Role-Specific Navigation Architecture
   const ownerNavItems = [
@@ -48,12 +49,22 @@ export default function Navbar({
   const salesNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'inventory', label: 'Katalog Unit', icon: Layers, badge: availableCount },
-    { id: 'pos', label: 'Kasir Jual', icon: CreditCard },
     { id: 'tempo', label: 'Piutang DP', icon: Clock, badge: tempoAlertCount, badgeColor: 'bg-amber-500' },
     { id: 'my_commission', label: 'Komisi Saya', icon: BarChart3 }
   ];
 
-  const currentNavItems = isOwnerOrAdmin ? ownerNavItems : salesNavItems;
+  const mechanicNavItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'inventory', label: 'Katalog Unit', icon: Layers, badge: availableCount },
+    { id: 'workshop', label: 'Bengkel & Servis', icon: Wrench },
+    { id: 'my_commission', label: 'Komisi Saya', icon: BarChart3 }
+  ];
+
+  const currentNavItems = isOwnerOrAdmin 
+    ? ownerNavItems 
+    : isMechanic 
+    ? mechanicNavItems 
+    : salesNavItems;
 
   const handleNavClick = (id) => {
     if (id === 'admin_panel') {
@@ -336,25 +347,50 @@ export default function Navbar({
           <span className="text-[10px] mt-0.5">Katalog</span>
         </button>
 
-        <button
-          onClick={() => setActiveTab('pos')}
-          className="flex flex-col items-center py-1 px-3 rounded-lg bg-amber-500 text-zinc-950 font-bold shadow-sm"
-        >
-          <CreditCard className="w-4 h-4" />
-          <span className="text-[10px]">Kasir</span>
-        </button>
-
-        {isSales ? (
+        {/* Center Action: Kasir for Owner/Admin, Bengkel for Mechanic, Piutang DP for Sales */}
+        {isOwnerOrAdmin && (
           <button
-            onClick={() => setActiveTab('my_commission')}
-            className={`flex flex-col items-center py-1 px-2 rounded-lg transition-colors ${
-              activeTab === 'my_commission' ? 'text-amber-400 font-bold' : 'text-zinc-400'
+            onClick={() => setActiveTab('pos')}
+            className={`flex flex-col items-center py-1 px-3 rounded-lg transition-all ${
+              activeTab === 'pos' 
+                ? 'bg-amber-400 text-zinc-950 font-bold shadow-md shadow-amber-500/20' 
+                : 'bg-amber-500 text-zinc-950 font-bold shadow-sm'
             }`}
           >
-            <BarChart3 className="w-4 h-4" />
-            <span className="text-[10px] mt-0.5">Komisi</span>
+            <CreditCard className="w-4 h-4" />
+            <span className="text-[10px]">Kasir</span>
           </button>
-        ) : (
+        )}
+
+        {isMechanic && (
+          <button
+            onClick={() => setActiveTab('workshop')}
+            className={`flex flex-col items-center py-1 px-2 rounded-lg transition-colors ${
+              activeTab === 'workshop' ? 'text-amber-400 font-bold' : 'text-zinc-400'
+            }`}
+          >
+            <Wrench className="w-4 h-4" />
+            <span className="text-[10px] mt-0.5">Bengkel</span>
+          </button>
+        )}
+
+        {isSales && (
+          <button
+            onClick={() => setActiveTab('tempo')}
+            className={`flex flex-col items-center py-1 px-2 rounded-lg transition-colors relative ${
+              activeTab === 'tempo' ? 'text-amber-400 font-bold' : 'text-zinc-400'
+            }`}
+          >
+            <Clock className="w-4 h-4" />
+            <span className="text-[10px] mt-0.5">Piutang DP</span>
+            {tempoAlertCount > 0 && (
+              <span className="absolute top-0 right-1 w-2 h-2 rounded-full bg-amber-500" />
+            )}
+          </button>
+        )}
+
+        {/* Keuangan ONLY for Owner/Admin. Komisi for all staff (Sales & Mechanic) */}
+        {isOwnerOrAdmin ? (
           <button
             onClick={() => setActiveTab('financial_report')}
             className={`flex flex-col items-center py-1 px-2 rounded-lg transition-colors ${
@@ -363,6 +399,16 @@ export default function Navbar({
           >
             <DollarSign className="w-4 h-4" />
             <span className="text-[10px] mt-0.5">Keuangan</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => setActiveTab('my_commission')}
+            className={`flex flex-col items-center py-1 px-2 rounded-lg transition-colors ${
+              activeTab === 'my_commission' ? 'text-amber-400 font-bold' : 'text-zinc-400'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" />
+            <span className="text-[10px] mt-0.5">Komisi</span>
           </button>
         )}
 

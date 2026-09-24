@@ -1,10 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
+
+:root {
+  font-family: 'Fredoka', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0.01em;
+}
 
 html, body {
   background-color: #09090b;
   color: #f4f4f5;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: 'Fredoka', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   min-height: 100vh;
+}
+
+button, input, select, textarea {
+  font-family: 'Fredoka', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 /* Custom scrollbar */
@@ -39,5 +49,6 @@ html, body {
     padding: 20px;
     background: white !important;
     color: black !important;
+    font-family: 'Fredoka', sans-serif !important;
   }
 }

@@ -379,65 +379,93 @@ export const saveSettlementToCloud = async (txId, unitId) => {
 export const subscribeToCloudRealtime = (onRemoteUpdate) => {
   if (!isSupabaseConfigured() || !supabase) return () => {};
 
-  const channel = supabase
-    .channel('maharga-realtime-channel')
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'units' },
-      async () => {
-        const { data: dbUnits } = await supabase.from('units').select('*').order('id', { ascending: false });
-        const { data: dbRepairs } = await supabase.from('repairs').select('*');
-        if (dbUnits) {
-          onRemoteUpdate({ units: dbUnits.map(u => unitFromDb(u, dbRepairs || [])) });
+  try {
+    const channel = supabase
+      .channel('maharga-realtime-channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'units' },
+        async () => {
+          try {
+            const { data: dbUnits } = await supabase.from('units').select('*').order('id', { ascending: false });
+            const { data: dbRepairs } = await supabase.from('repairs').select('*');
+            if (dbUnits) {
+              onRemoteUpdate({ units: dbUnits.map(u => unitFromDb(u, dbRepairs || [])) });
+            }
+          } catch (err) {
+            console.warn('Realtime sync units error:', err);
+          }
         }
-      }
-    )
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'sales_transactions' },
-      async () => {
-        const { data: dbSales } = await supabase.from('sales_transactions').select('*').order('created_at', { ascending: false });
-        if (dbSales) {
-          onRemoteUpdate({
-            salesList: dbSales.map(s => ({
-              id: s.id,
-              date: s.tx_date,
-              unitId: s.unit_id,
-              unitName: s.unit_name,
-              plate: s.plate,
-              buyerName: s.buyer_name,
-              buyerPhone: s.buyer_phone,
-              buyerNik: '',
-              buyerAddress: s.buyer_address || '',
-              dealPrice: Number(s.deal_price) || 0,
-              paymentType: s.payment_method === 'dp-tempo' ? 'Tempo DP' : 'Cash Lunas',
-              dpAmount: Number(s.dp_amount) || 0,
-              remainingPayment: Number(s.remaining_amount) || 0,
-              dueDate: s.due_date || '',
-              salesName: s.sales_name,
-              commission: Number(s.commission) || 200000,
-              status: s.status
-            }))
-          });
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sales_transactions' },
+        async () => {
+          try {
+            const { data: dbSales } = await supabase.from('sales_transactions').select('*').order('created_at', { ascending: false });
+            if (dbSales) {
+              onRemoteUpdate({
+                salesList: dbSales.map(s => ({
+                  id: s.id,
+                  date: s.tx_date,
+                  unitId: s.unit_id,
+                  unitName: s.unit_name,
+                  plate: s.plate,
+                  buyerName: s.buyer_name,
+                  buyerPhone: s.buyer_phone,
+                  buyerNik: '',
+                  buyerAddress: s.buyer_address || '',
+                  dealPrice: Number(s.deal_price) || 0,
+                  paymentType: s.payment_method === 'dp-tempo' ? 'Tempo DP' : 'Cash Lunas',
+                  dpAmount: Number(s.dp_amount) || 0,
+                  remainingPayment: Number(s.remaining_amount) || 0,
+                  dueDate: s.due_date || '',
+                  salesName: s.sales_name,
+                  commission: Number(s.commission) || 200000,
+                  status: s.status
+                }))
+              });
+            }
+          } catch (err) {
+            console.warn('Realtime sync sales error:', err);
+          }
         }
-      }
-    )
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'employees' },
-      async () => {
-        const { data } = await supabase
-          .from('employees')
-          .select('id, user_id, username, name, role, email, phone, avatar, status, joined_date')
-          .order('id', { ascending: true });
-        if (data && data.length > 0) {
-          onRemoteUpdate({ employees: data.map(employeeFromDb) });
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'employees' },
+        async () => {
+          try {
+            const { data } = await supabase
+              .from('employees')
+              .select('id, user_id, username, name, role, email, phone, avatar, status, joined_date')
+              .order('id', { ascending: true });
+            if (data && data.length > 0) {
+              onRemoteUpdate({ employees: data.map(employeeFromDb) });
+            }
+          } catch (err) {
+            console.warn('Realtime sync employees error:', err);
+          }
         }
-      }
-    )
-    .subscribe();
+      )
+      .subscribe((status, err) => {
+        if (err || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn('Supabase Realtime status warning:', status, err);
+        }
+      });
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
+    return () => {
+      try {
+        if (supabase && channel) {
+          supabase.removeChannel(channel);
+        }
+      } catch (err) {
+        console.warn('Error saat remove channel realtime:', err);
+      }
+    };
+  } catch (err) {
+    console.warn('Inisialisasi Realtime WebSocket dilewati karena keterbatasan lingkungan/browser:', err);
+    return () => {};
+  }
 };
+

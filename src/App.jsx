@@ -108,19 +108,30 @@ export default function App() {
       if (isMounted) setCloudSyncStatus('offline');
     });
 
-    // 2. Subscribe to realtime changes from other devices
-    const unsubscribe = subscribeToCloudRealtime((remoteData) => {
-      if (isMounted && remoteData) {
-        if (Array.isArray(remoteData.units)) setUnits(remoteData.units);
-        if (Array.isArray(remoteData.salesList)) setSalesList(remoteData.salesList);
-        if (Array.isArray(remoteData.employees) && remoteData.employees.length > 0) setEmployees(remoteData.employees);
-        setCloudSyncStatus('synced');
-      }
-    });
+    // 2. Subscribe to realtime changes from other devices (safely guarded)
+    let unsubscribe = () => {};
+    try {
+      unsubscribe = subscribeToCloudRealtime((remoteData) => {
+        if (isMounted && remoteData) {
+          if (Array.isArray(remoteData.units)) setUnits(remoteData.units);
+          if (Array.isArray(remoteData.salesList)) setSalesList(remoteData.salesList);
+          if (Array.isArray(remoteData.employees) && remoteData.employees.length > 0) setEmployees(remoteData.employees);
+          setCloudSyncStatus('synced');
+        }
+      });
+    } catch (e) {
+      console.warn('Realtime subscription bypassed:', e);
+    }
 
     return () => {
       isMounted = false;
-      unsubscribe();
+      try {
+        if (typeof unsubscribe === 'function') {
+          unsubscribe();
+        }
+      } catch (e) {
+        console.warn('Realtime unsubscribe cleanup error:', e);
+      }
     };
   }, []);
 

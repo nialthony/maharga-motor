@@ -32,17 +32,9 @@ export default function SalesPOS({
 
   const eco = activeUnit ? calculateUnitEconomics(activeUnit) : { minPrice: 0, totalModal: 0 };
 
-  // Sales Staff Selection (Default to current logged-in user if sales, otherwise Anas)
-  const salesStaffList = employees.length > 0 
-    ? employees.filter(e => e.role === 'sales' || e.role === 'admin' || e.role === 'owner')
-    : [
-        { id: 14, name: "Anas Nur Cholis", role: "sales" },
-        { id: 12, name: "Dimas Saputra", role: "sales" },
-        { id: 2, name: "Siti Rahmawati (Admin)", role: "admin" },
-        { id: 1, name: "H. Maharga (Owner)", role: "owner" }
-      ];
-
-  const defaultSalesId = currentUser?.id || salesStaffList[0]?.id || 14;
+  // Sales Staff Selection (Default to current logged-in user if sales, otherwise first available)
+  const salesStaffList = employees.filter(e => e.role === 'sales' || e.role === 'admin' || e.role === 'owner');
+  const defaultSalesId = currentUser?.id || salesStaffList[0]?.id || '';
   const [selectedSalesId, setSelectedSalesId] = useState(defaultSalesId);
   const [customSalesName, setCustomSalesName] = useState('');
 
@@ -87,7 +79,7 @@ export default function SalesPOS({
   const selectedSalesStaff = salesStaffList.find(s => s.id === Number(selectedSalesId));
   const finalSalesName = selectedSalesId === 'custom' 
     ? (customSalesName.trim() || 'Mediator / Makelar Luar')
-    : (selectedSalesStaff?.name || 'Anas Nur Cholis');
+    : (selectedSalesStaff?.name || currentUser?.name || 'Staff Sales');
 
   // Profit calculation for this deal
   const estimatedGrossProfit = dealPrice - eco.totalModal;

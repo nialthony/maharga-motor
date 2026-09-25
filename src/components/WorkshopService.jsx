@@ -5,7 +5,7 @@ import { formatIDR } from '../data/mockData';
 export default function WorkshopService({ units = [], onAddRepair, mechanics = [] }) {
   const [selectedUnitId, setSelectedUnitId] = useState(units[0]?.id || '');
   const [item, setItem] = useState('');
-  const [mechanic, setMechanic] = useState('Budi Santoso');
+  const [mechanic, setMechanic] = useState(mechanics[0]?.name || '');
   const [cost, setCost] = useState(150000);
 
   const selectedUnit = units.find(u => u.id === Number(selectedUnitId)) || units[0];

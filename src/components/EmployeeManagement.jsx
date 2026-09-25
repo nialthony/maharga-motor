@@ -8,6 +8,7 @@ import {
   Search,
   UserCheck
 } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
 
 export default function EmployeeManagement({ employees, setEmployees, currentRole, onSwitchUser }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,7 +23,6 @@ export default function EmployeeManagement({ employees, setEmployees, currentRol
   const [role, setRole] = useState('sales');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [pin, setPin] = useState('1234');
 
   const filteredEmployees = employees.filter(e => 
     e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -48,7 +48,6 @@ export default function EmployeeManagement({ employees, setEmployees, currentRol
       role,
       email: email.trim(),
       phone: phone.trim(),
-      pin: pin.trim() || '1234',
       status: 'active',
       joinedDate: new Date().toISOString().split('T')[0],
       permissions: role === 'owner' ? ['all_access'] : role === 'admin' ? ['inventory_manage', 'pos_access', 'file_manager'] : ['pos_access', 'view_catalog']
@@ -61,17 +60,22 @@ export default function EmployeeManagement({ employees, setEmployees, currentRol
     setName('');
     setEmail('');
     setPhone('');
-    setPin('1234');
   };
 
-  const handleUpdatePin = (e) => {
+  const handleUpdatePin = async (e) => {
     e.preventDefault();
     if (!targetEmployee || !newPin.trim()) return;
 
-    const nextEmployees = employees.map(emp => 
-      emp.id === targetEmployee.id ? { ...emp, pin: newPin.trim() } : emp
-    );
-    setEmployees(nextEmployees);
+    try {
+      if (supabase && targetEmployee.userId) {
+        await supabase.functions.invoke('verify-pin', {
+          body: { action: 'set_pin', factor_code: newPin.trim(), target_user_id: targetEmployee.userId }
+        });
+      }
+    } catch (err) {
+      console.warn('Gagal set faktor PIN server:', err);
+    }
+
     setIsPinModalOpen(false);
     setNewPin('');
     setTargetEmployee(null);
@@ -338,31 +342,18 @@ export default function EmployeeManagement({ employees, setEmployees, currentRol
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-zinc-300 block mb-1 font-medium">Role Jabatan</label>
-                  <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    className="w-full px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400"
-                  >
-                    <option value="sales">Sales Executive</option>
-                    <option value="admin">Admin Showroom</option>
-                    <option value="mechanic">Mekanik Bengkel</option>
-                    <option value="owner">Owner Showroom</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-zinc-300 block mb-1 font-medium">PIN Login (4 Digit)</label>
-                  <input
-                    type="password"
-                    maxLength={4}
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value)}
-                    className="w-full px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-amber-400 font-mono font-bold text-center tracking-widest focus:outline-none focus:border-amber-400"
-                  />
-                </div>
+              <div>
+                <label className="text-zinc-300 block mb-1 font-medium">Role Jabatan</label>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="w-full px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400"
+                >
+                  <option value="sales">Sales Executive</option>
+                  <option value="admin">Admin Showroom</option>
+                  <option value="mechanic">Mekanik Bengkel</option>
+                  <option value="owner">Owner Showroom</option>
+                </select>
               </div>
 
               <div>

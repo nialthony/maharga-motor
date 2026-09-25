@@ -71,10 +71,11 @@ export default function UserProfileModal({
   const [name, setName] = useState(currentUser?.name || '');
   const [phone, setPhone] = useState(currentUser?.phone || '');
   const [email, setEmail] = useState(currentUser?.email || '');
-  const [pin, setPin] = useState(currentUser?.pin || '');
+  const [newPassword, setNewPassword] = useState('');
+  const [newPinFactor, setNewPinFactor] = useState('');
   const [avatar, setAvatar] = useState(currentUser?.avatar || '');
   
-  const [showPin, setShowPin] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
@@ -122,24 +123,42 @@ export default function UserProfileModal({
       return;
     }
 
-    if (pin.trim().length < 4) {
-      setErrorMsg('PIN keamanan minimal 4 digit.');
+    if (newPassword && newPassword.length < 12) {
+      setErrorMsg('Kata sandi baru minimal 12 karakter sesuai standar keamanan.');
+      return;
+    }
+
+    if (newPinFactor && (newPinFactor.length < 4 || newPinFactor.length > 6)) {
+      setErrorMsg('PIN faktor kedua baru harus 4-6 digit.');
       return;
     }
 
     setIsSaving(true);
     try {
+      // 1. Jika ada perubahan kata sandi, update di Supabase Auth
+      if (newPassword && supabase) {
+        const { error: pwdErr } = await supabase.auth.updateUser({ password: newPassword });
+        if (pwdErr) throw pwdErr;
+      }
+
+      // 2. Jika ada pembaruan PIN faktor kedua, kirim ke Edge Function server
+      if (newPinFactor && supabase) {
+        await supabase.functions.invoke('verify-pin', {
+          body: { action: 'set_pin', factor_code: newPinFactor }
+        });
+      }
+
+      // 3. Simpan data profil (tanpa kolom pin plaintext!)
       const updatedUser = {
         ...currentUser,
         name: name.trim() || currentUser.name,
         phone: phone.trim(),
         email: email.trim(),
-        pin: pin.trim(),
         avatar: avatar || ''
       };
 
       await onSaveProfile(updatedUser);
-      setSuccessMsg('Profil berhasil disimpan & disinkronkan ke cloud!');
+      setSuccessMsg('Profil dan keamanan berhasil disimpan!');
       setTimeout(() => {
         onClose();
       }, 900);
@@ -345,33 +364,53 @@ export default function UserProfileModal({
               </div>
             </div>
 
-            {/* PIN Keamanan */}
-            <div>
-              <label className="text-xs font-semibold text-zinc-300 block mb-1.5 flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-amber-400" />
-                <span>PIN Keamanan Akses Login:</span>
-              </label>
-              <div className="relative">
-                <input
-                  type={showPin ? 'text' : 'password'}
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value)}
-                  maxLength={6}
-                  placeholder="4 - 6 digit PIN"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-xs font-mono tracking-widest focus:outline-none focus:border-amber-400 transition-colors pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPin(!showPin)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 p-1"
-                  aria-label={showPin ? 'Sembunyikan PIN' : 'Tampilkan PIN'}
-                >
-                  {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+            {/* Ubah Kata Sandi & PIN Faktor Kedua (Server-Side) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-zinc-800/80">
+              <div>
+                <label className="text-xs font-semibold text-zinc-300 block mb-1.5 flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Kata Sandi Baru (Opsional):</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    minLength={12}
+                    placeholder="Min. 12 karakter"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-xs font-mono focus:outline-none focus:border-amber-400 transition-colors pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 p-1"
+                    aria-label={showPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <span className="text-[10px] text-zinc-500 mt-1 block">
+                  Kosongkan jika tidak ingin mengubah sandi.
+                </span>
               </div>
-              <span className="text-[10px] text-zinc-500 mt-1 block">
-                PIN digunakan untuk otentikasi login saat masuk sistem.
-              </span>
+
+              <div>
+                <label className="text-xs font-semibold text-zinc-300 block mb-1.5 flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-amber-400" />
+                  <span>PIN Faktor Ke-2 (Opsional):</span>
+                </label>
+                <input
+                  type="password"
+                  value={newPinFactor}
+                  onChange={(e) => setNewPinFactor(e.target.value.replace(/\D/g, ''))}
+                  maxLength={6}
+                  placeholder="4-6 digit angka"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-amber-400 text-xs font-mono font-bold tracking-widest text-center focus:outline-none focus:border-amber-400 transition-colors"
+                />
+                <span className="text-[10px] text-zinc-500 mt-1 block">
+                  PIN kedua diverifikasi di server saat login.
+                </span>
+              </div>
             </div>
 
             {/* Read-Only System Info */}

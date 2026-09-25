@@ -16,6 +16,7 @@ import NewUnitModal from './components/NewUnitModal';
 import LoginScreen from './components/LoginScreen';
 import UserProfileModal from './components/UserProfileModal';
 
+import { supabase } from './lib/supabaseClient';
 import { 
   initialUnits, 
   initialSalesList, 
@@ -169,7 +170,7 @@ export default function App() {
     saveTransactionToCloud(newTx, unitId, newStatus, updatedUnits, updatedSales, employees);
   };
 
-  const handleAddRepair = (unitId, repair) => {
+  const handleAddRepair = async (unitId, repair) => {
     const updatedUnits = units.map(u => {
       if (u.id === unitId) {
         const updatedRepairs = [repair, ...(u.repairs || [])];
@@ -183,8 +184,28 @@ export default function App() {
       return u;
     });
     setUnits(updatedUnits);
-    // Kirim update ke Supabase Cloud
-    syncAllToCloud(updatedUnits, salesList, employees);
+
+    // Kirim langsung ke tabel repairs & update repair_cost tabel units
+    if (supabase) {
+      try {
+        await supabase.from('repairs').insert([{
+          unit_id: unitId,
+          repair_date: repair.date || new Date().toISOString().split('T')[0],
+          item: repair.item,
+          mechanic_name: repair.mechanic,
+          cost: Math.max(0, Number(repair.cost) || 0)
+        }]);
+
+        const targetUnit = updatedUnits.find(u => u.id === unitId);
+        if (targetUnit) {
+          await supabase.from('units').update({ 
+            repair_cost: targetUnit.repairCost 
+          }).eq('id', unitId);
+        }
+      } catch (err) {
+        console.warn('Gagal simpan data servis ke Supabase:', err);
+      }
+    }
   };
 
   const handleAddUnit = (newUnit) => {
@@ -278,11 +299,14 @@ export default function App() {
     setIsLoginModalOpen(false);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     try {
       sessionStorage.removeItem('maharga_auth_user');
+      if (supabase) {
+        await supabase.auth.signOut();
+      }
     } catch (e) {
-      console.warn('sessionStorage error', e);
+      console.warn('Logout error', e);
     }
     setCurrentUser(null);
     setIsAdminPanelOpen(false);
@@ -293,7 +317,6 @@ export default function App() {
   if (!currentUser) {
     return (
       <LoginScreen
-        employees={employees}
         onLoginSuccess={handleLoginSuccess}
       />
     );
@@ -454,7 +477,6 @@ export default function App() {
           isOpen={isLoginModalOpen}
           onClose={() => setIsLoginModalOpen(false)}
           onLoginSuccess={handleLoginSuccess}
-          employees={employees}
         />
       )}
 

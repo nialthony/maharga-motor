@@ -24,7 +24,6 @@ import {
   supabase,
   isSupabaseConfigured,
   getSupabaseConfig, 
-  saveSupabaseConfig, 
   testSupabaseConnection 
 } from '../lib/supabaseClient';
 import { syncAllToCloud, clearShowroomDataInCloud, deleteUnitFromCloud } from '../lib/cloudStore';
@@ -198,9 +197,6 @@ export default function AdminPanel({
         if (dbError) {
           console.warn('Gagal update tabel units:', dbError);
         }
-
-        // Sinkronkan juga snapshot master state
-        await syncAllToCloud(nextUnits, salesList, employees);
       }
 
       setUploadPreview(null);
@@ -241,8 +237,6 @@ export default function AdminPanel({
           .from('units')
           .update({ images: finalImages })
           .eq('id', selectedUnit.id);
-
-        await syncAllToCloud(nextUnits, salesList, employees);
       }
 
       setSaveSuccessMsg('Foto berhasil dihapus dan diperbarui di database cloud!');
@@ -278,8 +272,6 @@ export default function AdminPanel({
           .from('units')
           .update({ images: reorderedImages })
           .eq('id', selectedUnit.id);
-
-        await syncAllToCloud(nextUnits, salesList, employees);
       }
 
       setSaveSuccessMsg('Foto utama berhasil diubah dan disimpan ke database cloud!');
@@ -310,10 +302,9 @@ export default function AdminPanel({
     setIsTestingSupabase(false);
 
     if (testRes.success) {
-      saveSupabaseConfig(supabaseUrl, supabaseAnonKey);
       setSupabaseTestStatus({
         success: true,
-        message: 'Koneksi ke PostgreSQL Supabase Berhasil! Konfigurasi tersimpan.'
+        message: 'Koneksi ke PostgreSQL Supabase Berhasil! Endpoint aktif dan terhubung.'
       });
     } else {
       setSupabaseTestStatus({
@@ -347,8 +338,7 @@ CREATE TABLE IF NOT EXISTS employees (
   name VARCHAR(100) NOT NULL,
   role VARCHAR(20) NOT NULL,
   email VARCHAR(100),
-  phone VARCHAR(25),
-  pin VARCHAR(10) NOT NULL DEFAULT '1234',
+  user_id UUID,
   status VARCHAR(20) NOT NULL DEFAULT 'active',
   joined_date DATE DEFAULT CURRENT_DATE
 );

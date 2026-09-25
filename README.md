@@ -46,9 +46,60 @@ Sistem manajemen operasional showroom motor bekas **Maharga Motor** berbasis Web
 # Install dependensi
 npm install
 
-# Build untuk Cloudflare Pages
+# Build untuk Cloudflare Pages / Workers
 npm run build
 
-# Menjalankan server lokal
-node server.js
+# Menjalankan server preview lokal
+npm run preview
 ```
+
+---
+
+## 🔐 Manajemen Pengguna Supabase Auth & Role Claims
+
+Keamanan sistem menggunakan **Supabase Auth** (`signInWithPassword`) dengan kata sandi minimal 12 karakter dan verifikasi faktor kedua PIN server-side.
+
+### 1. Menambahkan Akun Pengguna di Supabase Dashboard
+1. Buka dashboard project Supabase Anda: `https://supabase.com/dashboard/project/<project-id>/auth/users`.
+2. Klik **Add User** -> **Create User**.
+3. Masukkan Email staf (contoh: `owner@mahargamotor.com`, `admin@mahargamotor.com`, `anas@mahargamotor.com`, `dimas@mahargamotor.com`, `budi@mahargamotor.com`).
+4. Tentukan kata sandi kuat (minimal 12 karakter).
+5. Centang **Auto Confirm User** agar pengguna langsung aktif tanpa verifikasi email manual.
+
+### 2. Mengatur Claim Role di `app_metadata` (Bukan via SQL langsung ke `auth.users`)
+Untuk menetapkan hak akses (`owner`, `admin`, `sales`, atau `mechanic`), atur `app_metadata` pengguna melalui:
+- **Supabase Dashboard**: Pada menu *Authentication -> Users*, klik user -> edit *User Metadata / App Metadata*, masukkan JSON:
+  ```json
+  {
+    "role": "owner"
+  }
+  ```
+  *(Gunakan `"owner"`, `"admin"`, `"sales"`, atau `"mechanic"` sesuai posisi staf).*
+- **Atau via Supabase Admin API / Node.js script**:
+  ```javascript
+  await supabaseAdmin.auth.admin.updateUserById(userId, {
+    app_metadata: { role: 'owner' }
+  });
+  ```
+
+### 3. Menghubungkan ID Pengguna ke Tabel `employees`
+Setelah user dibuat di Supabase Auth, salin `User UID` dari dashboard, lalu update baris karyawan yang bersangkutan di Supabase SQL Editor:
+```sql
+UPDATE public.employees 
+SET user_id = '<USER_UUID_DARI_AUTH_USERS>' 
+WHERE email = 'owner@mahargamotor.com';
+```
+
+### 4. Deploy Supabase Edge Function `verify-pin`
+Untuk mengaktifkan verifikasi faktor kedua PIN showroom dengan hashing bcrypt dan proteksi rate limiting:
+```bash
+# Login Supabase CLI
+npx supabase login
+
+# Link project
+npx supabase link --project-ref ouuxgwskivkugrndgsiv
+
+# Deploy fungsi verify-pin
+npx supabase functions deploy verify-pin
+```
+

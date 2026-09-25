@@ -14,11 +14,16 @@ dist-ssr
 .env
 .env.*
 !.env.example
+!.env.security-check.example
 
 # Cloudflare Wrangler
 .wrangler
 .dev.vars*
 !.dev.vars.example
+
+# Supabase CLI
+supabase/.temp/
+supabase/.branches/
 
 # Editor directories and files
 .vscode/*

@@ -86,63 +86,7 @@ export const sampleDemoSales = [
 export const initialUnits = [];
 export const initialSalesList = [];
 
-export const initialEmployees = [
-  {
-    id: 1,
-    username: "owner",
-    name: "H. Maharga (Owner)",
-    role: "owner",
-    email: "owner@mahargamotor.com",
-    phone: "081298765432",
-    pin: "8888",
-    status: "active",
-    joinedDate: "2024-01-01"
-  },
-  {
-    id: 2,
-    username: "admin_showroom",
-    name: "Siti Rahmawati (Admin)",
-    role: "admin",
-    email: "admin@mahargamotor.com",
-    phone: "085612349876",
-    pin: "1234",
-    status: "active",
-    joinedDate: "2024-06-15"
-  },
-  {
-    id: 14,
-    username: "anas",
-    name: "Anas Nur Cholis",
-    role: "sales",
-    email: "anas@mahargamotor.com",
-    phone: "081392817290",
-    pin: "1122",
-    status: "active",
-    joinedDate: "2025-02-01"
-  },
-  {
-    id: 12,
-    username: "dimas",
-    name: "Dimas Saputra",
-    role: "sales",
-    email: "dimas@mahargamotor.com",
-    phone: "087819283741",
-    pin: "3344",
-    status: "active",
-    joinedDate: "2025-05-10"
-  },
-  {
-    id: 21,
-    username: "budi_mekanik",
-    name: "Budi Santoso",
-    role: "mechanic",
-    email: "budi@mahargamotor.com",
-    phone: "081392847102",
-    pin: "5566",
-    status: "active",
-    joinedDate: "2024-03-01"
-  }
-];
+export const initialEmployees = [];
 
 export const initialFiles = [
   {
@@ -184,11 +128,7 @@ export const initialFiles = [
   }
 ];
 
-export const initialMechanics = [
-  { id: 1, name: "Budi Santoso", phone: "081392847102", role: "Kepala Mekanik Mesin" },
-  { id: 2, name: "Agus Mekanik", phone: "087819283741", role: "Mekanik CVT & Kelistrikan" },
-  { id: 3, name: "Rizky Detailing", phone: "085619283719", role: "Spesialis Body & Poles" }
-];
+export const initialMechanics = [];
 
 export const formatIDR = (val) => {
   if (val === null || val === undefined || isNaN(val)) return "Rp 0";

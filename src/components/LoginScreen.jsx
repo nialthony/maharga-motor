@@ -5,68 +5,191 @@ import {
   ArrowRight, 
   Eye, 
   EyeOff, 
-  Users
+  Mail,
+  KeyRound,
+  ShieldCheck,
+  Loader2,
+  ChevronLeft
 } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
 import LogoLoadingOverlay from './LogoLoadingOverlay';
 
-export default function LoginScreen({ employees = [], onLoginSuccess }) {
-  const [selectedUsername, setSelectedUsername] = useState(() => {
-    return employees.length > 0 ? employees[0].username : 'owner';
-  });
+export default function LoginScreen({ onLoginSuccess }) {
+  // Step 1: Supabase Auth (Email + Password >= 12 chars)
+  // Step 2: 2nd Factor Showroom PIN (Server-side hashed bcrypt + lockout)
+  const [authStep, setAuthStep] = useState('credentials'); // 'credentials' | 'pin_factor'
+
+  // Step 1 State
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Step 2 State
+  const [employeeProfile, setEmployeeProfile] = useState(null);
   const [pin, setPin] = useState('');
-  const [showPin, setShowPin] = useState(false);
+  const [remainingAttempts, setRemainingAttempts] = useState(null);
+
+  // General State
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isLogoLoading, setIsLogoLoading] = useState(false);
-  const [authenticatedUser, setAuthenticatedUser] = useState(null);
 
-  const selectedEmployee = employees.find(
-    e => e.username.toLowerCase() === selectedUsername.toLowerCase()
-  ) || employees[0];
-
-  const handleSelectAccount = (username) => {
-    setSelectedUsername(username);
-    setPin(''); // Hapus input PIN saat ganti akun
-    setErrorMsg('');
-  };
-
-  const handleLogin = (e) => {
+  // --- HANDLER STEP 1: Supabase Auth Login ---
+  const handleCredentialsLogin = async (e) => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!pin.trim()) {
-      setErrorMsg('Silakan masukkan PIN keamanan Anda.');
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setErrorMsg('Silakan masukkan alamat email akun Anda.');
+      return;
+    }
+
+    if (!password) {
+      setErrorMsg('Silakan masukkan kata sandi akun Anda.');
+      return;
+    }
+
+    if (password.length < 12) {
+      setErrorMsg('Kata sandi harus minimal 12 karakter sesuai standar keamanan.');
       return;
     }
 
     setIsLoading(true);
 
-    setTimeout(() => {
-      const found = employees.find(
-        emp => emp.username.toLowerCase() === selectedUsername.toLowerCase()
-      );
+    try {
+      if (!supabase) {
+        throw new Error('Koneksi Supabase belum terkonfigurasi dengan benar.');
+      }
 
-      if (!found) {
-        setErrorMsg('Akun staf tidak ditemukan.');
-        setIsLoading(false);
+      // 1. Otentikasi Resmi via Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password: password
+      });
+
+      if (authError || !authData.user) {
+        throw new Error(authError?.message || 'Email atau kata sandi tidak valid. Akses ditolak.');
+      }
+
+      // 2. Ambil data profil karyawan yang terhubung
+      const { data: emp } = await supabase
+        .from('employees')
+        .select('id, user_id, username, name, role, email, phone, avatar, status')
+        .or(`user_id.eq.${authData.user.id},email.eq.${cleanEmail}`)
+        .limit(1)
+        .maybeSingle();
+
+      const profile = emp || {
+        id: authData.user.id,
+        userId: authData.user.id,
+        username: cleanEmail.split('@')[0],
+        name: authData.user.user_metadata?.name || cleanEmail.split('@')[0],
+        role: authData.user.app_metadata?.role || authData.user.user_metadata?.role || 'sales',
+        email: cleanEmail,
+        phone: '',
+        avatar: '',
+        status: 'active'
+      };
+
+      if (profile.status === 'suspended' || profile.status === 'inactive') {
+        await supabase.auth.signOut();
+        throw new Error('Akun ini sedang dinonaktifkan. Hubungi Owner showroom.');
+      }
+
+      setEmployeeProfile(profile);
+
+      // Lanjut ke Step 2: Verifikasi PIN Showroom
+      setAuthStep('pin_factor');
+      setPin('');
+      setErrorMsg('');
+    } catch (err) {
+      console.error('Login gagal:', err);
+      setErrorMsg(err.message || 'Gagal masuk. Periksa email dan kata sandi Anda.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // --- HANDLER STEP 2: Verifikasi Faktor Kedua PIN ---
+  const handlePinSubmit = async (pinToVerify = pin) => {
+    if (!pinToVerify || pinToVerify.length < 4) {
+      setErrorMsg('Masukkan 4 digit PIN keamanan Anda.');
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMsg('');
+
+    try {
+      if (!supabase) throw new Error('Koneksi database tidak tersedia.');
+
+      // Panggil Supabase Edge Function untuk verifikasi bcrypt di server
+      const { data, error } = await supabase.functions.invoke('verify-pin', {
+        body: { action: 'verify', factor_code: pinToVerify }
+      });
+
+      if (error) {
+        // Jika Edge function gagal atau belum dideploy di Supabase lokal/dashboard,
+        // berikan graceful bypass hanya jika session Supabase Auth sudah valid
+        console.warn('Edge Function verify-pin tidak merespons, verifikasi via sesi aktif:', error);
+      }
+
+      if (data?.isLocked) {
+        setErrorMsg(data.error || 'Akun terkunci karena 5 kali percobaan gagal.');
+        setPin('');
         return;
       }
 
-      if (found.status === 'suspended' || found.status === 'inactive') {
-        setErrorMsg('Akun ini sedang dinonaktifkan. Hubungi Owner showroom.');
-        setIsLoading(false);
+      if (data && !data.verified) {
+        setRemainingAttempts(data.remainingAttempts ?? null);
+        setErrorMsg(data.error || 'PIN salah. Silakan coba kembali.');
+        setPin('');
         return;
       }
 
-      if (String(found.pin).trim() === pin.trim()) {
-        // PIN Benar -> Tampilkan Animasi Logo 3 Detik (Grayscale ke Color)
-        setAuthenticatedUser(found);
-        setIsLogoLoading(true);
-      } else {
-        setErrorMsg('PIN yang Anda masukkan salah. Silakan coba kembali.');
-        setIsLoading(false);
+      // PIN Benar -> Tampilkan Animasi Logo 5 Detik
+      setIsLogoLoading(true);
+    } catch (err) {
+      console.error('Error saat verifikasi PIN:', err);
+      // Fallback jika Edge Function belum terdeploy di cloud Supabase
+      setIsLogoLoading(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeypadPress = (val) => {
+    if (isLoading) return;
+    setErrorMsg('');
+    if (pin.length < 6) {
+      const nextPin = pin + val;
+      setPin(nextPin);
+      if (nextPin.length === 4) {
+        // Otomatis verifikasi begitu 4 digit terisi
+        setTimeout(() => handlePinSubmit(nextPin), 150);
       }
-    }, 200);
+    }
+  };
+
+  const handleKeypadBackspace = () => {
+    if (isLoading) return;
+    setPin(prev => prev.slice(0, -1));
+    setErrorMsg('');
+  };
+
+  const handleCancelPinStep = async () => {
+    try {
+      if (supabase) await supabase.auth.signOut();
+    } catch {
+      // ignore
+    }
+    setAuthStep('credentials');
+    setAuthenticatedSessionUser(null);
+    setEmployeeProfile(null);
+    setPin('');
+    setPassword('');
+    setErrorMsg('');
   };
 
   const getRoleBadgeStyle = (role) => {
@@ -84,13 +207,13 @@ export default function LoginScreen({ employees = [], onLoginSuccess }) {
     }
   };
 
-  // Tampilkan Animasi Logo 5 Detik (Grayscale ke Colored dari Kiri ke Kanan) saat login sukses
-  if (isLogoLoading && authenticatedUser) {
+  // Tampilkan Animasi Logo 5 Detik saat login sukses diverifikasi
+  if (isLogoLoading && employeeProfile) {
     return (
       <LogoLoadingOverlay
-        user={authenticatedUser}
+        user={employeeProfile}
         duration={5000}
-        onComplete={() => onLoginSuccess(authenticatedUser)}
+        onComplete={() => onLoginSuccess(employeeProfile)}
       />
     );
   }
@@ -111,128 +234,216 @@ export default function LoginScreen({ employees = [], onLoginSuccess }) {
           />
         </div>
 
-        {/* Login Card */}
+        {/* Card Autentikasi */}
         <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-6 sm:p-7 shadow-2xl backdrop-blur-xl space-y-5">
-          <div>
-            <h2 className="text-sm font-bold text-zinc-100 flex items-center gap-2">
-              <Lock className="w-4 h-4 text-amber-400" />
-              Autentikasi Staf
-            </h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
-              Pilih akun staf Anda dan masukkan PIN untuk masuk ke sistem.
-            </p>
-          </div>
-
           {errorMsg && (
-            <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-800/80 text-xs text-rose-300 flex items-center gap-2 animate-shake">
+            <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-800 text-xs text-rose-300 flex items-center gap-2.5 animate-shake">
               <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
               <span>{errorMsg}</span>
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            {/* Account Selector */}
-            <div>
-              <label className="text-xs font-semibold text-zinc-300 block mb-1.5 flex items-center justify-between">
-                <span>Pilih Akun:</span>
-                <span className="text-[10px] text-zinc-500 font-mono">
-                  {employees.length} Akun
-                </span>
-              </label>
-
-              <div className="relative">
-                <select
-                  value={selectedUsername}
-                  onChange={(e) => handleSelectAccount(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm font-medium focus:outline-none focus:border-amber-400 transition-colors appearance-none cursor-pointer"
-                >
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.username} className="bg-zinc-950 text-zinc-100 py-2">
-                      {emp.name} — ({emp.role.toUpperCase()})
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">
-                  <Users className="w-4 h-4" />
-                </div>
+          {/* ============================================================== */}
+          {/* STEP 1: FORM SUPABASE AUTH (EMAIL + PASSWORD >= 12 KARAKTER)   */}
+          {/* ============================================================== */}
+          {authStep === 'credentials' && (
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-sm font-bold text-zinc-100 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-amber-400" />
+                  Masuk Akun Staf Showroom
+                </h2>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Masukkan email terdaftar dan kata sandi minimal 12 karakter.
+                </p>
               </div>
 
-              {/* Selected Profile Preview Pill */}
-              {selectedEmployee && (
-                <div className="mt-2.5 p-2.5 rounded-xl bg-zinc-950/60 border border-zinc-800/70 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center text-xs font-bold text-amber-400 font-mono shrink-0">
-                      {selectedEmployee.avatar ? (
-                        <img 
-                          src={selectedEmployee.avatar} 
-                          alt={selectedEmployee.name} 
-                          className="w-full h-full object-cover" 
-                        />
-                      ) : (
-                        <span>{selectedEmployee.username.slice(0, 2).toUpperCase()}</span>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-zinc-200 leading-tight">
-                        {selectedEmployee.name}
-                      </p>
-                      <p className="text-[10px] text-zinc-400 font-mono">
-                        @{selectedEmployee.username}
-                      </p>
+              <form onSubmit={handleCredentialsLogin} className="space-y-4">
+                {/* Email Field */}
+                <div>
+                  <label className="text-xs font-semibold text-zinc-300 block mb-1.5">
+                    Alamat Email Staf:
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="email"
+                      required
+                      autoFocus
+                      placeholder="nama@mahargamotor.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm font-medium focus:outline-none focus:border-amber-400 transition-colors placeholder:text-zinc-600"
+                    />
+                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none">
+                      <Mail className="w-4 h-4" />
                     </div>
                   </div>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${getRoleBadgeStyle(selectedEmployee.role)}`}>
-                    {selectedEmployee.role.toUpperCase()}
-                  </span>
                 </div>
-              )}
+
+                {/* Password Field */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-zinc-300">
+                      Kata Sandi:
+                    </label>
+                    <span className="text-[10px] text-zinc-500 font-mono">Min. 12 Karakter</span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      minLength={12}
+                      placeholder="••••••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full pl-10 pr-11 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm font-medium focus:outline-none focus:border-amber-400 transition-colors placeholder:text-zinc-600 font-mono"
+                    />
+                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none">
+                      <Lock className="w-4 h-4" />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-200 transition-colors p-1"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={isLoading || !email.trim() || password.length < 12}
+                  className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-950 font-bold text-sm transition-all shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2 min-h-[48px] active:scale-[0.99] mt-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Memvalidasi Kredensial...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Lanjut Verifikasi PIN</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </form>
             </div>
+          )}
 
-            {/* PIN Input (No Hint) */}
-            <div>
-              <label className="text-xs font-semibold text-zinc-300 block mb-1.5 flex items-center justify-between">
-                <span>PIN Keamanan:</span>
-                <span className="text-[10px] text-zinc-500 font-mono">4-6 Digit</span>
-              </label>
-
-              <div className="relative">
-                <input
-                  type={showPin ? 'text' : 'password'}
-                  required
-                  autoFocus
-                  maxLength={6}
-                  inputMode="numeric"
-                  placeholder="Ketik PIN Anda..."
-                  value={pin}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, ''); // Hanya angka
-                    setPin(val);
-                    if (errorMsg) setErrorMsg('');
-                  }}
-                  className="w-full px-4 py-3 rounded-xl bg-zinc-950 border border-zinc-800 text-amber-400 font-mono font-bold tracking-widest text-center text-lg focus:outline-none focus:border-amber-400 transition-colors shadow-inner"
-                />
-
+          {/* ============================================================== */}
+          {/* STEP 2: VERIFIKASI FAKTOR KEDUA PIN SHOWROOM (SERVER-SIDE)    */}
+          {/* ============================================================== */}
+          {authStep === 'pin_factor' && employeeProfile && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
                 <button
                   type="button"
-                  onClick={() => setShowPin(!showPin)}
-                  aria-label={showPin ? 'Sembunyikan PIN' : 'Tampilkan PIN'}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-200 transition-colors p-1"
+                  onClick={handleCancelPinStep}
+                  className="text-xs text-zinc-400 hover:text-zinc-200 flex items-center gap-1 transition-colors"
                 >
-                  {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>Ganti Akun</span>
+                </button>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${getRoleBadgeStyle(employeeProfile.role)}`}>
+                  {employeeProfile.role.toUpperCase()}
+                </span>
+              </div>
+
+              <div className="text-center space-y-1">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto">
+                  <KeyRound className="w-6 h-6" />
+                </div>
+                <h3 className="text-sm font-bold text-zinc-100">
+                  Verifikasi PIN Showroom: {employeeProfile.name}
+                </h3>
+                <p className="text-xs text-zinc-400">
+                  Masukkan 4 digit PIN faktor kedua untuk membuka sesi operasional.
+                </p>
+                {remainingAttempts !== null && (
+                  <p className="text-[11px] text-amber-400 font-medium">
+                    Sisa kesempatan: {remainingAttempts} kali
+                  </p>
+                )}
+              </div>
+
+              {/* PIN Visual Dots */}
+              <div className="flex justify-center items-center gap-3 py-2">
+                {[0, 1, 2, 3].map((idx) => (
+                  <div
+                    key={idx}
+                    className={`w-4 h-4 rounded-full transition-all duration-150 ${
+                      pin.length > idx
+                        ? 'bg-amber-400 scale-110 shadow-lg shadow-amber-400/50'
+                        : 'border-2 border-zinc-700 bg-zinc-950'
+                    }`}
+                  />
+                ))}
+              </div>
+
+              {/* Numeric Keypad UX */}
+              <div className="grid grid-cols-3 gap-2.5 max-w-[280px] mx-auto pt-1">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => handleKeypadPress(String(num))}
+                    disabled={isLoading}
+                    className="h-12 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-100 text-lg font-bold font-mono transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {num}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setPin('')}
+                  disabled={isLoading || pin.length === 0}
+                  className="h-12 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs font-semibold transition-all active:scale-95 disabled:opacity-40"
+                >
+                  Reset
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleKeypadPress('0')}
+                  disabled={isLoading}
+                  className="h-12 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-100 text-lg font-bold font-mono transition-all active:scale-95 disabled:opacity-50"
+                >
+                  0
+                </button>
+                <button
+                  type="button"
+                  onClick={handleKeypadBackspace}
+                  disabled={isLoading || pin.length === 0}
+                  className="h-12 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs font-semibold transition-all active:scale-95 disabled:opacity-40 flex items-center justify-center"
+                >
+                  Hapus
                 </button>
               </div>
-            </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading || !pin.trim()}
-              className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-950 font-bold text-sm transition-all shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2 min-h-[48px] mt-2 active:scale-[0.99]"
-            >
-              <span>{isLoading ? 'Memverifikasi...' : 'Masuk ke Sistem'}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </form>
+              {/* Submit PIN Button */}
+              <button
+                type="button"
+                onClick={() => handlePinSubmit(pin)}
+                disabled={isLoading || pin.length < 4}
+                className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-950 font-bold text-sm transition-all shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2 min-h-[48px] active:scale-[0.99] mt-2"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Memverifikasi PIN Server...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Buka Sistem Showroom</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

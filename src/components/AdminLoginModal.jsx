@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Lock, AlertCircle, X, Eye, EyeOff, Mail, KeyRound, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import LogoLoadingOverlay from './LogoLoadingOverlay';
+import { prepareLoadingSfx } from '../lib/soundFx';
 
 export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
   const [authStep, setAuthStep] = useState('credentials'); // 'credentials' | 'pin_factor'
@@ -89,6 +90,7 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
 
     setIsLoading(true);
     setErrorMsg('');
+    prepareLoadingSfx();
 
     try {
       if (!supabase) throw new Error('Supabase client tidak tersedia.');

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import LogoLoadingOverlay from './LogoLoadingOverlay';
+import { prepareLoadingSfx } from '../lib/soundFx';
 
 export default function LoginScreen({ onLoginSuccess }) {
   // Step 1: Supabase Auth (Email + Password >= 12 chars)
@@ -120,6 +121,7 @@ export default function LoginScreen({ onLoginSuccess }) {
 
     setIsLoading(true);
     setErrorMsg('');
+    prepareLoadingSfx();
 
     try {
       if (!supabase) throw new Error('Koneksi database tidak tersedia.');

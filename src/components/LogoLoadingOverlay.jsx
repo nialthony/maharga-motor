@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { playLoadingSfx, stopLoadingSfx, fadeLoadingSfx } from '../lib/soundFx';
 
 /**
  * Animasi Loading Logo Maharga Motor:
@@ -10,6 +11,9 @@ export default function LogoLoadingOverlay({ user, onComplete, duration = 5000 }
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
+    // Putar soundfx saat animasi logo loading dimulai
+    playLoadingSfx();
+
     let animationFrameId;
     const startTime = performance.now();
 
@@ -18,9 +22,15 @@ export default function LogoLoadingOverlay({ user, onComplete, duration = 5000 }
       const currentProgress = Math.min(100, (elapsed / duration) * 100);
       setProgress(currentProgress);
 
+      // Fade out halus di 10% terakhir durasi loading
+      if (currentProgress > 90) {
+        fadeLoadingSfx((100 - currentProgress) / 10);
+      }
+
       if (currentProgress < 100) {
         animationFrameId = requestAnimationFrame(updateAnimation);
       } else {
+        stopLoadingSfx();
         setTimeout(() => {
           onComplete();
         }, 120);
@@ -30,6 +40,7 @@ export default function LogoLoadingOverlay({ user, onComplete, duration = 5000 }
     animationFrameId = requestAnimationFrame(updateAnimation);
 
     return () => {
+      stopLoadingSfx();
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
       }

@@ -1,6 +1,6 @@
 // Supabase Edge Function: verify-pin
-// Melakukan verifikasi faktor kedua (4-digit PIN) di sisi server menggunakan pure JavaScript bcryptjs
-// Dilengkapi proteksi Brute-Force: Lockout 15 menit setelah 5 kali percobaan gagal
+// Melakukan verifikasi dan setting faktor kedua (4-digit PIN) di sisi server menggunakan pure JavaScript bcryptjs
+// Mendukung manajemen PIN oleh Owner/Admin untuk staf lain & proteksi Brute-Force Lockout
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -50,11 +50,27 @@ serve(async (req: Request) => {
     const action = body.action || "verify";
     const pin = String(body.factor_code || body.pin || body.code || "").trim();
 
-    // Inisialisasi Admin Client (Service Role) untuk akses tabel aman employee_pin_factors
+    // Inisialisasi Admin Client (Service Role) untuk bypass RLS pada tabel aman
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
+    // Ambil data profil karyawan pemanggil (caller)
+    const { data: callerEmp } = await adminClient
+      .from("employees")
+      .select("id, user_id, role, email")
+      .or(`user_id.eq.${user.id},email.eq.${user.email || ""}`)
+      .limit(1)
+      .maybeSingle();
+
+    const isOwnerOrAdmin = 
+      user.app_metadata?.role === 'owner' || 
+      user.user_metadata?.role === 'owner' ||
+      user.app_metadata?.role === 'admin' || 
+      user.user_metadata?.role === 'admin' ||
+      callerEmp?.role === 'owner' || 
+      callerEmp?.role === 'admin';
+
     // -------------------------------------------------------------------------
-    // AKSI 1: SET / UPDATE PIN
+    // AKSI 1: SET / UPDATE PIN (Bisa untuk diri sendiri atau oleh Owner/Admin untuk staf)
     // -------------------------------------------------------------------------
     if (action === "set_pin") {
       if (!pin || pin.length < 4 || pin.length > 6 || !/^\d+$/.test(pin)) {
@@ -64,12 +80,57 @@ serve(async (req: Request) => {
         );
       }
 
+      let destinationUserId = user.id;
+      const targetUserId = body.target_user_id;
+      const targetEmail = (body.target_email || body.email || "").trim().toLowerCase();
+
+      // Jika Owner/Admin mengatur PIN untuk staf lain
+      if (isOwnerOrAdmin && (targetUserId || targetEmail)) {
+        if (targetUserId) {
+          destinationUserId = targetUserId;
+        } else if (targetEmail) {
+          // Cari karyawan berdasarkan email
+          const { data: empByEmail } = await adminClient
+            .from("employees")
+            .select("id, user_id, email")
+            .ilike("email", targetEmail)
+            .maybeSingle();
+
+          if (empByEmail?.user_id) {
+            destinationUserId = empByEmail.user_id;
+          } else {
+            // Cari di auth.users menggunakan listUsers admin API
+            const { data: authList, error: authListErr } = await adminClient.auth.admin.listUsers();
+            const matchedAuth = authList?.users?.find(
+              u => u.email?.toLowerCase() === targetEmail
+            );
+
+            if (matchedAuth) {
+              destinationUserId = matchedAuth.id;
+              // Kaitkan langsung user_id ke tabel employees
+              await adminClient
+                .from("employees")
+                .update({ user_id: matchedAuth.id })
+                .ilike("email", targetEmail);
+            } else {
+              return new Response(
+                JSON.stringify({ 
+                  success: false, 
+                  error: `Akun email "${targetEmail}" belum dibuat di Supabase Auth. Silakan buat user dengan email tersebut di Supabase Dashboard -> Authentication -> Users terlebih dahulu.` 
+                }),
+                { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+              );
+            }
+          }
+        }
+      }
+
       const pinHash = bcrypt.hashSync(pin, 10);
 
       const { error: upsertErr } = await adminClient
         .from("employee_pin_factors")
         .upsert({
-          user_id: user.id,
+          user_id: destinationUserId,
           pin_hash: pinHash,
           failed_attempts: 0,
           locked_until: null,
@@ -93,6 +154,14 @@ serve(async (req: Request) => {
     // -------------------------------------------------------------------------
     // AKSI 2: VERIFY PIN
     // -------------------------------------------------------------------------
+    // Sinkronisasi otomatis user_id jika di tabel employees masih null
+    if (callerEmp && (!callerEmp.user_id || callerEmp.user_id !== user.id)) {
+      await adminClient
+        .from("employees")
+        .update({ user_id: user.id })
+        .eq("id", callerEmp.id);
+    }
+
     const { data: factor, error: factorError } = await adminClient
       .from("employee_pin_factors")
       .select("user_id, pin_hash, failed_attempts, locked_until")

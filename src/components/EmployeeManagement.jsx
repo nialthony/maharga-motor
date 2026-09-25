@@ -6,7 +6,10 @@ import {
   X, 
   Trash2, 
   Search,
-  UserCheck
+  UserCheck,
+  AlertCircle,
+  Check,
+  Loader2
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -16,6 +19,9 @@ export default function EmployeeManagement({ employees, setEmployees, currentRol
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [targetEmployee, setTargetEmployee] = useState(null);
   const [newPin, setNewPin] = useState('');
+  const [pinModalError, setPinModalError] = useState('');
+  const [pinModalSuccess, setPinModalSuccess] = useState('');
+  const [isSavingPin, setIsSavingPin] = useState(false);
   
   // Form State for new employee
   const [username, setUsername] = useState('');
@@ -66,19 +72,49 @@ export default function EmployeeManagement({ employees, setEmployees, currentRol
     e.preventDefault();
     if (!targetEmployee || !newPin.trim()) return;
 
-    try {
-      if (supabase && targetEmployee.userId) {
-        await supabase.functions.invoke('verify-pin', {
-          body: { action: 'set_pin', factor_code: newPin.trim(), target_user_id: targetEmployee.userId }
-        });
-      }
-    } catch (err) {
-      console.warn('Gagal set faktor PIN server:', err);
+    if (newPin.trim().length < 4 || newPin.trim().length > 6) {
+      setPinModalError('PIN harus berupa 4-6 digit angka.');
+      return;
     }
 
-    setIsPinModalOpen(false);
-    setNewPin('');
-    setTargetEmployee(null);
+    setIsSavingPin(true);
+    setPinModalError('');
+    setPinModalSuccess('');
+
+    try {
+      if (!supabase) throw new Error('Koneksi Supabase tidak tersedia.');
+
+      const { data, error } = await supabase.functions.invoke('verify-pin', {
+        body: {
+          action: 'set_pin',
+          factor_code: newPin.trim(),
+          target_user_id: targetEmployee.userId || targetEmployee.user_id,
+          target_email: targetEmployee.email,
+          employee_id: targetEmployee.id
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Gagal menghubungi server verifikasi PIN.');
+      }
+
+      if (data && !data.success) {
+        throw new Error(data.error || 'Gagal menyimpan PIN.');
+      }
+
+      setPinModalSuccess(`PIN untuk ${targetEmployee.name} berhasil diperbarui!`);
+      setTimeout(() => {
+        setIsPinModalOpen(false);
+        setNewPin('');
+        setTargetEmployee(null);
+        setPinModalSuccess('');
+      }, 1200);
+    } catch (err) {
+      console.error('Gagal update PIN:', err);
+      setPinModalError(err.message || 'Gagal menyimpan PIN ke server.');
+    } finally {
+      setIsSavingPin(false);
+    }
   };
 
   const handleToggleStatus = (id) => {
@@ -401,33 +437,86 @@ export default function EmployeeManagement({ employees, setEmployees, currentRol
       {/* Reset PIN Modal */}
       {isPinModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-zinc-950/80 backdrop-blur-sm">
-          <div className="w-full max-w-xs bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3 shadow-2xl">
-            <h4 className="text-xs font-bold text-zinc-100">Reset PIN: {targetEmployee?.name}</h4>
-            <form onSubmit={handleUpdatePin} className="space-y-3 text-xs">
+          <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
               <div>
-                <label className="text-zinc-400 block mb-1">Masukkan PIN Baru (4-6 Angka):</label>
+                <h4 className="text-sm font-bold text-zinc-100 flex items-center gap-1.5 font-mono">
+                  <KeyRound className="w-4 h-4 text-amber-400" />
+                  Atur PIN: {targetEmployee?.name}
+                </h4>
+                <p className="text-[11px] text-zinc-400 font-mono mt-0.5">
+                  Email: {targetEmployee?.email || '-'}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setIsPinModalOpen(false);
+                  setPinModalError('');
+                  setPinModalSuccess('');
+                  setNewPin('');
+                }}
+                className="p-1 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {pinModalError && (
+              <div className="p-2.5 rounded-lg bg-rose-950/40 border border-rose-900/60 text-rose-300 text-xs flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
+                <span className="leading-tight">{pinModalError}</span>
+              </div>
+            )}
+
+            {pinModalSuccess && (
+              <div className="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-900/60 text-emerald-300 text-xs flex items-center gap-2">
+                <Check className="w-4 h-4 shrink-0 text-emerald-400" />
+                <span>{pinModalSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleUpdatePin} className="space-y-4 text-xs">
+              <div>
+                <label className="text-zinc-300 block mb-1.5 font-medium">Masukkan 4-6 Digit PIN Baru:</label>
                 <input
                   type="password"
                   required
                   maxLength={6}
                   value={newPin}
                   onChange={(e) => setNewPin(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-amber-400 font-mono font-bold text-center tracking-widest text-base focus:outline-none focus:border-amber-400"
+                  placeholder="••••"
+                  autoFocus
+                  className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-amber-400 font-mono font-bold text-center tracking-widest text-lg focus:outline-none focus:border-amber-400 transition-colors"
                 />
               </div>
-              <div className="flex justify-end gap-2">
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-zinc-800">
                 <button
                   type="button"
-                  onClick={() => setIsPinModalOpen(false)}
-                  className="px-2.5 py-1 rounded bg-zinc-800 text-zinc-300 font-semibold min-h-[32px]"
+                  onClick={() => {
+                    setIsPinModalOpen(false);
+                    setPinModalError('');
+                    setPinModalSuccess('');
+                    setNewPin('');
+                  }}
+                  disabled={isSavingPin}
+                  className="px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold min-h-[36px] transition-colors"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-3 py-1 rounded bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold shadow-sm min-h-[32px]"
+                  disabled={isSavingPin}
+                  className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-zinc-950 font-bold shadow-sm min-h-[36px] flex items-center gap-2 transition-colors"
                 >
-                  Simpan PIN
+                  {isSavingPin ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Menyimpan...</span>
+                    </>
+                  ) : (
+                    <span>Simpan PIN</span>
+                  )}
                 </button>
               </div>
             </form>

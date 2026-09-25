@@ -435,13 +435,14 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
 
     setIsResetting(true);
     try {
+      await clearShowroomDataInCloud(employees);
+
       setUnits([]);
       if (setSalesList) setSalesList([]);
       
       localStorage.setItem('maharga_units_v3_clean', JSON.stringify([]));
       localStorage.setItem('maharga_sales_v3_clean', JSON.stringify([]));
 
-      await clearShowroomDataInCloud(employees);
       alert('Sukses! Seluruh data stok motor dan catatan keuangan telah dikosongkan.');
     } catch (err) {
       console.error('Gagal reset showroom:', err);
@@ -474,7 +475,8 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
             </span>
           </div>
 
-          <div className="flex items-center gap-3 text-xs">
+          {/* Supabase Cloud Live (Tersembunyi di Mobile) */}
+          <div className="hidden sm:flex items-center gap-3 text-xs">
             <span className="px-2.5 py-1 rounded-lg bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 text-[11px] font-mono font-bold flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               Supabase Cloud Live

@@ -222,13 +222,25 @@ export const syncAllToCloud = async (units, salesList, employees) => {
 export const clearShowroomDataInCloud = async () => {
   if (!isSupabaseConfigured() || !supabase) return false;
   try {
-    await supabase.from('repairs').delete().neq('id', -999999);
-    await supabase.from('sales_transactions').delete().neq('id', '___empty___');
-    await supabase.from('units').delete().neq('id', -999999);
+    const { error: repErr } = await supabase.from('repairs').delete().neq('id', -999999);
+    if (repErr) console.warn('Gagal reset repairs di cloud:', repErr);
+
+    const { error: salesErr } = await supabase.from('sales_transactions').delete().neq('id', '___empty___');
+    if (salesErr) {
+      console.warn('Gagal reset sales_transactions di cloud:', salesErr);
+      throw new Error(`Gagal menghapus riwayat transaksi di database: ${salesErr.message || 'Izin ditolak'}`);
+    }
+
+    const { error: unitErr } = await supabase.from('units').delete().neq('id', -999999);
+    if (unitErr) {
+      console.warn('Gagal reset units di cloud:', unitErr);
+      throw new Error(`Gagal menghapus stok unit di database: ${unitErr.message || 'Izin ditolak'}`);
+    }
+
     return true;
   } catch (err) {
     console.error('Gagal reset data showroom di cloud:', err);
-    return false;
+    throw err;
   }
 };
 

@@ -1,7 +1,9 @@
-refactor(loading): remove glow effect, remove vertical line, and extend duration to 5s
+feat(security): complete full security remediation (Tahap 1-7)
 
-- Set LogoLoadingOverlay duration to 5000ms (5 seconds) across LoginScreen and AdminLoginModal
-- Remove ambient radial glow background lights
-- Remove drop shadow glow on colored logo layer
-- Remove vertical yellow laser beam on the fill leading edge
-- Update progress bar track and fill to clean flat aesthetic
+- Implement strict Row Level Security (RLS) across all tables with helper functions
+- Eliminate client-side PIN storage, drop employees.pin column, and add verify-pin Edge Function with bcrypt and rate limiting
+- Decompose monolithic state and add database CHECK constraints & financial triggers
+- Migrate inline base64 images to private Supabase Storage (showroom-assets) with Signed URLs
+- Remove localStorage credential caches and add strict TypeScript checks
+- Configure Cloudflare Worker with HTTP->HTTPS 301, 6 security headers, and real 404 for dotfiles
+- Add automated regression check suite and deployment runbook

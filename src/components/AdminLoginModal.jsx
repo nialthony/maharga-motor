@@ -98,7 +98,17 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
       });
 
       if (fnError) {
-        setErrorMsg(fnError.message || 'Gagal memverifikasi PIN. Silakan coba lagi.');
+        let msg = 'Gagal memverifikasi PIN. Silakan coba lagi.';
+        try {
+          if (fnError.context) {
+            const errBody = await fnError.context.json();
+            if (errBody?.error) msg = errBody.error;
+          }
+        } catch {
+          msg = fnError.message || msg;
+        }
+        console.error('Admin PIN verify error:', msg, fnError);
+        setErrorMsg(msg);
         setPin('');
         return;
       }

@@ -130,8 +130,17 @@ export default function LoginScreen({ onLoginSuccess }) {
       });
 
       if (error) {
-        console.error('Edge Function verify-pin error:', error);
-        setErrorMsg(error.message || 'Gagal memverifikasi PIN. Silakan coba lagi.');
+        let msg = 'Gagal memverifikasi PIN. Silakan coba lagi.';
+        try {
+          if (error.context) {
+            const errBody = await error.context.json();
+            if (errBody?.error) msg = errBody.error;
+          }
+        } catch {
+          msg = error.message || msg;
+        }
+        console.error('Edge Function verify-pin error:', msg, error);
+        setErrorMsg(msg);
         setPin('');
         return;
       }

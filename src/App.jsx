@@ -91,23 +91,46 @@ export default function App() {
     }
   }, [employees]);
 
-  // Cloud Sync on Mount & Realtime Subscription across all devices
-  useEffect(() => {
-    let isMounted = true;
-
-    // 1. Fetch latest data from Supabase Cloud
-    fetchCloudData().then(cloudData => {
-      if (isMounted && cloudData) {
+  // Reusable Auto Fetch function for cloud database
+  const refreshCloudData = async () => {
+    try {
+      const cloudData = await fetchCloudData();
+      if (cloudData) {
         if (Array.isArray(cloudData.units)) setUnits(cloudData.units);
         if (Array.isArray(cloudData.salesList)) setSalesList(cloudData.salesList);
         if (Array.isArray(cloudData.employees) && cloudData.employees.length > 0) setEmployees(cloudData.employees);
         setCloudSyncStatus('synced');
-      } else if (isMounted) {
+      } else {
         setCloudSyncStatus('offline');
       }
-    }).catch(() => {
-      if (isMounted) setCloudSyncStatus('offline');
-    });
+    } catch (err) {
+      console.warn('Gagal memuat data cloud:', err);
+      setCloudSyncStatus('offline');
+    }
+  };
+
+  // Cloud Sync on Mount & Realtime Subscription across all devices
+  useEffect(() => {
+    let isMounted = true;
+
+    // 1. Auto fetch data dari Supabase Cloud saat mount
+    fetchCloudData()
+      .then((cloudData) => {
+        if (!isMounted) return;
+        if (cloudData) {
+          if (Array.isArray(cloudData.units)) setUnits(cloudData.units);
+          if (Array.isArray(cloudData.salesList)) setSalesList(cloudData.salesList);
+          if (Array.isArray(cloudData.employees) && cloudData.employees.length > 0) setEmployees(cloudData.employees);
+          setCloudSyncStatus('synced');
+        } else {
+          setCloudSyncStatus('offline');
+        }
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        console.warn('Gagal memuat data cloud:', err);
+        setCloudSyncStatus('offline');
+      });
 
     // 2. Subscribe to realtime changes from other devices (safely guarded)
     let unsubscribe = () => {};
@@ -124,6 +147,21 @@ export default function App() {
       console.warn('Realtime subscription bypassed:', e);
     }
 
+    // 3. Listener event login Supabase untuk auto-fetch instan tanpa refresh
+    let authListener = null;
+    try {
+      if (supabase) {
+        const { data } = supabase.auth.onAuthStateChange((event) => {
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            refreshCloudData();
+          }
+        });
+        authListener = data;
+      }
+    } catch (authErr) {
+      console.warn('Auth state change listener bypassed:', authErr);
+    }
+
     return () => {
       isMounted = false;
       try {
@@ -132,6 +170,11 @@ export default function App() {
         }
       } catch (e) {
         console.warn('Realtime unsubscribe cleanup error:', e);
+      }
+      try {
+        authListener?.subscription?.unsubscribe();
+      } catch {
+        // ignore
       }
     };
   }, []);
@@ -311,6 +354,9 @@ export default function App() {
     setActiveTab('dashboard');
     setIsAdminPanelOpen(false);
     setIsLoginModalOpen(false);
+
+    // Otomatis fetch database langsung setelah login berhasil
+    refreshCloudData();
   };
 
   const handleLogout = async () => {

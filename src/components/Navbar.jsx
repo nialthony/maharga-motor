@@ -334,15 +334,6 @@ export default function Navbar({
               <User className="w-4 h-4 text-amber-400" />
               <span>Profil Saya & Kontak</span>
             </button>
-            <button
-              onClick={() => {
-                onOpenLoginModal();
-                setIsMobileMenuOpen(false);
-              }}
-              className="w-full py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 text-xs font-semibold hover:text-zinc-200 transition-colors"
-            >
-              Ganti Pengguna (Login)
-            </button>
             {onLogout && (
               <button
                 onClick={() => {

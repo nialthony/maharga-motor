@@ -268,32 +268,37 @@ export const saveEmployeeProfileToCloud = async (updatedEmp) => {
   try {
     const dbRow = employeeToDb(updatedEmp);
     
-    try {
-      const { error: fullUpdateErr } = await supabase
-        .from('employees')
-        .update({
-          name: dbRow.name,
-          email: dbRow.email,
-          phone: dbRow.phone,
-          avatar: dbRow.avatar
-        })
-        .eq('id', updatedEmp.id);
+    // Siapkan payload update profil
+    const updatePayload = {
+      name: dbRow.name,
+      phone: dbRow.phone,
+      avatar: dbRow.avatar || ''
+    };
+    if (dbRow.email) {
+      updatePayload.email = dbRow.email;
+    }
 
-      if (fullUpdateErr) {
-        await supabase
-          .from('employees')
-          .update({
-            name: dbRow.name,
-            email: dbRow.email,
-            phone: dbRow.phone
-          })
-          .eq('id', updatedEmp.id);
-      }
-    } catch (colErr) {
-      console.warn('Fallback update employee table:', colErr);
+    // Eksekusi update pada database Supabase
+    let query = supabase.from('employees').update(updatePayload);
+
+    if (updatedEmp.id && typeof updatedEmp.id === 'number') {
+      query = query.eq('id', updatedEmp.id);
+    } else if (updatedEmp.userId || updatedEmp.user_id) {
+      query = query.eq('user_id', updatedEmp.userId || updatedEmp.user_id);
+    } else if (updatedEmp.email) {
+      query = query.eq('email', updatedEmp.email);
+    } else {
+      query = query.eq('username', updatedEmp.username);
+    }
+
+    const { error } = await query;
+    if (error) {
+      console.error('Gagal update profile karyawan di cloud:', error);
+      throw new Error(error.message || 'Gagal menyimpan profil ke database Supabase');
     }
   } catch (e) {
     console.warn('Gagal simpan profil ke cloud:', e);
+    throw e;
   }
 };
 

@@ -94,25 +94,14 @@ export default function LogoLoadingOverlay({ user, onComplete, duration = 5000 }
           </div>
         </div>
 
-        {/* Clean Progress Tracker & Status Text */}
-        <div className="w-full max-w-xs space-y-2.5">
-          {/* Progress Bar Track (Clean, Flat, Tanpa Glow Shadow) */}
-          <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
-            <div 
-              className="h-full rounded-full bg-amber-500 transition-all ease-linear"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-
-          {/* Status Label & Percentage */}
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-[11px] text-zinc-400 font-medium truncate pr-2">
-              {getStatusText()}
-            </span>
-            <span className="font-mono font-bold text-amber-400 text-xs shrink-0">
-              {Math.round(progress)}%
-            </span>
-          </div>
+        {/* Status Label & Percentage (Logo itu sendiri adalah loading bar-nya) */}
+        <div className="w-full max-w-xs flex items-center justify-between text-xs pt-1 px-1">
+          <span className="text-[11px] text-zinc-400 font-medium truncate pr-2">
+            {getStatusText()}
+          </span>
+          <span className="font-mono font-bold text-amber-400 text-xs shrink-0">
+            {Math.round(progress)}%
+          </span>
         </div>
 
       </div>

@@ -203,15 +203,6 @@ export default function Navbar({
                   <span className="hidden sm:inline">Keluar</span>
                 </button>
               )}
-
-              {/* Mobile Drawer Trigger */}
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white md:hidden"
-                aria-label="Menu"
-              >
-                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
             </div>
           </div>
         </div>

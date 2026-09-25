@@ -285,7 +285,8 @@ export default function Navbar({
             </button>
           </div>
 
-          <div className="space-y-1 overflow-y-auto flex-1">
+          {/* Mobile Menu Items - Modern Grid Layout */}
+          <div className="grid grid-cols-2 gap-2 overflow-y-auto flex-1 p-1">
             {currentNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -293,19 +294,27 @@ export default function Navbar({
                 <button
                   key={item.id}
                   onClick={() => handleNavClick(item.id)}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                    isActive ? 'bg-amber-500 text-zinc-950 font-bold' : 'text-zinc-300 hover:bg-zinc-900'
+                  className={`relative flex flex-col items-center justify-center p-3.5 rounded-xl text-center transition-all border ${
+                    isActive 
+                      ? 'bg-amber-500 text-zinc-950 border-amber-400 shadow-md font-bold' 
+                      : 'bg-zinc-900/90 text-zinc-300 border-zinc-800/80 hover:bg-zinc-850 hover:text-white'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <Icon className="w-4 h-4" />
-                    <span>{item.label}</span>
-                  </div>
                   {item.badge !== undefined && item.badge > 0 && (
-                    <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-zinc-900 text-zinc-200">
+                    <span className={`absolute top-2 right-2 px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                      isActive 
+                        ? 'bg-zinc-950 text-amber-400' 
+                        : 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                    }`}>
                       {item.badge}
                     </span>
                   )}
+                  <div className={`p-2.5 rounded-xl mb-1.5 ${
+                    isActive ? 'bg-zinc-950/20 text-zinc-950' : 'bg-zinc-800/70 text-amber-400'
+                  }`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-semibold leading-tight line-clamp-2">{item.label}</span>
                 </button>
               );
             })}
@@ -359,7 +368,7 @@ export default function Navbar({
           }`}
         >
           <LayoutDashboard className="w-4 h-4" />
-          <span className="text-[10px] mt-0.5">Ringkasan</span>
+          <span className="text-[10px] mt-0.5">Dashboard</span>
         </button>
 
         <button

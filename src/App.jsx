@@ -32,6 +32,7 @@ import {
   saveTransactionToCloud, 
   saveSettlementToCloud,
   saveEmployeeProfileToCloud,
+  deleteEmployeeFromCloud,
   subscribeToCloudRealtime 
 } from './lib/cloudStore';
 
@@ -344,6 +345,27 @@ export default function App() {
     });
   };
 
+  const handleDeleteEmployee = async (empToDelete) => {
+    try {
+      await deleteEmployeeFromCloud(empToDelete);
+      const targetId = typeof empToDelete === 'object' ? empToDelete.id : empToDelete;
+      const targetUsername = typeof empToDelete === 'object' ? empToDelete.username : empToDelete;
+      setEmployees(prev => {
+        const next = prev.filter(e => e.id !== targetId && e.username !== targetUsername);
+        try {
+          localStorage.setItem('maharga_employees', JSON.stringify(next));
+        } catch (e) {
+          console.warn('localStorage error', e);
+        }
+        return next;
+      });
+      return true;
+    } catch (err) {
+      console.error('Gagal menghapus staf dari cloud:', err);
+      throw err;
+    }
+  };
+
   const handleLoginSuccess = (user) => {
     try {
       sessionStorage.setItem('maharga_auth_user', JSON.stringify(user));
@@ -502,6 +524,7 @@ export default function App() {
           <EmployeeManagement
             employees={employees}
             setEmployees={handleUpdateEmployees}
+            onDeleteEmployee={handleDeleteEmployee}
             currentRole={currentUser.role}
             onSwitchUser={setCurrentUser}
           />
@@ -512,6 +535,7 @@ export default function App() {
       {isDetailModalOpen && (
         <UnitDetailModal
           unit={selectedUnit}
+          salesList={salesList}
           role={currentUser.role}
           onClose={() => setIsDetailModalOpen(false)}
           onOpenPOS={handleOpenPOS}

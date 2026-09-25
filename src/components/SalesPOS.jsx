@@ -130,6 +130,7 @@ export default function SalesPOS({
       dueDate: paymentMethod === 'dp-tempo' ? dueDate : null,
       guarantee: paymentMethod === 'dp-tempo' ? guarantee : null,
       date: new Date().toISOString().split('T')[0],
+      createdAt: new Date().toISOString(),
       commission: Number(commissionAmount),
       status: paymentMethod === 'dp-tempo' ? 'Tempo Aktif' : 'Lunas'
     };

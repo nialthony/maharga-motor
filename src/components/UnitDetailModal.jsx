@@ -1,11 +1,12 @@
 import React from 'react';
-import { X, CreditCard } from 'lucide-react';
+import { X, CreditCard, CheckCircle2, ExternalLink } from 'lucide-react';
 import { formatIDR, calculateUnitEconomics } from '../data/mockData';
 
-export default function UnitDetailModal({ unit, role, onClose, onOpenPOS }) {
+export default function UnitDetailModal({ unit, salesList = [], role, onClose, onOpenPOS }) {
   if (!unit) return null;
 
   const eco = calculateUnitEconomics(unit);
+  const matchedSale = salesList.find(s => s.unitId === unit.id || (unit.plate && s.plate === unit.plate));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm overflow-y-auto">
@@ -78,6 +79,64 @@ export default function UnitDetailModal({ unit, role, onClose, onOpenPOS }) {
               </p>
             </div>
           </div>
+
+          {/* Informasi Transaksi & Pembeli (Jika Unit Sudah Terjual / Tempo) */}
+          {matchedSale && (
+            <div className="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-800/60 space-y-2.5">
+              <div className="flex items-center justify-between border-b border-emerald-800/40 pb-2">
+                <h4 className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Data Pembeli & Transaksi Terjual</span>
+                </h4>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">
+                  {matchedSale.paymentType || (matchedSale.paymentMethod === 'dp-tempo' ? 'Tempo DP' : 'Cash Lunas')}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                <div>
+                  <span className="text-zinc-500 block text-[10px]">Nama Pembeli:</span>
+                  <strong className="text-zinc-100">{matchedSale.buyerName || '-'}</strong>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block text-[10px]">No. WhatsApp / HP:</span>
+                  {matchedSale.buyerPhone ? (
+                    <a 
+                      href={`https://wa.me/${matchedSale.buyerPhone.replace(/[^0-9]/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-amber-400 font-mono font-bold hover:underline inline-flex items-center gap-1"
+                    >
+                      <span>{matchedSale.buyerPhone}</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  ) : (
+                    <span className="text-zinc-400">-</span>
+                  )}
+                </div>
+                <div className="sm:col-span-2">
+                  <span className="text-zinc-500 block text-[10px]">Alamat Domisili:</span>
+                  <span className="text-zinc-300">{matchedSale.buyerAddress || '-'}</span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block text-[10px]">Tanggal & Jam Transaksi:</span>
+                  <span className="text-zinc-200 font-mono">
+                    {matchedSale.createdAt 
+                      ? new Date(matchedSale.createdAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
+                      : (matchedSale.date || '-')}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block text-[10px]">Harga Deal Terjual:</span>
+                  <strong className="text-emerald-400 font-mono text-sm">{formatIDR(matchedSale.dealPrice)}</strong>
+                </div>
+                <div className="sm:col-span-2 pt-1 border-t border-emerald-900/40 text-[10px] text-zinc-400 flex justify-between">
+                  <span>Sales Pelayan: <strong className="text-zinc-200">{matchedSale.salesName || '-'}</strong></span>
+                  <span>ID Transaksi: <strong className="font-mono text-zinc-400">{matchedSale.id}</strong></span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Owner Only Breakdown */}
           {role === 'owner' && (

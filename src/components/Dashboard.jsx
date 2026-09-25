@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { 
   Layers, 
   TrendingUp, 
@@ -8,7 +8,10 @@ import {
   CreditCard,
   Plus,
   CheckCircle2,
-  History
+  History,
+  X,
+  User,
+  ExternalLink
 } from 'lucide-react';
 import { formatIDR, calculateUnitEconomics } from '../data/mockData';
 
@@ -21,11 +24,9 @@ export default function Dashboard({
   onOpenPOS, 
   onOpenNewUnit 
 }) {
-  const [activityFilter, setActivityFilter] = useState('latest_10'); // 'latest_10' | 'sold_this_month' | 'ready'
-  const activitySectionRef = useRef(null);
+  const [isSoldModalOpen, setIsSoldModalOpen] = useState(false);
 
   const readyUnits = units.filter(u => u.status === 'Tersedia');
-  const soldUnits = salesList.filter(s => s.status === 'Lunas' || s.status === 'Terjual');
   const tempoUnits = salesList.filter(s => s.paymentMethod === 'dp-tempo' && s.status === 'Tempo Aktif');
   const isOwnerOrAdmin = role === 'owner' || role === 'admin';
 
@@ -37,9 +38,9 @@ export default function Dashboard({
   const now = new Date();
   const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const currentMonthName = now.toLocaleString('id-ID', { month: 'long' });
-  const soldThisMonth = soldUnits.filter(s => {
+  const soldThisMonth = salesList.filter(s => {
     if (!s.date) return false;
-    return s.date.startsWith(currentYearMonth);
+    return s.date.startsWith(currentYearMonth) && (s.status === 'Lunas' || s.status === 'Terjual' || s.status === 'Tempo Aktif');
   });
 
   // Gross Profit calculation from real sold units
@@ -56,8 +57,32 @@ export default function Dashboard({
 
   const isEmpty = units.length === 0 && salesList.length === 0;
 
+  // Helper Format Tanggal & Jam
+  const formatDateTime = (dateStr, createdAtStr) => {
+    if (createdAtStr) {
+      try {
+        const d = new Date(createdAtStr);
+        if (!isNaN(d.getTime())) {
+          const dPart = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+          const tPart = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+          return `${dPart} • ${tPart} WIB`;
+        }
+      } catch {}
+    }
+    if (dateStr) {
+      try {
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+      } catch {}
+      return dateStr;
+    }
+    return '-';
+  };
+
   // ==============================================================
-  // DATA AKTIVITAS STOK (PENJUALAN & UNIT READY)
+  // DATA AKTIVITAS STOK (PENJUALAN & UNIT READY TERBARU)
   // ==============================================================
   const soldActivities = salesList.map(s => {
     const matchedUnit = units.find(u => u.id === s.unitId);
@@ -69,12 +94,15 @@ export default function Dashboard({
       title: s.unitName || (matchedUnit ? `${matchedUnit.brand} ${matchedUnit.model}` : 'Unit Motor'),
       plate: s.plate || matchedUnit?.plate || '-',
       date: s.date || '',
+      createdAt: s.createdAt || null,
       price: s.dealPrice || 0,
       buyerName: s.buyerName || '',
+      buyerPhone: s.buyerPhone || '',
+      buyerAddress: s.buyerAddress || '',
       salesName: s.salesName || '',
       paymentType: s.paymentType || (s.paymentMethod === 'dp-tempo' ? 'Tempo DP' : 'Cash'),
       unit: matchedUnit,
-      sortTime: s.date ? new Date(s.date).getTime() : 0
+      sortTime: s.createdAt ? new Date(s.createdAt).getTime() : (s.date ? new Date(s.date).getTime() : 0)
     };
   });
 
@@ -88,6 +116,7 @@ export default function Dashboard({
       title: `${u.brand} ${u.model}`,
       plate: u.plate,
       date: u.createdAt ? u.createdAt.split('T')[0] : (u.taxValidUntil || ''),
+      createdAt: u.createdAt || null,
       price: u.displayPrice || 0,
       minPrice: eco.minPrice,
       totalModal: eco.totalModal,
@@ -99,45 +128,10 @@ export default function Dashboard({
     };
   });
 
-  let displayedActivities = [];
-  if (activityFilter === 'sold_this_month') {
-    displayedActivities = soldActivities.filter(a => a.date && a.date.startsWith(currentYearMonth));
-    if (displayedActivities.length === 0) {
-      displayedActivities = soldActivities;
-    }
-  } else if (activityFilter === 'ready') {
-    displayedActivities = readyActivities;
-  } else {
-    // 10 Aktivitas Terakhir Stok
-    const combined = [...soldActivities, ...readyActivities];
-    combined.sort((a, b) => (b.sortTime || 0) - (a.sortTime || 0));
-    displayedActivities = combined.slice(0, 10);
-  }
-
-  const getActivityHeading = () => {
-    switch (activityFilter) {
-      case 'sold_this_month':
-        return {
-          title: `Aktivitas Stok Terjual (${soldThisMonth.length > 0 ? `Bulan ${currentMonthName}` : 'Semua Terjual'})`,
-          desc: `Menampilkan daftar motor yang telah laku terjual ke konsumen`,
-          countText: `${displayedActivities.length} Unit Terjual`
-        };
-      case 'ready':
-        return {
-          title: 'Daftar Unit Ready (Stok Terkini)',
-          desc: 'Katalog motor tersedia untuk transaksi Cash & Titip DP',
-          countText: `${readyUnits.length} Unit Ready`
-        };
-      default:
-        return {
-          title: '10 Aktivitas Terakhir Stok',
-          desc: '10 catatan riwayat pergerakan stok unit motor terbaru (Masuk & Terjual)',
-          countText: `${displayedActivities.length} Aktivitas`
-        };
-    }
-  };
-
-  const heading = getActivityHeading();
+  // 10 Aktivitas Terakhir Stok (Kombinasi Terbaru Masuk & Terjual)
+  const combinedActivities = [...soldActivities, ...readyActivities];
+  combinedActivities.sort((a, b) => (b.sortTime || 0) - (a.sortTime || 0));
+  const displayedActivities = combinedActivities.slice(0, 10);
 
   return (
     <div className="space-y-5 pb-20 md:pb-12 animate-fadeIn">
@@ -185,17 +179,10 @@ export default function Dashboard({
 
       {/* Metric Cards Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* Card 1: Unit Ready */}
+        {/* Card 1: Unit Ready (Stok) - Klik menuju Katalog */}
         <div 
-          onClick={() => {
-            setActivityFilter('ready');
-            activitySectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-          }}
-          className={`p-4 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 cursor-pointer space-y-2 shadow-sm ${
-            activityFilter === 'ready' 
-              ? 'bg-amber-950/20 border-amber-500 ring-2 ring-amber-500/30' 
-              : 'bg-zinc-900/90 hover:bg-zinc-850 border-zinc-800 hover:border-zinc-700'
-          }`}
+          onClick={() => setActiveTab('inventory')}
+          className="p-4 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 cursor-pointer space-y-2 shadow-sm bg-zinc-900/90 hover:bg-zinc-850 border-zinc-800 hover:border-zinc-700"
         >
           <div className="flex items-center justify-between text-xs text-zinc-400">
             <span className="font-semibold uppercase tracking-wider text-[10px]">Unit Ready (Stok)</span>
@@ -207,20 +194,12 @@ export default function Dashboard({
             </span>
             <span className="text-[11px] font-semibold text-zinc-500">Unit</span>
           </div>
-          <p className="text-[11px] text-zinc-500">Klik untuk lihat stok ready</p>
         </div>
 
-        {/* Card 2: Terjual Bulan Ini (Klik untuk tampilkan Card Aktivitas Terjual) */}
+        {/* Card 2: Terjual Bulan Ini - Klik buka Pop-up Detail Stok Terjual */}
         <div 
-          onClick={() => {
-            setActivityFilter('sold_this_month');
-            activitySectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-          }}
-          className={`p-4 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 cursor-pointer space-y-2 shadow-sm ${
-            activityFilter === 'sold_this_month' 
-              ? 'bg-emerald-950/25 border-emerald-500 ring-2 ring-emerald-500/30' 
-              : 'bg-zinc-900/90 hover:bg-zinc-850 border-zinc-800 hover:border-zinc-700'
-          }`}
+          onClick={() => setIsSoldModalOpen(true)}
+          className="p-4 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 cursor-pointer space-y-2 shadow-sm bg-zinc-900/90 hover:bg-zinc-850 border-zinc-800 hover:border-zinc-700"
         >
           <div className="flex items-center justify-between text-xs text-zinc-400">
             <span className="font-semibold uppercase tracking-wider text-[10px]">Terjual Bulan Ini</span>
@@ -232,9 +211,8 @@ export default function Dashboard({
             </span>
             <span className="text-[11px] font-semibold text-zinc-500">Unit ({currentMonthName})</span>
           </div>
-          <p className="text-[11px] text-zinc-400 flex items-center justify-between">
+          <p className="text-[11px] text-zinc-400">
             <span className="text-emerald-400 font-medium">Bulan {currentMonthName}</span>
-            <span className="font-mono text-emerald-400 text-[10px]">Klik: Lihat Terjual ↓</span>
           </p>
         </div>
 
@@ -301,62 +279,22 @@ export default function Dashboard({
       )}
 
       {/* ============================================================== */}
-      {/* SECTION: 10 AKTIVITAS TERAKHIR STOK & CARD AKTIVITAS TERJUAL  */}
+      {/* SECTION: AKTIVITAS TERAKHIR STOK (HANYA AKTIVITAS TERAKHIR)    */}
       {/* ============================================================== */}
       {!isEmpty && (
-        <div ref={activitySectionRef} className="bg-zinc-900/90 rounded-xl border border-zinc-800 overflow-hidden shadow-sm space-y-0">
-          <div className="p-4 border-b border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="bg-zinc-900/90 rounded-xl border border-zinc-800 overflow-hidden shadow-sm space-y-0">
+          <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2">
                 <History className="w-4 h-4 text-amber-400" />
-                <h3 className="text-sm font-bold text-zinc-100">{heading.title}</h3>
+                <h3 className="text-sm font-bold text-zinc-100">Aktivitas Terakhir Stok</h3>
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-zinc-800 text-zinc-300 border border-zinc-700">
-                  {heading.countText}
+                  {displayedActivities.length} Aktivitas
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-400 mt-0.5">{heading.desc}</p>
-            </div>
-
-            {/* Filter Toggle Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-              <button
-                onClick={() => setActivityFilter('latest_10')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
-                  activityFilter === 'latest_10'
-                    ? 'bg-amber-500 text-zinc-950 font-bold shadow-sm'
-                    : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
-                }`}
-              >
-                10 Terakhir
-              </button>
-
-              <button
-                onClick={() => setActivityFilter('sold_this_month')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1 ${
-                  activityFilter === 'sold_this_month'
-                    ? 'bg-emerald-500 text-zinc-950 font-bold shadow-sm'
-                    : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
-                }`}
-              >
-                <span>Terjual Bulan Ini</span>
-                <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-zinc-950/30">
-                  {soldThisMonth.length}
-                </span>
-              </button>
-
-              <button
-                onClick={() => setActivityFilter('ready')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1 ${
-                  activityFilter === 'ready'
-                    ? 'bg-amber-500 text-zinc-950 font-bold shadow-sm'
-                    : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
-                }`}
-              >
-                <span>Unit Ready</span>
-                <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-zinc-950/30">
-                  {readyUnits.length}
-                </span>
-              </button>
+              <p className="text-[11px] text-zinc-400 mt-0.5">
+                Catatan riwayat pergerakan stok unit motor terbaru (Masuk & Terjual)
+              </p>
             </div>
           </div>
 
@@ -552,6 +490,149 @@ export default function Dashboard({
                 Tidak ada aktivitas stok pada kategori ini.
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Pop-up Modal: Detail Stok Terjual Bulan Ini */}
+      {isSoldModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-zinc-950/80 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-2xl bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl my-8 animate-fadeIn">
+            {/* Modal Header */}
+            <div className="p-4 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-emerald-950/60 border border-emerald-800/80 text-emerald-400">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-zinc-100 flex items-center gap-2">
+                    <span>Detail Stok Terjual Bulan Ini</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
+                      {soldThisMonth.length} Unit
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-zinc-400 mt-0.5">
+                    Periode: Bulan {currentMonthName} {now.getFullYear()}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsSoldModalOpen(false)}
+                aria-label="Tutup detail stok terjual"
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body: Cards List */}
+            <div className="p-4 sm:p-5 max-h-[75vh] overflow-y-auto space-y-3">
+              {soldThisMonth.length > 0 ? (
+                soldThisMonth.map((s) => {
+                  const matchedUnit = units.find(u => u.id === s.unitId);
+                  const unitTitle = s.unitName || (matchedUnit ? `${matchedUnit.brand} ${matchedUnit.model}` : 'Unit Motor');
+                  const plateNo = s.plate || matchedUnit?.plate || '-';
+                  const isTempo = s.paymentMethod === 'dp-tempo' || s.paymentType === 'Tempo DP';
+
+                  return (
+                    <div 
+                      key={s.id} 
+                      className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800/90 hover:border-zinc-700/80 transition-all space-y-3 text-xs"
+                    >
+                      {/* Top Row: Plate, Status, Deal Price */}
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 border-b border-zinc-850 pb-2.5">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded bg-zinc-800 text-amber-400 font-mono font-bold text-xs border border-zinc-700">
+                              {plateNo}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              isTempo 
+                                ? 'bg-amber-950 text-amber-400 border border-amber-800' 
+                                : 'bg-emerald-950 text-emerald-400 border border-emerald-800'
+                            }`}>
+                              {isTempo ? 'Titip DP / Tempo' : 'Cash Lunas'}
+                            </span>
+                          </div>
+                          <h4 className="text-sm font-bold text-zinc-100">{unitTitle}</h4>
+                          <div className="flex items-center gap-1.5 text-zinc-400 text-[11px] font-mono">
+                            <Clock className="w-3.5 h-3.5 text-zinc-500" />
+                            <span>Waktu Deal: <strong className="text-zinc-200">{formatDateTime(s.date, s.createdAt)}</strong></span>
+                          </div>
+                        </div>
+
+                        <div className="sm:text-right">
+                          <span className="text-[10px] text-zinc-500 uppercase tracking-wider block font-medium">Harga Deal:</span>
+                          <span className="font-mono font-black text-emerald-400 text-base">
+                            {formatIDR(s.dealPrice)}
+                          </span>
+                          {isTempo && (
+                            <div className="text-[10px] text-amber-400 font-mono">
+                              Sisa Tempo: {formatIDR(s.remainingPayment || s.remainingAmount || 0)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Detail Pembeli */}
+                      <div className="p-3 rounded-lg bg-zinc-900/80 border border-zinc-850 space-y-2">
+                        <h5 className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+                          <User className="w-3.5 h-3.5 text-blue-400" />
+                          <span>Detail Informasi Pembeli & Sales</span>
+                        </h5>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                          <div>
+                            <span className="text-zinc-500">Nama Pembeli:</span>
+                            <div className="font-semibold text-zinc-200">{s.buyerName || '-'}</div>
+                          </div>
+                          <div>
+                            <span className="text-zinc-500">No. WhatsApp / HP:</span>
+                            <div>
+                              {s.buyerPhone ? (
+                                <a 
+                                  href={`https://wa.me/${s.buyerPhone.replace(/[^0-9]/g, '')}`} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-amber-400 font-mono font-bold hover:underline inline-flex items-center gap-1"
+                                >
+                                  <span>{s.buyerPhone}</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              ) : (
+                                <span className="text-zinc-500">-</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="sm:col-span-2">
+                            <span className="text-zinc-500">Alamat Domisili:</span>
+                            <div className="text-zinc-300">{s.buyerAddress || '-'}</div>
+                          </div>
+                          <div className="sm:col-span-2 pt-1 border-t border-zinc-800/60 flex items-center justify-between text-zinc-400 text-[10px]">
+                            <span>Sales Pelayan: <strong className="text-zinc-200">{s.salesName || '-'}</strong></span>
+                            <span>ID Transaksi: <strong className="font-mono text-zinc-400">{s.id}</strong></span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-center py-12 text-zinc-500 space-y-2">
+                  <CheckCircle2 className="w-10 h-10 mx-auto text-zinc-600" />
+                  <p className="text-xs">Belum ada unit motor yang terjual pada bulan {currentMonthName} ini.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3.5 bg-zinc-950 border-t border-zinc-800 flex items-center justify-end">
+              <button
+                onClick={() => setIsSoldModalOpen(false)}
+                className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition-colors"
+              >
+                Tutup
+              </button>
+            </div>
           </div>
         </div>
       )}

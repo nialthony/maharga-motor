@@ -14,7 +14,7 @@ import {
 import { supabase } from '../lib/supabaseClient';
 import RoleBadge from './RoleBadge';
 
-export default function EmployeeManagement({ employees, setEmployees, currentRole, onSwitchUser }) {
+export default function EmployeeManagement({ employees, setEmployees, onDeleteEmployee, currentRole, onSwitchUser }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
@@ -131,10 +131,27 @@ export default function EmployeeManagement({ employees, setEmployees, currentRol
     setEmployees(nextEmployees);
   };
 
-  const handleDeleteEmployee = (id) => {
-    if (confirm('Yakin ingin menghapus akun staf/karyawan ini?')) {
-      const nextEmployees = employees.filter(emp => emp.id !== id);
-      setEmployees(nextEmployees);
+  const handleDeleteEmployee = async (empOrId) => {
+    const empObj = typeof empOrId === 'object' ? empOrId : employees.find(e => e.id === empOrId);
+    if (!empObj) return;
+
+    if (empObj.role === 'owner') {
+      alert('Akun Owner Showroom tidak dapat dihapus.');
+      return;
+    }
+
+    const confirmMsg = `Yakin ingin menghapus akun staf "${empObj.name}" (@${empObj.username})?\n\nData staf ini akan dihapus permanen dari sistem dan database Supabase.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      if (typeof onDeleteEmployee === 'function') {
+        await onDeleteEmployee(empObj);
+      } else {
+        const nextEmployees = employees.filter(emp => emp.id !== empObj.id && emp.username !== empObj.username);
+        setEmployees(nextEmployees);
+      }
+    } catch (err) {
+      alert('Gagal menghapus staf dari database: ' + (err.message || 'Izin ditolak atau kendala jaringan'));
     }
   };
 
@@ -310,7 +327,7 @@ export default function EmployeeManagement({ employees, setEmployees, currentRol
 
                         {emp.role !== 'owner' && (
                           <button
-                            onClick={() => handleDeleteEmployee(emp.id)}
+                            onClick={() => handleDeleteEmployee(emp)}
                             aria-label={`Hapus akun ${emp.name}`}
                             className="p-1 rounded hover:bg-zinc-800 text-rose-400 transition-colors min-h-[30px] min-w-[30px] flex items-center justify-center"
                             title="Hapus Akun"

@@ -147,6 +147,7 @@ export const fetchCloudData = async () => {
     const formattedSales = (dbSales || []).map(s => ({
       id: s.id,
       date: s.tx_date,
+      createdAt: s.created_at || s.tx_date || null,
       unitId: s.unit_id,
       unitName: s.unit_name,
       plate: s.plate,
@@ -305,12 +306,36 @@ export const saveEmployeeProfileToCloud = async (updatedEmp) => {
 /**
  * Hapus akun staf dari Supabase Cloud
  */
-export const deleteEmployeeFromCloud = async (empId) => {
-  if (!isSupabaseConfigured() || !supabase) return;
+export const deleteEmployeeFromCloud = async (empOrId) => {
+  if (!isSupabaseConfigured() || !supabase) return false;
   try {
-    await supabase.from('employees').delete().eq('id', empId);
+    let query = supabase.from('employees').delete();
+    if (typeof empOrId === 'object' && empOrId !== null) {
+      if (empOrId.id && typeof empOrId.id === 'number') {
+        query = query.eq('id', empOrId.id);
+      } else if (empOrId.username) {
+        query = query.eq('username', empOrId.username);
+      } else if (empOrId.userId || empOrId.user_id) {
+        query = query.eq('user_id', empOrId.userId || empOrId.user_id);
+      }
+    } else if (typeof empOrId === 'number') {
+      query = query.eq('id', empOrId);
+    } else if (typeof empOrId === 'string') {
+      if (!isNaN(Number(empOrId))) {
+        query = query.eq('id', Number(empOrId));
+      } else {
+        query = query.eq('username', empOrId);
+      }
+    }
+    const { error } = await query;
+    if (error) {
+      console.error('Gagal menghapus karyawan dari Supabase Cloud:', error);
+      throw new Error(error.message || 'Gagal menghapus karyawan di database Supabase');
+    }
+    return true;
   } catch (e) {
     console.warn('Gagal menghapus karyawan dari cloud:', e);
+    throw e;
   }
 };
 
@@ -349,11 +374,11 @@ export const saveTransactionToCloud = async (tx, unitId, newStatus) => {
   try {
     await supabase.from('units').update({ status: newStatus }).eq('id', unitId);
     
-    await supabase.from('sales_transactions').upsert([{
+    const payload = {
       id: tx.id,
       unit_id: unitId,
       unit_name: tx.unitName,
-      plate: tx.plate,
+      plate: tx.plate || '',
       sales_name: tx.salesName,
       buyer_name: tx.buyerName,
       buyer_phone: tx.buyerPhone || '',
@@ -365,8 +390,26 @@ export const saveTransactionToCloud = async (tx, unitId, newStatus) => {
       due_date: tx.dueDate || null,
       commission: Math.max(0, Number(tx.commission) || 200000),
       status: tx.status || 'Lunas',
-      tx_date: tx.date || new Date().toISOString().split('T')[0]
-    }], { onConflict: 'id' });
+      tx_date: tx.date || new Date().toISOString().split('T')[0],
+      created_at: tx.createdAt || new Date().toISOString()
+    };
+
+    const { error } = await supabase.from('sales_transactions').upsert([payload], { onConflict: 'id' });
+    if (error) {
+      console.warn('Upsert sales_transactions lengkap gagal, coba fallback:', error);
+      await supabase.from('sales_transactions').upsert([{
+        id: tx.id,
+        unit_id: unitId,
+        unit_name: tx.unitName,
+        sales_name: tx.salesName,
+        buyer_name: tx.buyerName,
+        deal_price: Math.max(1, Number(tx.dealPrice) || 0),
+        payment_method: tx.paymentType === 'Tempo DP' ? 'dp-tempo' : 'cash',
+        commission: Math.max(0, Number(tx.commission) || 200000),
+        status: tx.status || 'Lunas',
+        tx_date: tx.date || new Date().toISOString().split('T')[0]
+      }], { onConflict: 'id' });
+    }
   } catch (e) {
     console.warn('Gagal upload transaksi ke cloud:', e);
   }
@@ -425,6 +468,7 @@ export const subscribeToCloudRealtime = (onRemoteUpdate) => {
                 salesList: dbSales.map(s => ({
                   id: s.id,
                   date: s.tx_date,
+                  createdAt: s.created_at || s.tx_date || null,
                   unitId: s.unit_id,
                   unitName: s.unit_name,
                   plate: s.plate,

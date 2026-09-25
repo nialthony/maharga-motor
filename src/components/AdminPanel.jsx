@@ -27,6 +27,7 @@ import {
   testSupabaseConnection 
 } from '../lib/supabaseClient';
 import { syncAllToCloud, clearShowroomDataInCloud, deleteUnitFromCloud } from '../lib/cloudStore';
+import RoleBadge from './RoleBadge';
 
 export default function AdminPanel({ 
   units = [], 
@@ -34,7 +35,8 @@ export default function AdminPanel({
   salesList = [], 
   setSalesList,
   employees = [], 
-  onBackToERP 
+  onBackToERP,
+  currentUser
 }) {
   // Modul Showroom:
   // 'photos' (Kelola Foto Motor) | 'stok' (Kelola & Hapus Stok Satuan) | 'db' (Koneksi Supabase Cloud) | 'backup' (Backup & Reset)
@@ -470,17 +472,7 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
               alt="Maharga Motor Logo" 
               className="h-8 sm:h-9 w-auto object-contain transition-transform hover:scale-105" 
             />
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-950 text-amber-400 border border-amber-800">
-              ADMIN CONTROL
-            </span>
-          </div>
-
-          {/* Supabase Cloud Live (Tersembunyi di Mobile) */}
-          <div className="hidden sm:flex items-center gap-3 text-xs">
-            <span className="px-2.5 py-1 rounded-lg bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 text-[11px] font-mono font-bold flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              Supabase Cloud Live
-            </span>
+            <RoleBadge role={currentUser?.role || 'admin'} className="h-6 sm:h-7 w-auto" />
           </div>
         </div>
       </header>

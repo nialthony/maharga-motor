@@ -12,6 +12,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import RoleBadge from './RoleBadge';
 
 export default function EmployeeManagement({ employees, setEmployees, currentRole, onSwitchUser }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -138,13 +139,7 @@ export default function EmployeeManagement({ employees, setEmployees, currentRol
   };
 
   const getRoleBadge = (empRole) => {
-    switch(empRole) {
-      case 'owner': return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-400 border border-amber-800">OWNER</span>;
-      case 'admin': return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-950 text-blue-400 border border-blue-800">ADMIN SHOWROOM</span>;
-      case 'sales': return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">SALES EXECUTIVE</span>;
-      case 'mechanic': return <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950 text-purple-400 border border-purple-800">MEKANIK QC</span>;
-      default: return null;
-    }
+    return <RoleBadge role={empRole} className="h-6 w-auto" />;
   };
 
   return (
@@ -158,9 +153,10 @@ export default function EmployeeManagement({ employees, setEmployees, currentRol
               Manajemen Staf & Hak Akses
             </h2>
             {currentRole && (
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-zinc-800 text-zinc-300 border border-zinc-700">
-                Sesi: {currentRole.toUpperCase()}
-              </span>
+              <div className="flex items-center gap-1.5 bg-zinc-800/80 px-2 py-1 rounded-lg border border-zinc-700/60">
+                <span className="text-[10px] font-mono text-zinc-400">Sesi:</span>
+                <RoleBadge role={currentRole} className="h-5 w-auto" />
+              </div>
             )}
           </div>
           <p className="text-xs text-zinc-400 mt-0.5">

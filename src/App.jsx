@@ -16,6 +16,7 @@ import NewUnitModal from './components/NewUnitModal';
 import LoginScreen from './components/LoginScreen';
 import UserProfileModal from './components/UserProfileModal';
 import LogoutConfirmModal from './components/LogoutConfirmModal';
+import RoleBadge from './components/RoleBadge';
 
 import { supabase } from './lib/supabaseClient';
 import { 
@@ -347,6 +348,7 @@ export default function App() {
         salesList={salesList}
         setSalesList={setSalesList}
         employees={employees}
+        currentUser={currentUser}
         onBackToERP={() => setIsAdminPanelOpen(false)}
       />
     );
@@ -523,7 +525,10 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <p>© 2026 <strong>Maharga Motor Showroom System</strong> • Cash & Titip DP Management.</p>
           <div className="flex items-center gap-3 text-zinc-400 font-mono text-[11px]">
-            <span>Login: {currentUser.name} ({currentUser.role.toUpperCase()})</span>
+            <div className="flex items-center gap-2">
+              <span>Login: {currentUser.name}</span>
+              <RoleBadge role={currentUser.role} className="h-4 sm:h-5 w-auto" />
+            </div>
             {isOwnerOrAdmin && (
               <span>
                 Admin Suite:{' '}

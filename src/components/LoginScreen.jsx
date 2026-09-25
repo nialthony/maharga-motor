@@ -14,6 +14,7 @@ import {
 import { supabase } from '../lib/supabaseClient';
 import LogoLoadingOverlay from './LogoLoadingOverlay';
 import { prepareLoadingSfx } from '../lib/soundFx';
+import RoleBadge from './RoleBadge';
 
 export default function LoginScreen({ onLoginSuccess }) {
   // Step 1: Supabase Auth (Email + Password >= 12 chars)
@@ -204,21 +205,6 @@ export default function LoginScreen({ onLoginSuccess }) {
     setErrorMsg('');
   };
 
-  const getRoleBadgeStyle = (role) => {
-    switch (role) {
-      case 'owner':
-        return 'bg-amber-500/15 text-amber-300 border-amber-500/30';
-      case 'admin':
-        return 'bg-blue-500/15 text-blue-300 border-blue-500/30';
-      case 'sales':
-        return 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30';
-      case 'mechanic':
-        return 'bg-purple-500/15 text-purple-300 border-purple-500/30';
-      default:
-        return 'bg-zinc-800 text-zinc-300 border-zinc-700';
-    }
-  };
-
   // Tampilkan Animasi Logo 5 Detik saat login sukses diverifikasi
   if (isLogoLoading && employeeProfile) {
     return (
@@ -360,9 +346,7 @@ export default function LoginScreen({ onLoginSuccess }) {
                   <ChevronLeft className="w-3.5 h-3.5" />
                   <span>Ganti Akun</span>
                 </button>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${getRoleBadgeStyle(employeeProfile.role)}`}>
-                  {employeeProfile.role.toUpperCase()}
-                </span>
+                <RoleBadge role={employeeProfile.role} className="h-6 w-auto" />
               </div>
 
               <div className="text-center space-y-1">

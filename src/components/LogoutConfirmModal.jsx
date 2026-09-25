@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { LogOut, AlertTriangle, X } from 'lucide-react';
+import RoleBadge from './RoleBadge';
 
 export default function LogoutConfirmModal({ isOpen, onClose, onConfirm, currentUser }) {
   useEffect(() => {
@@ -48,9 +49,10 @@ export default function LogoutConfirmModal({ isOpen, onClose, onConfirm, current
             Apakah Anda yakin ingin keluar dari akun <strong className="text-zinc-200">{currentUser?.name || 'Showroom'}</strong>? Sesi login Anda di perangkat ini akan diakhiri.
           </p>
 
-          <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-800/80 border border-zinc-700/50 text-[11px] text-zinc-400 font-mono">
-            <AlertTriangle className="w-3 h-3 text-amber-400" />
-            <span>Role Aktif: <span className="uppercase text-amber-400 font-bold">{currentUser?.role || 'STAF'}</span></span>
+          <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-800/80 border border-zinc-700/50 text-xs text-zinc-400 font-mono">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+            <span>Role Aktif:</span>
+            <RoleBadge role={currentUser?.role} className="h-5 w-auto" />
           </div>
         </div>
 

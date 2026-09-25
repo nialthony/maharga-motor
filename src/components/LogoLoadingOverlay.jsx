@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { playLoadingSfx, stopLoadingSfx, fadeLoadingSfx } from '../lib/soundFx';
+import RoleBadge from './RoleBadge';
 
 /**
  * Animasi Loading Logo Maharga Motor:
@@ -71,9 +72,7 @@ export default function LogoLoadingOverlay({ user, onComplete, duration = 5000 }
               )}
             </div>
             <span className="text-xs font-semibold text-zinc-200">{user.name}</span>
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase bg-amber-950 text-amber-400 border border-amber-800">
-              {user.role}
-            </span>
+            <RoleBadge role={user.role} className="h-5 sm:h-6 w-auto" />
           </div>
         )}
 

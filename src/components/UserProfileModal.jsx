@@ -16,6 +16,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import RoleBadge from './RoleBadge';
 
 /**
  * Kompresi gambar client-side menggunakan HTML5 Canvas
@@ -183,21 +184,6 @@ export default function UserProfileModal({
     }
   };
 
-  const getRoleBadgeStyle = (role) => {
-    switch (role) {
-      case 'owner':
-        return 'bg-amber-500/15 text-amber-300 border-amber-500/30';
-      case 'admin':
-        return 'bg-blue-500/15 text-blue-300 border-blue-500/30';
-      case 'sales':
-        return 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30';
-      case 'mechanic':
-        return 'bg-purple-500/15 text-purple-300 border-purple-500/30';
-      default:
-        return 'bg-zinc-800 text-zinc-300 border-zinc-700';
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-zinc-950/85 backdrop-blur-md">
       <div 
@@ -288,9 +274,7 @@ export default function UserProfileModal({
             <div className="space-y-1.5 text-center sm:text-left flex-1">
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                 <span className="font-bold text-zinc-100 text-sm">{currentUser.name}</span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${getRoleBadgeStyle(currentUser.role)}`}>
-                  {currentUser.role}
-                </span>
+                <RoleBadge role={currentUser.role} className="h-6 w-auto" />
               </div>
               <p className="text-xs text-zinc-400 font-mono">@{currentUser.username}</p>
               

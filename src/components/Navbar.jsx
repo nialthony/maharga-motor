@@ -17,6 +17,7 @@ import {
   Cloud,
   LogOut
 } from 'lucide-react';
+import RoleBadge from './RoleBadge';
 
 export default function Navbar({ 
   activeTab, 
@@ -97,11 +98,7 @@ export default function Navbar({
                 />
               </button>
               <div className="flex items-center gap-1.5">
-                <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold ${
-                  isOwnerOrAdmin ? 'bg-amber-950 text-amber-400 border border-amber-800' : 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                }`}>
-                  {currentUser.role.toUpperCase()}
-                </span>
+                <RoleBadge role={currentUser.role} className="h-5 sm:h-6 w-auto" />
                 <span className="hidden lg:inline text-[10px] text-zinc-500 font-mono">
                   • {isOwnerOrAdmin ? 'Portal Showroom' : 'Sales Portal'}
                 </span>
@@ -176,9 +173,7 @@ export default function Navbar({
                   <span className="font-semibold text-zinc-200 block text-xs leading-tight group-hover:text-amber-300 transition-colors">
                     {currentUser.name}
                   </span>
-                  <span className="text-[9px] text-zinc-400 font-mono uppercase">
-                    {currentUser.role}
-                  </span>
+                  <RoleBadge role={currentUser.role} className="h-4 w-auto mt-0.5" />
                 </div>
               </button>
 
@@ -276,8 +271,8 @@ export default function Navbar({
                 <h4 className="text-xs font-bold text-zinc-100 flex items-center gap-1.5">
                   <span>{currentUser.name}</span>
                 </h4>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-[10px] text-amber-400 font-mono uppercase font-bold">{currentUser.role}</span>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <RoleBadge role={currentUser.role} className="h-4 w-auto" />
                   <span className="text-[10px] text-zinc-400">• Edit Profil</span>
                 </div>
               </div>

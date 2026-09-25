@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Wrench, Plus } from 'lucide-react';
 import { formatIDR } from '../data/mockData';
+import RoleBadge from './RoleBadge';
 
 export default function WorkshopService({ units = [], onAddRepair, mechanics = [] }) {
   const [selectedUnitId, setSelectedUnitId] = useState(units[0]?.id || '');
@@ -134,7 +135,7 @@ export default function WorkshopService({ units = [], onAddRepair, mechanics = [
                   <div key={m.id} className="p-2 rounded bg-zinc-950 flex items-center justify-between border border-zinc-800/60">
                     <div>
                       <span className="font-bold text-zinc-200 block">{m.name}</span>
-                      <span className="text-[10px] text-zinc-500">{m.role}</span>
+                      <RoleBadge role={m.role || 'mechanic'} className="h-4 w-auto mt-0.5" />
                     </div>
                     <span className="text-[10px] font-bold text-emerald-400">Aktif</span>
                   </div>

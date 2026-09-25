@@ -15,6 +15,7 @@ import DocumentPrintModal from './components/DocumentPrintModal';
 import NewUnitModal from './components/NewUnitModal';
 import LoginScreen from './components/LoginScreen';
 import UserProfileModal from './components/UserProfileModal';
+import LogoutConfirmModal from './components/LogoutConfirmModal';
 
 import { supabase } from './lib/supabaseClient';
 import { 
@@ -141,6 +142,7 @@ export default function App() {
   const [isNewUnitModalOpen, setIsNewUnitModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [currentTransaction, setCurrentTransaction] = useState(null);
 
   // Handlers with Cloud Push
@@ -353,7 +355,7 @@ export default function App() {
         availableCount={readyCount}
         tempoAlertCount={tempoAlertCount}
         cloudSyncStatus={cloudSyncStatus}
-        onLogout={handleLogout}
+        onLogout={() => setIsLogoutConfirmOpen(true)}
       />
 
       {/* Main Workspace */}
@@ -490,6 +492,18 @@ export default function App() {
             setIsProfileModalOpen(false);
             setIsLoginModalOpen(true);
           }}
+        />
+      )}
+
+      {isLogoutConfirmOpen && (
+        <LogoutConfirmModal
+          isOpen={isLogoutConfirmOpen}
+          onClose={() => setIsLogoutConfirmOpen(false)}
+          onConfirm={() => {
+            setIsLogoutConfirmOpen(false);
+            handleLogout();
+          }}
+          currentUser={currentUser}
         />
       )}
 

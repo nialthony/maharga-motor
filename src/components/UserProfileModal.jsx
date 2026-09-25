@@ -15,6 +15,7 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
 
 /**
  * Kompresi gambar client-side menggunakan HTML5 Canvas
@@ -136,16 +137,26 @@ export default function UserProfileModal({
     setIsSaving(true);
     try {
       // 1. Jika ada perubahan kata sandi, update di Supabase Auth
-      if (newPassword && supabase) {
+      if (newPassword) {
+        if (!supabase) throw new Error('Koneksi Supabase tidak tersedia.');
         const { error: pwdErr } = await supabase.auth.updateUser({ password: newPassword });
-        if (pwdErr) throw pwdErr;
+        if (pwdErr) {
+          throw new Error(`Gagal memperbarui kata sandi: ${pwdErr.message}`);
+        }
       }
 
       // 2. Jika ada pembaruan PIN faktor kedua, kirim ke Edge Function server
-      if (newPinFactor && supabase) {
-        await supabase.functions.invoke('verify-pin', {
+      if (newPinFactor) {
+        if (!supabase) throw new Error('Koneksi Supabase tidak tersedia.');
+        const { data: pinData, error: pinErr } = await supabase.functions.invoke('verify-pin', {
           body: { action: 'set_pin', factor_code: newPinFactor }
         });
+        if (pinErr) {
+          throw new Error(`Gagal memperbarui PIN: ${pinErr.message}`);
+        }
+        if (pinData?.error) {
+          throw new Error(pinData.error);
+        }
       }
 
       // 3. Simpan data profil (tanpa kolom pin plaintext!)
@@ -158,13 +169,15 @@ export default function UserProfileModal({
       };
 
       await onSaveProfile(updatedUser);
-      setSuccessMsg('Profil dan keamanan berhasil disimpan!');
+      setNewPassword('');
+      setNewPinFactor('');
+      setSuccessMsg('Profil, kata sandi, dan PIN berhasil disimpan!');
       setTimeout(() => {
         onClose();
-      }, 900);
+      }, 1200);
     } catch (err) {
       console.error('Gagal simpan profil:', err);
-      setErrorMsg('Gagal menyimpan profil ke server. Silakan coba lagi.');
+      setErrorMsg(err.message || 'Gagal menyimpan profil ke server. Silakan coba lagi.');
     } finally {
       setIsSaving(false);
     }

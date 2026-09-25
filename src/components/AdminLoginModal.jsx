@@ -98,24 +98,28 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
       });
 
       if (fnError) {
-        throw new Error(fnError.message || 'Gagal memverifikasi PIN.');
+        setErrorMsg(fnError.message || 'Gagal memverifikasi PIN. Silakan coba lagi.');
+        setPin('');
+        return;
       }
 
       if (data?.isLocked) {
         setErrorMsg(data.error || 'Akun terkunci selama 15 menit.');
+        setPin('');
         return;
       }
 
-      if (data && !data.verified) {
-        setErrorMsg(data.error || 'PIN salah.');
+      if (!data || !data.verified) {
+        setErrorMsg(data?.error || 'PIN salah.');
         setPin('');
         return;
       }
 
       setIsLogoLoading(true);
     } catch (err) {
-      console.warn('Fallback verify auth factor:', err);
-      setIsLogoLoading(true);
+      console.error('Error saat verifikasi PIN:', err);
+      setErrorMsg(err.message || 'Gagal memverifikasi PIN.');
+      setPin('');
     } finally {
       setIsLoading(false);
     }

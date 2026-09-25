@@ -86,9 +86,12 @@ serve(async (req: Request) => {
 
     // 4. Aksi: VERIFY PIN
     if (!factor) {
-      // Jika pengguna belum mengonfigurasi PIN faktor kedua di DB, luluskan verifikasi
       return new Response(
-        JSON.stringify({ verified: true, hasPinConfigured: false }),
+        JSON.stringify({ 
+          verified: false, 
+          hasPinConfigured: false, 
+          error: "PIN keamanan belum dikonfigurasi untuk akun ini. Hubungi administrator untuk mengatur PIN." 
+        }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -102,11 +105,12 @@ serve(async (req: Request) => {
       );
       return new Response(
         JSON.stringify({ 
-          error: `Akun terkunci karena 5 kali percobaan PIN salah. Coba lagi dalam ${remainingMinutes} menit.`,
+          verified: false,
           isLocked: true,
+          error: `Akun terkunci karena 5 kali percobaan PIN salah. Coba lagi dalam ${remainingMinutes} menit.`,
           lockedUntil: factor.locked_until
         }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -130,27 +134,29 @@ serve(async (req: Request) => {
           locked_until: lockedUntil,
           updated_at: now.toISOString()
         })
-        .eq("user_id", user.id);
+        .eq("user_id", targetUserId);
 
       if (nextFailedAttempts >= 5) {
         return new Response(
           JSON.stringify({
-            error: "PIN salah 5 kali. Akun Anda dikunci selama 15 menit demi keamanan.",
+            verified: false,
             isLocked: true,
+            error: "PIN salah 5 kali. Akun Anda dikunci selama 15 menit demi keamanan.",
             lockedUntil
           }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
       const remainingAttempts = 5 - nextFailedAttempts;
       return new Response(
         JSON.stringify({
-          error: `PIN salah. Sisa kesempatan: ${remainingAttempts} kali sebelum akun dikunci.`,
+          verified: false,
           isLocked: false,
+          error: `PIN salah. Sisa kesempatan: ${remainingAttempts} kali sebelum akun dikunci.`,
           remainingAttempts
         }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -162,7 +168,7 @@ serve(async (req: Request) => {
         locked_until: null,
         updated_at: now.toISOString()
       })
-      .eq("user_id", user.id);
+      .eq("user_id", targetUserId);
 
     return new Response(
       JSON.stringify({ verified: true, hasPinConfigured: true }),

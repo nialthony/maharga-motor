@@ -130,20 +130,21 @@ export default function LoginScreen({ onLoginSuccess }) {
       });
 
       if (error) {
-        // Jika Edge function gagal atau belum dideploy di Supabase lokal/dashboard,
-        // berikan graceful bypass hanya jika session Supabase Auth sudah valid
-        console.warn('Edge Function verify-pin tidak merespons, verifikasi via sesi aktif:', error);
-      }
-
-      if (data?.isLocked) {
-        setErrorMsg(data.error || 'Akun terkunci karena 5 kali percobaan gagal.');
+        console.error('Edge Function verify-pin error:', error);
+        setErrorMsg(error.message || 'Gagal memverifikasi PIN. Silakan coba lagi.');
         setPin('');
         return;
       }
 
-      if (data && !data.verified) {
-        setRemainingAttempts(data.remainingAttempts ?? null);
-        setErrorMsg(data.error || 'PIN salah. Silakan coba kembali.');
+      if (data?.isLocked) {
+        setErrorMsg(data.error || 'Akun terkunci karena 5 kali percobaan gagal. Coba lagi dalam 15 menit.');
+        setPin('');
+        return;
+      }
+
+      if (!data || !data.verified) {
+        setRemainingAttempts(data?.remainingAttempts ?? null);
+        setErrorMsg(data?.error || 'PIN salah. Silakan coba kembali.');
         setPin('');
         return;
       }
@@ -152,8 +153,8 @@ export default function LoginScreen({ onLoginSuccess }) {
       setIsLogoLoading(true);
     } catch (err) {
       console.error('Error saat verifikasi PIN:', err);
-      // Fallback jika Edge Function belum terdeploy di cloud Supabase
-      setIsLogoLoading(true);
+      setErrorMsg(err.message || 'Terjadi kesalahan sistem saat memverifikasi PIN.');
+      setPin('');
     } finally {
       setIsLoading(false);
     }

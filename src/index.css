@@ -100,56 +100,349 @@ button, input, select, textarea {
   transform: translateY(-2px);
 }
 
-/* Light Mode Theme Overrides */
-html.light,
-html.light body {
-  background-color: #f8fafc;
-  color: #0f172a;
+/* ==========================================================================
+   NEUMORPHISM (SOFT UI) DESIGN SYSTEM FOR LIGHT MODE
+   Matte soft-gray canvas (#e6ecf5), dual extruded & inset shadows, tactile feel
+   ========================================================================== */
+
+html.light {
+  color-scheme: light;
 }
 
-html.light .min-h-screen.bg-zinc-950 {
-  background-color: #f8fafc !important;
+html.light,
+html.light body {
+  background-color: #e6ecf5 !important;
   color: #0f172a !important;
 }
 
+html.light ::-webkit-scrollbar-track {
+  background: #e6ecf5 !important;
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: #c3cfde !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #b2c0d1 !important;
+}
+
+/* Base Canvas & Main Containers */
+html.light #root,
+html.light .min-h-screen,
+html.light .min-h-screen.bg-zinc-950 {
+  background-color: #e6ecf5 !important;
+  color: #0f172a !important;
+}
+
+/* 1. Header & Navigation (Soft Extruded Lip) */
 html.light header {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  border-color: #e2e8f0 !important;
+  background-color: #e6ecf5 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.8) !important;
+  box-shadow: 0 4px 14px rgba(185, 197, 212, 0.45), inset 0 1px 0 #ffffff !important;
 }
 
-html.light nav {
-  background-color: #f1f5f9 !important;
-  border-color: #e2e8f0 !important;
+html.light .border-t.border-zinc-800.bg-zinc-950 {
+  background-color: #e6ecf5 !important;
+  border-top: 1px solid rgba(198, 209, 224, 0.6) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.8) !important;
 }
 
-html.light .bg-zinc-950 {
-  background-color: #f8fafc !important;
-  border-color: #e2e8f0 !important;
+html.light nav button {
+  color: #475569 !important;
+  border: 1px solid transparent !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
+html.light nav button:hover {
+  color: #0f172a !important;
+  background-color: #edf2f9 !important;
+  box-shadow: 3px 3px 6px #c4cede, -3px -3px 6px #ffffff !important;
+}
+
+/* Active Nav Tab: Recessed Inset Tactile */
+html.light nav button.bg-zinc-800,
+html.light nav button[class*="bg-zinc-800"] {
+  background: #e6ecf5 !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
+  box-shadow: inset 2px 2px 5px #c3cede, inset -2px -2px 5px #ffffff, 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  font-weight: 700 !important;
+}
+
+/* 2. Neumorphic Cards & Elevated Panels (Soft Convex/Raised Surface) */
+html.light .bg-zinc-900,
 html.light .bg-zinc-900\/80,
 html.light .bg-zinc-900\/90,
 html.light .bg-zinc-900\/70,
-html.light .bg-zinc-900 {
-  background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
+html.light .bg-zinc-900\/60,
+html.light .bg-zinc-850 {
+  background: #e6ecf5 !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 6px 6px 14px #c2cde0, -6px -6px 14px #ffffff !important;
   color: #0f172a !important;
 }
 
+/* Nested Sub-Containers, Stats Metrics & Recessed Panels */
+html.light .bg-zinc-950,
+html.light .bg-zinc-950\/80,
+html.light .bg-zinc-950\/60,
+html.light .bg-zinc-950\/90 {
+  background: #e0e7f2 !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: inset 2px 2px 5px #c6d1e0, inset -2px -2px 5px #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* 3. Neumorphic Form Controls (Sunken Inset Cavity) */
+html.light input:not([type="checkbox"]):not([type="radio"]),
+html.light select,
+html.light textarea {
+  background-color: #dfe6f2 !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(193, 203, 218, 0.75) !important;
+  box-shadow: inset 3px 3px 6px #c4cfde, inset -3px -3px 6px #ffffff !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+html.light input:focus,
+html.light select:focus,
+html.light textarea:focus {
+  border-color: #f59e0b !important;
+  background-color: #e5ebf5 !important;
+  box-shadow: inset 3px 3px 6px #b8c4d5, inset -3px -3px 6px #ffffff, 0 0 0 2px rgba(245, 158, 11, 0.25) !important;
+  outline: none !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #64748b !important;
+}
+
+html.light select option {
+  background-color: #e6ecf5 !important;
+  color: #0f172a !important;
+}
+
+/* 4. Neumorphic Buttons & Interactive Elements */
+html.light button.bg-zinc-800,
+html.light button.bg-zinc-900,
+html.light button.bg-zinc-950 {
+  background: #e6ecf5 !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 4px 4px 9px #c4cede, -4px -4px 9px #ffffff !important;
+  color: #1e293b !important;
+}
+
+html.light button.bg-zinc-800:hover,
+html.light button.bg-zinc-900:hover,
+html.light button.bg-zinc-950:hover {
+  box-shadow: 2px 2px 5px #c4cede, -2px -2px 5px #ffffff !important;
+  transform: translateY(1px);
+}
+
+html.light button.bg-zinc-800:active,
+html.light button.bg-zinc-900:active,
+html.light button.bg-zinc-950:active {
+  box-shadow: inset 2px 2px 5px #c0cbdb, inset -2px -2px 5px #ffffff !important;
+  transform: none;
+}
+
+/* Primary Amber / Gold CTA Buttons */
+html.light button.bg-amber-500,
+html.light .bg-amber-500 {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 4px 4px 10px #c5cfdd, -4px -4px 10px #ffffff, 0 2px 6px rgba(217, 119, 6, 0.3) !important;
+}
+
+html.light button.bg-amber-500:hover,
+html.light .bg-amber-500:hover {
+  background: linear-gradient(135deg, #fbbf24, #d97706) !important;
+  box-shadow: 2px 2px 6px #c5cfdd, -2px -2px 6px #ffffff, 0 1px 4px rgba(217, 119, 6, 0.35) !important;
+}
+
+html.light button.bg-amber-400,
+html.light .bg-amber-400 {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 4px 4px 10px #c5cfdd, -4px -4px 10px #ffffff, 0 2px 6px rgba(245, 158, 11, 0.3) !important;
+}
+
+html.light button.bg-emerald-500,
+html.light .bg-emerald-500 {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 4px 4px 10px #c5cfdd, -4px -4px 10px #ffffff, 0 2px 6px rgba(5, 150, 105, 0.3) !important;
+}
+
+/* 5. Modals, Drawers & Pop-ups (Deep Soft Floating) */
+html.light .fixed.inset-0.z-50 {
+  background-color: rgba(220, 229, 240, 0.78) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+html.light .fixed.inset-0.z-50 .bg-zinc-900,
+html.light .fixed.inset-0.z-50 [class*="max-w-"] {
+  background: #e6ecf5 !important;
+  border: 1px solid rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 12px 12px 28px #b5c2d4, -12px -12px 28px #ffffff !important;
+}
+
+html.light .fixed.inset-0.z-50 .border-b,
+html.light .fixed.inset-0.z-50 .border-t {
+  border-color: rgba(200, 211, 226, 0.75) !important;
+}
+
+/* 6. Mobile Sticky Bottom Nav & Mobile Menu Drawer */
+html.light .md\:hidden.fixed.bottom-0 {
+  background-color: #e6ecf5 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 -4px 14px rgba(185, 197, 212, 0.45) !important;
+}
+
+html.light .fixed.inset-0.z-50.md\:hidden {
+  background-color: #e6ecf5 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+html.light .fixed.inset-0.z-50.md\:hidden .grid button {
+  background: #e6ecf5 !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 5px 5px 10px #c2cde0, -5px -5px 10px #ffffff !important;
+  color: #0f172a !important;
+}
+
+html.light .fixed.inset-0.z-50.md\:hidden .grid button.bg-amber-500 {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  color: #ffffff !important;
+}
+
+/* 7. Tables & Lists */
+html.light table thead {
+  background-color: #dee6f2 !important;
+  color: #334155 !important;
+}
+
+html.light table tbody tr:hover {
+  background-color: #eff4fa !important;
+}
+
+html.light table td, 
+html.light table th {
+  border-color: rgba(200, 211, 226, 0.7) !important;
+}
+
+html.light .divide-zinc-800\/60 > * + *,
+html.light .divide-zinc-800 > * + * {
+  border-color: rgba(200, 211, 226, 0.7) !important;
+}
+
+/* 8. Crisp Typography & Readable Accents */
 html.light .text-zinc-100,
 html.light .text-zinc-200 {
   color: #0f172a !important;
 }
 
-html.light .text-zinc-300,
+html.light .text-zinc-300 {
+  color: #1e293b !important;
+}
+
 html.light .text-zinc-400 {
+  color: #334155 !important;
+}
+
+html.light .text-zinc-500 {
+  color: #64748b !important;
+}
+
+html.light .text-zinc-600 {
   color: #475569 !important;
 }
 
-html.light .border-zinc-800,
-html.light .border-zinc-700 {
-  border-color: #e2e8f0 !important;
+html.light .text-amber-400 {
+  color: #b45309 !important;
 }
+
+html.light .text-amber-300 {
+  color: #92400e !important;
+}
+
+html.light .text-emerald-400 {
+  color: #047857 !important;
+}
+
+html.light .text-rose-400 {
+  color: #be123c !important;
+}
+
+html.light .text-blue-400 {
+  color: #1d4ed8 !important;
+}
+
+html.light .text-purple-400 {
+  color: #6d28d9 !important;
+}
+
+/* 9. Tinted Boxes & Soft Status Badges */
+html.light .bg-amber-950\/20,
+html.light .bg-amber-950\/30,
+html.light .bg-amber-950 {
+  background-color: #fef3c7 !important;
+  border-color: #fde68a !important;
+  color: #92400e !important;
+  box-shadow: inset 1px 1px 3px rgba(245, 158, 11, 0.15) !important;
+}
+
+html.light .bg-rose-950\/20,
+html.light .bg-rose-950\/40,
+html.light .bg-rose-950 {
+  background-color: #ffe4e6 !important;
+  border-color: #fecdd3 !important;
+  color: #9f1239 !important;
+  box-shadow: inset 1px 1px 3px rgba(225, 29, 72, 0.15) !important;
+}
+
+html.light .bg-emerald-950\/20,
+html.light .bg-emerald-950\/40,
+html.light .bg-emerald-950 {
+  background-color: #d1fae5 !important;
+  border-color: #a7f3d0 !important;
+  color: #065f46 !important;
+  box-shadow: inset 1px 1px 3px rgba(16, 185, 129, 0.15) !important;
+}
+
+html.light .bg-blue-950\/20,
+html.light .bg-blue-950 {
+  background-color: #dbeafe !important;
+  border-color: #bfdbfe !important;
+  color: #1e40af !important;
+  box-shadow: inset 1px 1px 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+/* Soft Badges & Micro-Pills */
+html.light .bg-zinc-800,
+html.light .bg-zinc-700 {
+  background-color: #dce5f0 !important;
+  color: #1e293b !important;
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  box-shadow: 2px 2px 5px #c5d0df, -2px -2px 5px #ffffff !important;
+}
+
+html.light .border-zinc-800,
+html.light .border-zinc-700,
+html.light .border-zinc-800\/60,
+html.light .border-zinc-800\/80,
+html.light .border-zinc-850 {
+  border-color: rgba(198, 209, 224, 0.75) !important;
+}
+
 
 /* Print optimization for SPK & Kwitansi Resmi */
 @media print {

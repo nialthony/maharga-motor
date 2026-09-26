@@ -36,7 +36,7 @@ export function ThemeToggle({ className }) {
         "flex w-16 h-8 p-1 rounded-full cursor-pointer transition-all duration-300 select-none",
         isDark 
           ? "bg-zinc-950 border border-zinc-800" 
-          : "bg-white border border-zinc-300 shadow-sm",
+          : "bg-[#dfe6f2] border border-white/70 shadow-[inset_2px_2px_4px_#c2cde0,inset_-2px_-2px_4px_#ffffff]",
         className
       )}
       onClick={toggleTheme}
@@ -57,7 +57,7 @@ export function ThemeToggle({ className }) {
             "flex justify-center items-center w-6 h-6 rounded-full transition-transform duration-300",
             isDark 
               ? "transform translate-x-0 bg-zinc-800" 
-              : "transform translate-x-8 bg-zinc-100"
+              : "transform translate-x-8 bg-[#e6ecf5] shadow-[2px_2px_5px_#c2cde0,-2px_-2px_5px_#ffffff]"
           )}
         >
           {isDark ? (

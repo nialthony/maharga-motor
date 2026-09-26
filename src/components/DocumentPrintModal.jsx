@@ -7,6 +7,105 @@ export default function DocumentPrintModal({ transaction, onClose }) {
 
   if (!transaction) return null;
 
+  const handlePrint = () => {
+    const printableElement = document.getElementById('printable-document');
+    if (!printableElement) {
+      window.print();
+      return;
+    }
+
+    try {
+      // Create isolated printing iframe to eliminate dark modal/container clipping
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      document.body.appendChild(iframe);
+
+      const frameDoc = iframe.contentWindow?.document;
+      if (!frameDoc) {
+        window.print();
+        return;
+      }
+
+      frameDoc.open();
+      frameDoc.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>${docType === 'spk' ? 'SPK' : 'Kwitansi'} - ${transaction.id}</title>
+            <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+            <style>
+              @page {
+                size: A4 portrait;
+                margin: 12mm 15mm;
+              }
+              * {
+                box-sizing: border-box;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              body {
+                font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+                color: #18181b;
+                background: #ffffff;
+                margin: 0;
+                padding: 10px;
+                font-size: 12px;
+                line-height: 1.5;
+              }
+              .font-mono { font-family: 'JetBrains Mono', monospace; }
+              .font-bold { font-weight: 700; }
+              .font-black { font-weight: 900; }
+              .font-semibold { font-weight: 600; }
+              .text-center { text-align: center; }
+              .text-right { text-align: right; }
+              .uppercase { text-transform: uppercase; }
+              .underline { text-decoration: underline; }
+              table { width: 100%; border-collapse: collapse; margin-top: 6px; margin-bottom: 6px; }
+              td, th { border: 1px solid #d4d4d8; padding: 6px 10px; font-size: 11px; }
+              .bg-zinc-50 { background-color: #fafafa !important; }
+              .bg-zinc-100 { background-color: #f4f4f5 !important; }
+              .border-zinc-200 { border: 1px solid #e4e4e7 !important; }
+              .border-zinc-300 { border-color: #d4d4d8 !important; }
+              .border-b-2 { border-bottom: 2px solid #18181b !important; }
+              .text-emerald-800 { color: #065f46 !important; }
+              .text-rose-800 { color: #9f1239 !important; }
+              .text-amber-800 { color: #92400e !important; }
+              .text-zinc-500 { color: #71717a !important; }
+              .text-zinc-600 { color: #52525b !important; }
+              .text-zinc-800 { color: #27272a !important; }
+              .text-zinc-900 { color: #18181b !important; }
+              .grid { display: flex; gap: 12px; }
+              .grid-cols-2 > div { flex: 1; }
+              img { max-height: 40px; width: auto; }
+            </style>
+          </head>
+          <body>
+            ${printableElement.innerHTML}
+          </body>
+        </html>
+      `);
+      frameDoc.close();
+
+      setTimeout(() => {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+        }, 1500);
+      }, 300);
+    } catch {
+      window.print();
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/85 backdrop-blur-sm overflow-y-auto">
       <div className="relative w-full max-w-3xl bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl my-8">
@@ -33,7 +132,7 @@ export default function DocumentPrintModal({ transaction, onClose }) {
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => window.print()}
+              onClick={handlePrint}
               className="px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-sm"
             >
               <Printer className="w-3.5 h-3.5" />
@@ -58,8 +157,8 @@ export default function DocumentPrintModal({ transaction, onClose }) {
               <p className="text-xs text-zinc-600 font-medium">
                 Pusat Jual Beli Sepeda Motor Bekas Berkualitas & Bergaransi
               </p>
-              <p className="text-[11px] text-zinc-500">
-                Jl. Raya Solo - Sukoharjo • Telp/WA: 0812-3456-7890
+              <p className="text-[11px] text-zinc-500 font-medium">
+                Tombol RT09 RW04, Dalangan, Tulung, Klaten • Telp/WA: 0812-3456-7890
               </p>
             </div>
 
@@ -200,7 +299,7 @@ export default function DocumentPrintModal({ transaction, onClose }) {
 
               <div className="pt-6 flex justify-end">
                 <div className="text-center w-56 space-y-1">
-                  <p className="text-zinc-600">Surakarta, {transaction.date}</p>
+                  <p className="text-zinc-600">Klaten, {transaction.date}</p>
                   <p className="text-zinc-600 font-semibold mb-12">Kasir / Penerima,</p>
                   <p className="font-bold text-zinc-900 underline">( {transaction.salesName} )</p>
                   <span className="text-[10px] text-zinc-500">Maharga Motor Official</span>

@@ -100,22 +100,109 @@ button, input, select, textarea {
   transform: translateY(-2px);
 }
 
+/* Light Mode Theme Overrides */
+html.light,
+html.light body {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+html.light .min-h-screen.bg-zinc-950 {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+html.light header {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light nav {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light .bg-zinc-950 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light .bg-zinc-900\/80,
+html.light .bg-zinc-900\/90,
+html.light .bg-zinc-900\/70,
+html.light .bg-zinc-900 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html.light .text-zinc-100,
+html.light .text-zinc-200 {
+  color: #0f172a !important;
+}
+
+html.light .text-zinc-300,
+html.light .text-zinc-400 {
+  color: #475569 !important;
+}
+
+html.light .border-zinc-800,
+html.light .border-zinc-700 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Print optimization for SPK & Kwitansi Resmi */
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 15mm;
+  }
+  
+  html, body {
+    background: #ffffff !important;
+    color: #18181b !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+  }
+
   body * {
     visibility: hidden;
   }
-  #printable-document, #printable-document * {
-    visibility: visible;
+
+  .no-print, header, nav, button {
+    display: none !important;
   }
+
+  #printable-document, #printable-document * {
+    visibility: visible !important;
+  }
+
+  /* Reset modal overlay constraints during printing */
+  .fixed.inset-0.z-50 {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .relative.w-full.max-w-3xl {
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+  }
+
   #printable-document {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 20px;
-    background: white !important;
-    color: black !important;
-    font-family: 'Plus Jakarta Sans', Arial, sans-serif !important;
+    position: static !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    width: 100% !important;
+    background: #ffffff !important;
+    color: #18181b !important;
   }
 }
+

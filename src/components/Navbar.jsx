@@ -16,6 +16,7 @@ import {
   LogOut
 } from 'lucide-react';
 import RoleBadge from './RoleBadge';
+import { ThemeToggle } from './ui/theme-toggle';
 
 export default function Navbar({ 
   activeTab, 
@@ -101,8 +102,11 @@ export default function Navbar({
               </div>
             </div>
 
-            {/* Desktop Action Buttons: Profile & Logout Only */}
+            {/* Desktop Action Buttons: Theme Toggle, Profile & Logout */}
             <div className="flex items-center gap-2">
+              {/* Theme Toggle (Dark/Light Mode) */}
+              <ThemeToggle className="scale-85 sm:scale-90 shrink-0" />
+
               {/* User Profile Pill */}
               <button
                 onClick={onOpenProfile}
@@ -275,6 +279,10 @@ export default function Navbar({
                 Input Unit Motor Baru
               </button>
             )}
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-900 border border-zinc-800">
+              <span className="text-xs font-semibold text-zinc-300">Tema (Dark / Light)</span>
+              <ThemeToggle className="scale-90" />
+            </div>
             <button
               onClick={() => {
                 onOpenProfile?.();

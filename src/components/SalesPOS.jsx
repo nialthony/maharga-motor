@@ -32,9 +32,11 @@ export default function SalesPOS({
 
   const eco = activeUnit ? calculateUnitEconomics(activeUnit) : { minPrice: 0, totalModal: 0 };
 
-  // Sales Staff Selection (Default to current logged-in user if sales, otherwise first available)
-  const salesStaffList = employees.filter(e => e.role === 'sales' || e.role === 'admin' || e.role === 'owner');
-  const defaultSalesId = currentUser?.id || salesStaffList[0]?.id || '';
+  // Sales Staff Selection: HANYA staf sales (owner, admin, dan mekanik tidak ditampilkan)
+  const salesStaffList = employees.filter(e => 
+    (e.role === 'sales') && e.status !== 'inactive' && e.status !== 'suspended'
+  );
+  const defaultSalesId = (currentUser?.role === 'sales' ? currentUser.id : null) || salesStaffList[0]?.id || 'custom';
   const [selectedSalesId, setSelectedSalesId] = useState(defaultSalesId);
   const [customSalesName, setCustomSalesName] = useState('');
 
@@ -42,7 +44,7 @@ export default function SalesPOS({
   const [commissionAmount, setCommissionAmount] = useState(200000);
 
   // Form State
-  const [dealPrice, setDealPrice] = useState(activeUnit ? activeUnit.displayPrice : 0);
+  const [dealPrice, setDealPrice] = useState(activeUnit ? activeUnit.displayPrice : '');
   const [buyerName, setBuyerName] = useState('');
   const [buyerPhone, setBuyerPhone] = useState('');
   const [buyerAddress, setBuyerAddress] = useState('');
@@ -55,7 +57,7 @@ export default function SalesPOS({
   const [prevActiveUnitId, setPrevActiveUnitId] = useState(activeUnit?.id);
   if (activeUnit && activeUnit.id !== prevActiveUnitId) {
     setPrevActiveUnitId(activeUnit.id);
-    setDealPrice(activeUnit.displayPrice || 0);
+    setDealPrice(activeUnit.displayPrice || '');
   }
 
   const handleUnitChange = (unitId) => {
@@ -67,7 +69,13 @@ export default function SalesPOS({
   };
 
   const handlePriceChange = (val) => {
-    const num = Number(val.replace(/[^0-9]/g, ''));
+    const raw = val.replace(/[^0-9]/g, '');
+    if (raw === '') {
+      setDealPrice('');
+      setErrorMsg('');
+      return;
+    }
+    const num = Number(raw);
     setDealPrice(num);
     if (num < eco.minPrice) {
       setErrorMsg(`Harga deal tidak boleh di bawah batas minimal ${formatIDR(eco.minPrice)}!`);
@@ -82,7 +90,8 @@ export default function SalesPOS({
     : (selectedSalesStaff?.name || currentUser?.name || 'Staff Sales');
 
   // Profit calculation for this deal
-  const estimatedGrossProfit = dealPrice - eco.totalModal;
+  const numDealPrice = Number(dealPrice) || 0;
+  const estimatedGrossProfit = numDealPrice - eco.totalModal;
   const estimatedNetProfit = estimatedGrossProfit - commissionAmount;
 
   const handleSubmit = (e) => {
@@ -92,8 +101,11 @@ export default function SalesPOS({
       return;
     }
 
-    if (dealPrice < eco.minPrice) {
-      setErrorMsg(`Transaksi ditolak: Harga deal ${formatIDR(dealPrice)} di bawah batas minimal ${formatIDR(eco.minPrice)}!`);
+    const finalDealPrice = Number(dealPrice) || 0;
+    const finalDpAmount = Number(dpAmount) || 0;
+
+    if (finalDealPrice < eco.minPrice) {
+      setErrorMsg(`Transaksi ditolak: Harga deal ${formatIDR(finalDealPrice)} di bawah batas minimal ${formatIDR(eco.minPrice)}!`);
       return;
     }
 
@@ -102,7 +114,7 @@ export default function SalesPOS({
       return;
     }
 
-    if (paymentMethod === 'dp-tempo' && dpAmount >= dealPrice) {
+    if (paymentMethod === 'dp-tempo' && finalDpAmount >= finalDealPrice) {
       setErrorMsg('Untuk skema titip DP/tempo, nilai DP harus lebih kecil dari harga deal total.');
       return;
     }
@@ -123,10 +135,10 @@ export default function SalesPOS({
       buyerName,
       buyerPhone,
       buyerAddress,
-      dealPrice,
+      dealPrice: finalDealPrice,
       paymentMethod,
-      dpAmount: paymentMethod === 'dp-tempo' ? dpAmount : dealPrice,
-      remainingAmount: paymentMethod === 'dp-tempo' ? (dealPrice - dpAmount) : 0,
+      dpAmount: paymentMethod === 'dp-tempo' ? finalDpAmount : finalDealPrice,
+      remainingAmount: paymentMethod === 'dp-tempo' ? Math.max(0, finalDealPrice - finalDpAmount) : 0,
       dueDate: paymentMethod === 'dp-tempo' ? dueDate : null,
       guarantee: paymentMethod === 'dp-tempo' ? guarantee : null,
       date: new Date().toISOString().split('T')[0],
@@ -250,11 +262,15 @@ export default function SalesPOS({
                   onChange={(e) => setSelectedSalesId(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-100 text-xs font-bold focus:outline-none focus:border-amber-400"
                 >
-                  {salesStaffList.map((staff) => (
-                    <option key={staff.id} value={staff.id}>
-                      👤 {staff.name} ({staff.role.toUpperCase()})
-                    </option>
-                  ))}
+                  {salesStaffList.length > 0 ? (
+                    salesStaffList.map((staff) => (
+                      <option key={staff.id} value={staff.id}>
+                        👤 {staff.name} (@{staff.username || 'sales'})
+                      </option>
+                    ))
+                  ) : (
+                    <option value="" disabled>(Belum ada akun sales terdaftar)</option>
+                  )}
                   <option value="custom">➕ Mediator / Makelar Luar / Lainnya</option>
                 </select>
 
@@ -368,7 +384,9 @@ export default function SalesPOS({
                 <input
                   type="text"
                   required
-                  value={new Intl.NumberFormat('id-ID').format(dealPrice)}
+                  value={dealPrice === '' ? '' : new Intl.NumberFormat('id-ID').format(dealPrice)}
+                  placeholder="0"
+                  onFocus={(e) => e.target.select()}
                   onChange={(e) => handlePriceChange(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-emerald-400 font-mono font-black text-base focus:outline-none focus:border-emerald-400"
                 />
@@ -401,8 +419,13 @@ export default function SalesPOS({
                     <input
                       type="text"
                       required
-                      value={new Intl.NumberFormat('id-ID').format(dpAmount)}
-                      onChange={(e) => setDpAmount(Number(e.target.value.replace(/[^0-9]/g, '')))}
+                      value={dpAmount === '' ? '' : new Intl.NumberFormat('id-ID').format(dpAmount)}
+                      placeholder="0"
+                      onFocus={(e) => e.target.select()}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/[^0-9]/g, '');
+                        setDpAmount(raw === '' ? '' : Number(raw));
+                      }}
                       className="w-full px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-amber-400 font-mono font-bold text-xs focus:outline-none focus:border-amber-400"
                     />
                   </div>

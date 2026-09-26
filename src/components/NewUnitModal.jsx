@@ -213,8 +213,10 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
               <input
                 type="number"
                 required
-                value={year}
-                onChange={(e) => setYear(e.target.value)}
+                value={year === '' ? '' : year}
+                placeholder="2024"
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => setYear(e.target.value === '' ? '' : e.target.value)}
                 className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400 font-mono transition-colors"
               />
             </div>
@@ -234,8 +236,10 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
               <label className="font-medium text-zinc-300 block mb-1">Odometer (KM)</label>
               <input
                 type="number"
-                value={odometer}
-                onChange={(e) => setOdometer(e.target.value)}
+                value={odometer === '' ? '' : odometer}
+                placeholder="0"
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => setOdometer(e.target.value === '' ? '' : Number(e.target.value))}
                 className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400 font-mono transition-colors"
               />
             </div>
@@ -269,9 +273,10 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
                   type="number"
                   min="1"
                   max="20"
-                  value={taxDeadYears}
-                  onChange={(e) => setTaxDeadYears(Number(e.target.value))}
-                  placeholder="Jumlah tahun mati"
+                  value={taxDeadYears === '' ? '' : taxDeadYears}
+                  placeholder="0"
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => setTaxDeadYears(e.target.value === '' ? '' : Number(e.target.value))}
                   className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400 font-mono transition-colors"
                 />
               </div>
@@ -349,8 +354,10 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
                 <input
                   type="number"
                   required
-                  value={buyPrice}
-                  onChange={(e) => setBuyPrice(Number(e.target.value))}
+                  value={buyPrice === '' ? '' : buyPrice}
+                  placeholder="0"
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => setBuyPrice(e.target.value === '' ? '' : Number(e.target.value))}
                   className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-100 font-mono font-bold focus:outline-none focus:border-amber-400 transition-colors"
                 />
               </div>
@@ -359,8 +366,10 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
                 <label className="text-zinc-400 block mb-1 text-[11px] font-semibold">Margin Min. Sales (%):</label>
                 <input
                   type="number"
-                  value={minMarginPercent}
-                  onChange={(e) => setMinMarginPercent(Number(e.target.value))}
+                  value={minMarginPercent === '' ? '' : minMarginPercent}
+                  placeholder="0"
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => setMinMarginPercent(e.target.value === '' ? '' : Number(e.target.value))}
                   className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-100 font-mono font-bold focus:outline-none focus:border-amber-400 transition-colors"
                 />
               </div>
@@ -370,8 +379,10 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
                 <input
                   type="number"
                   required
-                  value={displayPrice}
-                  onChange={(e) => setDisplayPrice(Number(e.target.value))}
+                  value={displayPrice === '' ? '' : displayPrice}
+                  placeholder="0"
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => setDisplayPrice(e.target.value === '' ? '' : Number(e.target.value))}
                   className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-amber-500/50 text-amber-400 font-mono font-black focus:outline-none focus:border-amber-400 transition-colors"
                 />
               </div>

@@ -12,6 +12,7 @@ import {
   Menu, 
   X, 
   DollarSign,
+  Settings,
   LogOut
 } from 'lucide-react';
 import RoleBadge from './RoleBadge';
@@ -21,6 +22,7 @@ export default function Navbar({
   setActiveTab, 
   currentUser,
   onOpenNewUnit,
+  onOpenAdminPanel,
   onOpenProfile,
   availableCount,
   tempoAlertCount,

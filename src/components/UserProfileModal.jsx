@@ -234,9 +234,9 @@ export default function UserProfileModal({
           )}
 
           {/* Avatar Section */}
-          <div className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800/80 flex flex-col sm:flex-row items-center gap-4">
+          <div className="p-4 rounded-2xl bg-zinc-900/60 dark:bg-zinc-950/70 border border-zinc-700/50 dark:border-zinc-800/80 flex flex-col sm:flex-row items-center gap-4">
             <div className="relative group">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-zinc-800 border-2 border-amber-500/40 overflow-hidden flex items-center justify-center shadow-lg">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-zinc-800 dark:bg-zinc-800 border-2 border-amber-500/40 overflow-hidden flex items-center justify-center shadow-md">
                 {avatar ? (
                   <img 
                     src={avatar} 
@@ -244,7 +244,7 @@ export default function UserProfileModal({
                     className="w-full h-full object-cover" 
                   />
                 ) : (
-                  <span className="text-2xl sm:text-3xl font-black font-mono text-amber-400">
+                  <span className="text-2xl sm:text-3xl font-black font-mono text-amber-500 dark:text-amber-400">
                     {currentUser.username.slice(0, 2).toUpperCase()}
                   </span>
                 )}
@@ -273,17 +273,17 @@ export default function UserProfileModal({
 
             <div className="space-y-1.5 text-center sm:text-left flex-1">
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <span className="font-bold text-zinc-100 text-sm">{currentUser.name}</span>
+                <span className="font-bold text-zinc-900 dark:text-zinc-100 text-sm sm:text-base">{currentUser.name}</span>
                 <RoleBadge role={currentUser.role} className="h-6 w-auto" />
               </div>
-              <p className="text-xs text-zinc-400 font-mono">@{currentUser.username}</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">@{currentUser.username}</p>
               
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isProcessingPhoto}
-                  className="px-3 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold flex items-center gap-1.5 border border-zinc-700 transition-colors"
+                  className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold flex items-center gap-1.5 border border-zinc-700 transition-colors shadow-sm"
                 >
                   <Camera className="w-3.5 h-3.5 text-amber-400" />
                   <span>{isProcessingPhoto ? 'Memproses...' : 'Upload Foto'}</span>
@@ -292,7 +292,7 @@ export default function UserProfileModal({
                   <button
                     type="button"
                     onClick={handleRemovePhoto}
-                    className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-rose-950/50 hover:text-rose-300 text-zinc-400 text-xs font-semibold flex items-center gap-1 border border-zinc-800 transition-colors"
+                    className="px-2.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-rose-950/50 hover:text-rose-300 text-zinc-400 text-xs font-semibold flex items-center gap-1 border border-zinc-800 transition-colors shadow-sm"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>Hapus Foto</span>
@@ -411,14 +411,14 @@ export default function UserProfileModal({
             </div>
 
             {/* Read-Only System Info */}
-            <div className="p-3 rounded-xl bg-zinc-950/40 border border-zinc-800/60 text-[11px] text-zinc-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <div className="p-3.5 rounded-xl bg-zinc-900/60 dark:bg-zinc-950/40 border border-zinc-700/50 dark:border-zinc-800/60 text-[11px] text-zinc-600 dark:text-zinc-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-sm">
               <div className="flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-zinc-500" />
-                <span>Bergabung: {currentUser.joinedDate || '2024-01-01'}</span>
+                <span>Bergabung: <strong className="text-zinc-800 dark:text-zinc-200">{currentUser.joinedDate || '2024-01-01'}</strong></span>
               </div>
               <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Status Akun: <strong className="text-emerald-400">Aktif</strong></span>
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Status Akun: <strong className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 dark:border-emerald-800">Aktif</strong></span>
               </div>
             </div>
 

@@ -481,43 +481,43 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-5">
         
         {/* Clean Module Navigation Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto bg-zinc-900 p-1.5 rounded-xl border border-zinc-800 mb-5 no-scrollbar">
+        <div className="flex items-center gap-2 overflow-x-auto bg-zinc-900/90 dark:bg-zinc-900 p-2 rounded-2xl border border-zinc-700/60 dark:border-zinc-800 mb-5 shadow-sm no-scrollbar">
           <button
             onClick={() => setActiveModule('photos')}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 shadow-sm ${
               activeModule === 'photos' 
-                ? 'bg-amber-500 text-zinc-950 font-bold shadow-sm' 
-                : 'text-zinc-300 hover:text-white hover:bg-zinc-800'
+                ? 'bg-amber-500 text-zinc-950 font-bold shadow-md' 
+                : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-800/40 dark:hover:bg-zinc-800'
             }`}
           >
             <ImageIcon className="w-4 h-4" />
             <span>Kelola Foto & Galeri Motor</span>
-            <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-zinc-950/30">
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-zinc-950/20 dark:bg-zinc-950/40">
               {units.length} Unit
             </span>
           </button>
 
           <button
             onClick={() => setActiveModule('stok')}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 shadow-sm ${
               activeModule === 'stok' 
-                ? 'bg-amber-500 text-zinc-950 font-bold shadow-sm' 
-                : 'text-zinc-300 hover:text-white hover:bg-zinc-800'
+                ? 'bg-amber-500 text-zinc-950 font-bold shadow-md' 
+                : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-800/40 dark:hover:bg-zinc-800'
             }`}
           >
-            <Trash2 className="w-4 h-4 text-rose-400" />
+            <Trash2 className="w-4 h-4 text-rose-500 dark:text-rose-400" />
             <span>Kelola & Hapus Stok Satuan</span>
-            <span className="px-1.5 py-0.2 rounded text-[9px] font-mono bg-zinc-950/30">
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-zinc-950/20 dark:bg-zinc-950/40">
               {units.length} Unit
             </span>
           </button>
 
           <button
             onClick={() => setActiveModule('db')}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 shadow-sm ${
               activeModule === 'db' 
-                ? 'bg-amber-500 text-zinc-950 font-bold shadow-sm' 
-                : 'text-zinc-300 hover:text-white hover:bg-zinc-800'
+                ? 'bg-amber-500 text-zinc-950 font-bold shadow-md' 
+                : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-800/40 dark:hover:bg-zinc-800'
             }`}
           >
             <Database className="w-3.5 h-3.5" />
@@ -526,10 +526,10 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
 
           <button
             onClick={() => setActiveModule('backup')}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 shadow-sm ${
               activeModule === 'backup' 
-                ? 'bg-amber-500 text-zinc-950 font-bold shadow-sm' 
-                : 'text-zinc-300 hover:text-white hover:bg-zinc-800'
+                ? 'bg-amber-500 text-zinc-950 font-bold shadow-md' 
+                : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-800/40 dark:hover:bg-zinc-800'
             }`}
           >
             <Download className="w-3.5 h-3.5" />
@@ -542,17 +542,17 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
         {/* ========================================================= */}
         {activeModule === 'photos' && (
           <div className="space-y-5">
-            <div className="bg-gradient-to-r from-amber-950/40 via-zinc-900 to-zinc-900 border border-amber-800/40 rounded-xl p-4 sm:p-5">
+            <div className="bg-gradient-to-r from-amber-500/10 via-zinc-900/40 to-zinc-900/40 dark:from-amber-950/40 dark:via-zinc-900 dark:to-zinc-900 border border-amber-500/30 dark:border-amber-800/40 rounded-2xl p-4 sm:p-5 shadow-sm">
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-amber-500 text-zinc-950 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500 text-zinc-950 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-sm font-bold text-zinc-100">
+                  <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                     Upload & Simpan Foto Motor Langsung ke Database
                   </h3>
-                  <p className="text-xs text-zinc-300 leading-relaxed">
-                    Unggah foto motor dari galeri HP atau laptop. Foto otomatis dioptimalkan ukurannya dan <strong>langsung tersimpan permanen di database Supabase Cloud</strong>, sehingga langsung terlihat di katalog dan kasir pada seluruh perangkat staf.
+                  <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed">
+                    Unggah foto motor dari galeri HP atau laptop. Foto otomatis dioptimalkan ukurannya dan <strong className="text-zinc-900 dark:text-zinc-100">langsung tersimpan permanen di database Supabase Cloud</strong>, sehingga langsung terlihat di katalog dan kasir pada seluruh perangkat staf.
                   </p>
                 </div>
               </div>

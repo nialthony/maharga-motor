@@ -170,8 +170,8 @@ export default function EmployeeManagement({ employees, setEmployees, onDeleteEm
               Manajemen Staf & Hak Akses
             </h2>
             {currentRole && (
-              <div className="flex items-center gap-1.5 bg-zinc-800/80 px-2 py-1 rounded-lg border border-zinc-700/60">
-                <span className="text-[10px] font-mono text-zinc-400">Sesi:</span>
+              <div className="flex items-center gap-1.5 bg-zinc-800/80 px-2.5 py-1 rounded-lg border border-zinc-700/60">
+                <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400 font-semibold">Sesi:</span>
                 <RoleBadge role={currentRole} className="h-5 w-auto" />
               </div>
             )}

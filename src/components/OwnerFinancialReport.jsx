@@ -111,10 +111,10 @@ export default function OwnerFinancialReport({ salesList = [], employees = [], u
           <p className="text-[10px] text-zinc-500">Omset dikurangi modal unit</p>
         </div>
 
-        <div className="p-3.5 sm:p-4 rounded-xl bg-emerald-950/30 border border-emerald-800/60 space-y-1">
-          <span className="text-[10px] text-emerald-300 font-bold uppercase tracking-wider">Laba Bersih Showroom</span>
-          <h3 className="text-xl sm:text-2xl font-black font-mono text-emerald-400">{formatIDR(netOperationalProfit)}</h3>
-          <p className="text-[10px] text-emerald-300/80">Setelah komisi tim sales</p>
+        <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-900/90 border border-zinc-800 space-y-1">
+          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">Laba Bersih Showroom</span>
+          <h3 className="text-xl sm:text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">{formatIDR(netOperationalProfit)}</h3>
+          <p className="text-[10px] text-zinc-500">Setelah komisi tim sales</p>
         </div>
       </div>
 

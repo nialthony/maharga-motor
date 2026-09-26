@@ -82,13 +82,13 @@ export default function UnitDetailModal({ unit, salesList = [], role, onClose, o
 
           {/* Informasi Transaksi & Pembeli (Jika Unit Sudah Terjual / Tempo) */}
           {matchedSale && (
-            <div className="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-800/60 space-y-2.5">
-              <div className="flex items-center justify-between border-b border-emerald-800/40 pb-2">
-                <h4 className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-900/90 dark:bg-emerald-950/30 border border-zinc-700/60 dark:border-emerald-800/60 space-y-2.5 shadow-sm">
+              <div className="flex items-center justify-between border-b border-zinc-200/80 dark:border-emerald-800/40 pb-2">
+                <h4 className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Data Pembeli & Transaksi Terjual</span>
                 </h4>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800 font-mono">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 dark:border-emerald-800 font-mono">
                   {matchedSale.paymentType || (matchedSale.paymentMethod === 'dp-tempo' ? 'Tempo DP' : 'Cash Lunas')}
                 </span>
               </div>
@@ -96,7 +96,7 @@ export default function UnitDetailModal({ unit, salesList = [], role, onClose, o
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
                 <div>
                   <span className="text-zinc-500 block text-[10px]">Nama Pembeli:</span>
-                  <strong className="text-zinc-100">{matchedSale.buyerName || '-'}</strong>
+                  <strong className="text-zinc-900 dark:text-zinc-100 font-bold">{matchedSale.buyerName || '-'}</strong>
                 </div>
                 <div>
                   <span className="text-zinc-500 block text-[10px]">No. WhatsApp / HP:</span>
@@ -105,22 +105,22 @@ export default function UnitDetailModal({ unit, salesList = [], role, onClose, o
                       href={`https://wa.me/${matchedSale.buyerPhone.replace(/[^0-9]/g, '')}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-amber-400 font-mono font-bold hover:underline inline-flex items-center gap-1"
+                      className="text-amber-600 dark:text-amber-400 font-mono font-bold hover:underline inline-flex items-center gap-1"
                     >
                       <span>{matchedSale.buyerPhone}</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   ) : (
-                    <span className="text-zinc-400">-</span>
+                    <span className="text-zinc-500 dark:text-zinc-400">-</span>
                   )}
                 </div>
                 <div className="sm:col-span-2">
                   <span className="text-zinc-500 block text-[10px]">Alamat Domisili:</span>
-                  <span className="text-zinc-300">{matchedSale.buyerAddress || '-'}</span>
+                  <span className="text-zinc-800 dark:text-zinc-300">{matchedSale.buyerAddress || '-'}</span>
                 </div>
                 <div>
                   <span className="text-zinc-500 block text-[10px]">Tanggal & Jam Transaksi:</span>
-                  <span className="text-zinc-200 font-mono">
+                  <span className="text-zinc-800 dark:text-zinc-200 font-mono">
                     {matchedSale.createdAt 
                       ? new Date(matchedSale.createdAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
                       : (matchedSale.date || '-')}
@@ -128,11 +128,11 @@ export default function UnitDetailModal({ unit, salesList = [], role, onClose, o
                 </div>
                 <div>
                   <span className="text-zinc-500 block text-[10px]">Harga Deal Terjual:</span>
-                  <strong className="text-emerald-400 font-mono text-sm">{formatIDR(matchedSale.dealPrice)}</strong>
+                  <strong className="text-emerald-600 dark:text-emerald-400 font-mono text-base font-black">{formatIDR(matchedSale.dealPrice)}</strong>
                 </div>
-                <div className="sm:col-span-2 pt-1 border-t border-emerald-900/40 text-[10px] text-zinc-400 flex justify-between">
-                  <span>Sales Pelayan: <strong className="text-zinc-200">{matchedSale.salesName || '-'}</strong></span>
-                  <span>ID Transaksi: <strong className="font-mono text-zinc-400">{matchedSale.id}</strong></span>
+                <div className="sm:col-span-2 pt-1 border-t border-zinc-200/80 dark:border-emerald-900/40 text-[10px] text-zinc-500 dark:text-zinc-400 flex justify-between">
+                  <span>Sales Pelayan: <strong className="text-zinc-800 dark:text-zinc-200 font-semibold">{matchedSale.salesName || '-'}</strong></span>
+                  <span>ID Transaksi: <strong className="font-mono text-zinc-600 dark:text-zinc-400">{matchedSale.id}</strong></span>
                 </div>
               </div>
             </div>

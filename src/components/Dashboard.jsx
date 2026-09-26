@@ -546,37 +546,37 @@ export default function Dashboard({
                   return (
                     <div 
                       key={s.id} 
-                      className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800/90 hover:border-zinc-700/80 transition-all space-y-3 text-xs"
+                      className="p-4 rounded-xl bg-zinc-950/70 border border-zinc-800/90 hover:border-zinc-700/80 transition-all space-y-3 text-xs shadow-sm"
                     >
                       {/* Top Row: Plate, Status, Deal Price */}
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 border-b border-zinc-850 pb-2.5">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 border-b border-zinc-800/60 pb-2.5">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 rounded bg-zinc-800 text-amber-400 font-mono font-bold text-xs border border-zinc-700">
+                            <span className="px-2 py-0.5 rounded bg-zinc-800 text-amber-500 dark:text-amber-400 font-mono font-bold text-xs border border-zinc-700">
                               {plateNo}
                             </span>
                             <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                               isTempo 
-                                ? 'bg-amber-950 text-amber-400 border border-amber-800' 
-                                : 'bg-emerald-950 text-emerald-400 border border-emerald-800'
+                                ? 'bg-amber-500/10 dark:bg-amber-950 text-amber-600 dark:text-amber-400 border border-amber-500/30 dark:border-amber-800' 
+                                : 'bg-emerald-500/10 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 dark:border-emerald-800'
                             }`}>
                               {isTempo ? 'Titip DP / Tempo' : 'Cash Lunas'}
                             </span>
                           </div>
-                          <h4 className="text-sm font-bold text-zinc-100">{unitTitle}</h4>
-                          <div className="flex items-center gap-1.5 text-zinc-400 text-[11px] font-mono">
+                          <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{unitTitle}</h4>
+                          <div className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400 text-[11px] font-mono">
                             <Clock className="w-3.5 h-3.5 text-zinc-500" />
-                            <span>Waktu Deal: <strong className="text-zinc-200">{formatDateTime(s.date, s.createdAt)}</strong></span>
+                            <span>Waktu Deal: <strong className="text-zinc-800 dark:text-zinc-200">{formatDateTime(s.date, s.createdAt)}</strong></span>
                           </div>
                         </div>
 
                         <div className="sm:text-right">
                           <span className="text-[10px] text-zinc-500 uppercase tracking-wider block font-medium">Harga Deal:</span>
-                          <span className="font-mono font-black text-emerald-400 text-base">
+                          <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-base">
                             {formatIDR(s.dealPrice)}
                           </span>
                           {isTempo && (
-                            <div className="text-[10px] text-amber-400 font-mono">
+                            <div className="text-[10px] text-amber-600 dark:text-amber-400 font-mono font-semibold">
                               Sisa Tempo: {formatIDR(s.remainingPayment || s.remainingAmount || 0)}
                             </div>
                           )}
@@ -584,9 +584,9 @@ export default function Dashboard({
                       </div>
 
                       {/* Quick Summary Bar */}
-                      <div className="flex items-center justify-between text-[11px] text-zinc-400 pt-0.5">
-                        <span>Pembeli: <strong className="text-zinc-200">{s.buyerName || '-'}</strong></span>
-                        <span>Sales: <strong className="text-zinc-300">{s.salesName || '-'}</strong></span>
+                      <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 pt-0.5">
+                        <span>Pembeli: <strong className="text-zinc-800 dark:text-zinc-200 font-semibold">{s.buyerName || '-'}</strong></span>
+                        <span>Sales: <strong className="text-zinc-800 dark:text-zinc-300 font-semibold">{s.salesName || '-'}</strong></span>
                       </div>
 
                       {/* Expand / Collapse Button */}
@@ -595,29 +595,29 @@ export default function Dashboard({
                         onClick={() => toggleExpandSale(s.id)}
                         className={`w-full py-1.5 px-3 rounded-lg text-xs font-medium flex items-center justify-between transition-colors border ${
                           expandedSaleIds[s.id]
-                            ? 'bg-zinc-900 border-zinc-700 text-amber-300'
-                            : 'bg-zinc-900/60 hover:bg-zinc-900 border-zinc-800 text-zinc-300'
+                            ? 'bg-zinc-900 border-zinc-700 text-amber-500 dark:text-amber-300'
+                            : 'bg-zinc-900/60 hover:bg-zinc-900 border-zinc-800 text-zinc-700 dark:text-zinc-300'
                         }`}
                         aria-expanded={!!expandedSaleIds[s.id]}
                       >
                         <span className="flex items-center gap-1.5">
-                          <User className="w-3.5 h-3.5 text-blue-400" />
+                          <User className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
                           <span>{expandedSaleIds[s.id] ? 'Sembunyikan Rincian Pembeli & Dokumen' : 'Lihat Detail Rincian Pembeli & Transaksi'}</span>
                         </span>
-                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedSaleIds[s.id] ? 'rotate-180 text-amber-400' : 'text-zinc-500'}`} />
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedSaleIds[s.id] ? 'rotate-180 text-amber-500 dark:text-amber-400' : 'text-zinc-500'}`} />
                       </button>
 
                       {/* Collapsible Detail Content */}
                       {expandedSaleIds[s.id] && (
                         <div className="p-3.5 rounded-lg bg-zinc-900/90 border border-zinc-800 space-y-2.5 animate-fadeIn">
-                          <h5 className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5 border-b border-zinc-800/60 pb-1.5">
-                            <User className="w-3.5 h-3.5 text-blue-400" />
+                          <h5 className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 border-b border-zinc-800/60 pb-1.5">
+                            <User className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
                             <span>Detail Lengkap Pembeli & Kontak</span>
                           </h5>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
                             <div>
                               <span className="text-zinc-500 block text-[10px]">Nama Lengkap Pembeli:</span>
-                              <div className="font-semibold text-zinc-200">{s.buyerName || '-'}</div>
+                              <div className="font-semibold text-zinc-800 dark:text-zinc-200">{s.buyerName || '-'}</div>
                             </div>
                             <div>
                               <span className="text-zinc-500 block text-[10px]">No. WhatsApp / HP:</span>
@@ -627,7 +627,7 @@ export default function Dashboard({
                                     href={`https://wa.me/${s.buyerPhone.replace(/[^0-9]/g, '')}`} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
-                                    className="text-amber-400 font-mono font-bold hover:underline inline-flex items-center gap-1"
+                                    className="text-amber-600 dark:text-amber-400 font-mono font-bold hover:underline inline-flex items-center gap-1"
                                   >
                                     <span>{s.buyerPhone}</span>
                                     <ExternalLink className="w-3 h-3" />
@@ -639,19 +639,19 @@ export default function Dashboard({
                             </div>
                             <div className="sm:col-span-2">
                               <span className="text-zinc-500 block text-[10px]">Alamat Domisili:</span>
-                              <div className="text-zinc-300">{s.buyerAddress || '-'}</div>
+                              <div className="text-zinc-800 dark:text-zinc-300">{s.buyerAddress || '-'}</div>
                             </div>
                             <div>
                               <span className="text-zinc-500 block text-[10px]">Waktu Transaksi Lengkap:</span>
-                              <div className="text-zinc-200 font-mono">{formatDateTime(s.date, s.createdAt)}</div>
+                              <div className="text-zinc-800 dark:text-zinc-200 font-mono">{formatDateTime(s.date, s.createdAt)}</div>
                             </div>
                             <div>
                               <span className="text-zinc-500 block text-[10px]">Sales yang Menangani:</span>
-                              <div className="text-zinc-200 font-semibold">{s.salesName || '-'}</div>
+                              <div className="text-zinc-800 dark:text-zinc-200 font-semibold">{s.salesName || '-'}</div>
                             </div>
-                            <div className="sm:col-span-2 pt-1 border-t border-zinc-800/60 flex items-center justify-between text-zinc-400 text-[10px]">
-                              <span>Status: <strong className={isTempo ? 'text-amber-400' : 'text-emerald-400'}>{isTempo ? 'Titip DP / Tempo' : 'Cash Lunas'}</strong></span>
-                              <span>ID Transaksi: <strong className="font-mono text-zinc-400">{s.id}</strong></span>
+                            <div className="sm:col-span-2 pt-1 border-t border-zinc-800/60 flex items-center justify-between text-zinc-500 dark:text-zinc-400 text-[10px]">
+                              <span>Status: <strong className={isTempo ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}>{isTempo ? 'Titip DP / Tempo' : 'Cash Lunas'}</strong></span>
+                              <span>ID Transaksi: <strong className="font-mono text-zinc-600 dark:text-zinc-400">{s.id}</strong></span>
                             </div>
                           </div>
                         </div>

@@ -123,13 +123,15 @@ export default function WorkshopService({ units = [], onAddRepair, mechanics = [
                     className="w-full p-2.5 rounded-xl bg-zinc-950 hover:bg-zinc-850 border border-zinc-800 hover:border-amber-500/50 flex items-center justify-between text-left transition-all group"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
-                        {selectedUnit.image ? (
-                          <img src={selectedUnit.image} alt={selectedUnit.model} className="w-full h-full object-cover" />
-                        ) : (
-                          <Wrench className="w-4 h-4 text-amber-400" />
-                        )}
-                      </div>
+                      {(selectedUnit.images?.[0] || selectedUnit.image) && (
+                        <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
+                          <img 
+                            src={selectedUnit.images?.[0] || selectedUnit.image} 
+                            alt={selectedUnit.model} 
+                            className="w-full h-full object-cover" 
+                          />
+                        </div>
+                      )}
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
@@ -373,10 +375,10 @@ export default function WorkshopService({ units = [], onAddRepair, mechanics = [
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div className="w-12 h-12 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
-                          {u.image ? (
-                            <img src={u.image} alt={u.model} className="w-full h-full object-cover" />
+                          {(u.images?.[0] || u.image) ? (
+                            <img src={u.images?.[0] || u.image} alt={u.model} className="w-full h-full object-cover" />
                           ) : (
-                            <Wrench className="w-4 h-4 text-zinc-600" />
+                            <span className="text-[11px] font-bold font-mono text-amber-500/80">{u.brand?.slice(0, 3)}</span>
                           )}
                         </div>
                         <div className="min-w-0">

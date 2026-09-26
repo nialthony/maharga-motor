@@ -225,7 +225,7 @@ export default function Navbar({
             </button>
             <button 
               onClick={() => setIsMobileMenuOpen(false)}
-              className="p-1 rounded-md text-zinc-400 hover:text-white"
+              className="p-1 rounded-md text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
             >
               <X className="w-5 h-5" />
             </button>
@@ -243,7 +243,7 @@ export default function Navbar({
                   className={`relative flex flex-col items-center justify-center p-3.5 rounded-xl text-center transition-all border ${
                     isActive 
                       ? 'bg-amber-500 text-zinc-950 border-amber-400 shadow-md font-bold' 
-                      : 'bg-zinc-900/90 text-zinc-300 border-zinc-800/80 hover:bg-zinc-850 hover:text-white'
+                      : 'bg-zinc-900/90 text-zinc-700 dark:text-zinc-300 border-zinc-800/80 hover:bg-zinc-850 hover:text-zinc-900 dark:hover:text-white'
                   }`}
                 >
                   {item.badge !== undefined && item.badge > 0 && (

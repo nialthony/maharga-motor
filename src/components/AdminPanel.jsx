@@ -8,7 +8,6 @@ import {
   ArrowLeft,
   Image as ImageIcon,
   Layers,
-  Sparkles,
   Link2,
   Check,
   RefreshCw,
@@ -542,21 +541,6 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
         {/* ========================================================= */}
         {activeModule === 'photos' && (
           <div className="space-y-5">
-            <div className="bg-gradient-to-r from-amber-500/10 via-zinc-900/40 to-zinc-900/40 dark:from-amber-950/40 dark:via-zinc-900 dark:to-zinc-900 border border-amber-500/30 dark:border-amber-800/40 rounded-2xl p-4 sm:p-5 shadow-sm">
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-amber-500 text-zinc-950 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                    Upload & Simpan Foto Motor Langsung ke Database
-                  </h3>
-                  <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed">
-                    Unggah foto motor dari galeri HP atau laptop. Foto otomatis dioptimalkan ukurannya dan <strong className="text-zinc-900 dark:text-zinc-100">langsung tersimpan permanen di database Supabase Cloud</strong>, sehingga langsung terlihat di katalog dan kasir pada seluruh perangkat staf.
-                  </p>
-                </div>
-              </div>
-            </div>
 
             {saveSuccessMsg && (
               <div className="p-3 rounded-lg bg-emerald-950 border border-emerald-800 text-emerald-300 text-xs font-bold flex items-center gap-2 animate-in fade-in">

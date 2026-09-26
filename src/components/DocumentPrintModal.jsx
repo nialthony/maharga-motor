@@ -15,14 +15,15 @@ export default function DocumentPrintModal({ transaction, onClose }) {
     }
 
     try {
-      // Create isolated printing iframe to eliminate dark modal/container clipping
+      // Create isolated printing iframe with actual A4 dimensions positioned off-screen
       const iframe = document.createElement('iframe');
       iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
+      iframe.style.top = '-9999px';
+      iframe.style.left = '-9999px';
+      iframe.style.width = '210mm';
+      iframe.style.height = '297mm';
       iframe.style.border = '0';
+      iframe.style.opacity = '0';
       document.body.appendChild(iframe);
 
       const frameDoc = iframe.contentWindow?.document;
@@ -42,21 +43,27 @@ export default function DocumentPrintModal({ transaction, onClose }) {
             <style>
               @page {
                 size: A4 portrait;
-                margin: 12mm 15mm;
+                margin: 8mm 12mm;
               }
               * {
                 box-sizing: border-box;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
               }
-              body {
+              html, body {
                 font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
                 color: #18181b;
                 background: #ffffff;
                 margin: 0;
-                padding: 10px;
-                font-size: 12px;
-                line-height: 1.5;
+                padding: 0;
+                font-size: 11px;
+                line-height: 1.4;
+              }
+              .doc-wrapper {
+                margin: 0;
+                padding: 0;
+                page-break-inside: avoid;
+                break-inside: avoid;
               }
               .font-mono { font-family: 'JetBrains Mono', monospace; }
               .font-bold { font-weight: 700; }
@@ -66,8 +73,8 @@ export default function DocumentPrintModal({ transaction, onClose }) {
               .text-right { text-align: right; }
               .uppercase { text-transform: uppercase; }
               .underline { text-decoration: underline; }
-              table { width: 100%; border-collapse: collapse; margin-top: 6px; margin-bottom: 6px; }
-              td, th { border: 1px solid #d4d4d8; padding: 6px 10px; font-size: 11px; }
+              table { width: 100%; border-collapse: collapse; margin-top: 4px; margin-bottom: 4px; }
+              td, th { border: 1px solid #d4d4d8; padding: 5px 8px; font-size: 11px; }
               .bg-zinc-50 { background-color: #fafafa !important; }
               .bg-zinc-100 { background-color: #f4f4f5 !important; }
               .border-zinc-200 { border: 1px solid #e4e4e7 !important; }
@@ -80,13 +87,15 @@ export default function DocumentPrintModal({ transaction, onClose }) {
               .text-zinc-600 { color: #52525b !important; }
               .text-zinc-800 { color: #27272a !important; }
               .text-zinc-900 { color: #18181b !important; }
-              .grid { display: flex; gap: 12px; }
+              .grid { display: flex; gap: 10px; }
               .grid-cols-2 > div { flex: 1; }
-              img { max-height: 40px; width: auto; }
+              img { max-height: 38px; width: auto; }
             </style>
           </head>
           <body>
-            ${printableElement.innerHTML}
+            <div class="doc-wrapper">
+              ${printableElement.innerHTML}
+            </div>
           </body>
         </html>
       `);
@@ -100,7 +109,7 @@ export default function DocumentPrintModal({ transaction, onClose }) {
             document.body.removeChild(iframe);
           }
         }, 1500);
-      }, 300);
+      }, 350);
     } catch {
       window.print();
     }
@@ -263,7 +272,7 @@ export default function DocumentPrintModal({ transaction, onClose }) {
 
           {/* Kwitansi */}
           {docType === 'kwitansi' && (
-            <div className="space-y-5 text-xs text-zinc-800">
+            <div className="space-y-3.5 text-xs text-zinc-800">
               <div className="text-center space-y-0.5">
                 <h2 className="text-sm font-black uppercase underline tracking-wide">
                   KWITANSI RESMI PEMBAYARAN
@@ -271,7 +280,7 @@ export default function DocumentPrintModal({ transaction, onClose }) {
                 <p className="text-[10px] text-zinc-500 font-mono">KWT/{transaction.id}/2026</p>
               </div>
 
-              <div className="space-y-2.5 bg-zinc-50 p-4 rounded-lg border border-zinc-200">
+              <div className="space-y-2 bg-zinc-50 p-3.5 rounded-lg border border-zinc-200">
                 <div className="flex border-b border-zinc-200 pb-2">
                   <span className="w-1/3 text-zinc-600">Telah Diterima Dari:</span>
                   <span className="font-bold text-zinc-900">{transaction.buyerName} ({transaction.buyerPhone})</span>
@@ -297,10 +306,10 @@ export default function DocumentPrintModal({ transaction, onClose }) {
                 )}
               </div>
 
-              <div className="pt-6 flex justify-end">
+              <div className="pt-4 flex justify-end">
                 <div className="text-center w-56 space-y-1">
                   <p className="text-zinc-600">Klaten, {transaction.date}</p>
-                  <p className="text-zinc-600 font-semibold mb-12">Kasir / Penerima,</p>
+                  <p className="text-zinc-600 font-semibold mb-8">Kasir / Penerima,</p>
                   <p className="font-bold text-zinc-900 underline">( {transaction.salesName} )</p>
                   <span className="text-[10px] text-zinc-500">Maharga Motor Official</span>
                 </div>

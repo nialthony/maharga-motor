@@ -11,7 +11,8 @@ import {
   History,
   X,
   User,
-  ExternalLink
+  ExternalLink,
+  ChevronDown
 } from 'lucide-react';
 import { formatIDR, calculateUnitEconomics } from '../data/mockData';
 
@@ -25,6 +26,14 @@ export default function Dashboard({
   onOpenNewUnit 
 }) {
   const [isSoldModalOpen, setIsSoldModalOpen] = useState(false);
+  const [expandedSaleIds, setExpandedSaleIds] = useState({});
+
+  const toggleExpandSale = (saleId) => {
+    setExpandedSaleIds(prev => ({
+      ...prev,
+      [saleId]: !prev[saleId]
+    }));
+  };
 
   const readyUnits = units.filter(u => u.status === 'Tersedia');
   const tempoUnits = salesList.filter(s => s.paymentMethod === 'dp-tempo' && s.status === 'Tempo Aktif');
@@ -574,45 +583,79 @@ export default function Dashboard({
                         </div>
                       </div>
 
-                      {/* Detail Pembeli */}
-                      <div className="p-3 rounded-lg bg-zinc-900/80 border border-zinc-850 space-y-2">
-                        <h5 className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+                      {/* Quick Summary Bar */}
+                      <div className="flex items-center justify-between text-[11px] text-zinc-400 pt-0.5">
+                        <span>Pembeli: <strong className="text-zinc-200">{s.buyerName || '-'}</strong></span>
+                        <span>Sales: <strong className="text-zinc-300">{s.salesName || '-'}</strong></span>
+                      </div>
+
+                      {/* Expand / Collapse Button */}
+                      <button
+                        type="button"
+                        onClick={() => toggleExpandSale(s.id)}
+                        className={`w-full py-1.5 px-3 rounded-lg text-xs font-medium flex items-center justify-between transition-colors border ${
+                          expandedSaleIds[s.id]
+                            ? 'bg-zinc-900 border-zinc-700 text-amber-300'
+                            : 'bg-zinc-900/60 hover:bg-zinc-900 border-zinc-800 text-zinc-300'
+                        }`}
+                        aria-expanded={!!expandedSaleIds[s.id]}
+                      >
+                        <span className="flex items-center gap-1.5">
                           <User className="w-3.5 h-3.5 text-blue-400" />
-                          <span>Detail Informasi Pembeli & Sales</span>
-                        </h5>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                          <div>
-                            <span className="text-zinc-500">Nama Pembeli:</span>
-                            <div className="font-semibold text-zinc-200">{s.buyerName || '-'}</div>
-                          </div>
-                          <div>
-                            <span className="text-zinc-500">No. WhatsApp / HP:</span>
+                          <span>{expandedSaleIds[s.id] ? 'Sembunyikan Rincian Pembeli & Dokumen' : 'Lihat Detail Rincian Pembeli & Transaksi'}</span>
+                        </span>
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedSaleIds[s.id] ? 'rotate-180 text-amber-400' : 'text-zinc-500'}`} />
+                      </button>
+
+                      {/* Collapsible Detail Content */}
+                      {expandedSaleIds[s.id] && (
+                        <div className="p-3.5 rounded-lg bg-zinc-900/90 border border-zinc-800 space-y-2.5 animate-fadeIn">
+                          <h5 className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5 border-b border-zinc-800/60 pb-1.5">
+                            <User className="w-3.5 h-3.5 text-blue-400" />
+                            <span>Detail Lengkap Pembeli & Kontak</span>
+                          </h5>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
                             <div>
-                              {s.buyerPhone ? (
-                                <a 
-                                  href={`https://wa.me/${s.buyerPhone.replace(/[^0-9]/g, '')}`} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="text-amber-400 font-mono font-bold hover:underline inline-flex items-center gap-1"
-                                >
-                                  <span>{s.buyerPhone}</span>
-                                  <ExternalLink className="w-3 h-3" />
-                                </a>
-                              ) : (
-                                <span className="text-zinc-500">-</span>
-                              )}
+                              <span className="text-zinc-500 block text-[10px]">Nama Lengkap Pembeli:</span>
+                              <div className="font-semibold text-zinc-200">{s.buyerName || '-'}</div>
+                            </div>
+                            <div>
+                              <span className="text-zinc-500 block text-[10px]">No. WhatsApp / HP:</span>
+                              <div>
+                                {s.buyerPhone ? (
+                                  <a 
+                                    href={`https://wa.me/${s.buyerPhone.replace(/[^0-9]/g, '')}`} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-amber-400 font-mono font-bold hover:underline inline-flex items-center gap-1"
+                                  >
+                                    <span>{s.buyerPhone}</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                ) : (
+                                  <span className="text-zinc-500">-</span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="sm:col-span-2">
+                              <span className="text-zinc-500 block text-[10px]">Alamat Domisili:</span>
+                              <div className="text-zinc-300">{s.buyerAddress || '-'}</div>
+                            </div>
+                            <div>
+                              <span className="text-zinc-500 block text-[10px]">Waktu Transaksi Lengkap:</span>
+                              <div className="text-zinc-200 font-mono">{formatDateTime(s.date, s.createdAt)}</div>
+                            </div>
+                            <div>
+                              <span className="text-zinc-500 block text-[10px]">Sales yang Menangani:</span>
+                              <div className="text-zinc-200 font-semibold">{s.salesName || '-'}</div>
+                            </div>
+                            <div className="sm:col-span-2 pt-1 border-t border-zinc-800/60 flex items-center justify-between text-zinc-400 text-[10px]">
+                              <span>Status: <strong className={isTempo ? 'text-amber-400' : 'text-emerald-400'}>{isTempo ? 'Titip DP / Tempo' : 'Cash Lunas'}</strong></span>
+                              <span>ID Transaksi: <strong className="font-mono text-zinc-400">{s.id}</strong></span>
                             </div>
                           </div>
-                          <div className="sm:col-span-2">
-                            <span className="text-zinc-500">Alamat Domisili:</span>
-                            <div className="text-zinc-300">{s.buyerAddress || '-'}</div>
-                          </div>
-                          <div className="sm:col-span-2 pt-1 border-t border-zinc-800/60 flex items-center justify-between text-zinc-400 text-[10px]">
-                            <span>Sales Pelayan: <strong className="text-zinc-200">{s.salesName || '-'}</strong></span>
-                            <span>ID Transaksi: <strong className="font-mono text-zinc-400">{s.id}</strong></span>
-                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   );
                 })

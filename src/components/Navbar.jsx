@@ -6,15 +6,12 @@ import {
   Clock, 
   Wrench, 
   BarChart3, 
-  Plus, 
+  Plus,
   Users, 
   User,
-  KeyRound, 
   Menu, 
   X, 
   DollarSign,
-  Settings,
-  Cloud,
   LogOut
 } from 'lucide-react';
 import RoleBadge from './RoleBadge';
@@ -24,12 +21,9 @@ export default function Navbar({
   setActiveTab, 
   currentUser,
   onOpenNewUnit,
-  onOpenLoginModal,
-  onOpenAdminPanel,
   onOpenProfile,
   availableCount,
   tempoAlertCount,
-  cloudSyncStatus = 'synced',
   onLogout
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -105,53 +99,8 @@ export default function Navbar({
               </div>
             </div>
 
-            {/* Desktop Action Buttons */}
+            {/* Desktop Action Buttons: Profile & Logout Only */}
             <div className="flex items-center gap-2">
-              {/* Cloud Sync Status Indicator */}
-              <div 
-                className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-[10px] font-mono font-medium"
-                title="Status Sinkronisasi Cloud Supabase"
-              >
-                {cloudSyncStatus === 'syncing' ? (
-                  <>
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                    <span className="text-zinc-400">Sinkronisasi...</span>
-                  </>
-                ) : cloudSyncStatus === 'synced' ? (
-                  <>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    <Cloud className="w-3 h-3 text-emerald-400" />
-                    <span className="text-emerald-400 font-bold">Cloud Live</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
-                    <span className="text-zinc-400">Offline Cache</span>
-                  </>
-                )}
-              </div>
-
-              {isOwnerOrAdmin && (
-                <button
-                  onClick={onOpenAdminPanel}
-                  className="hidden md:flex px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-amber-400 border border-amber-500/30 font-bold text-xs shadow-sm transition-all items-center gap-1.5"
-                  title="Buka Admin Panel (Kelola Foto, File, Database)"
-                >
-                  <Settings className="w-3.5 h-3.5" />
-                  Admin Panel
-                </button>
-              )}
-
-              {isOwnerOrAdmin && (
-                <button
-                  onClick={onOpenNewUnit}
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs shadow-sm transition-all"
-                >
-                  <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                  Input Unit
-                </button>
-              )}
-
               {/* User Profile Pill */}
               <button
                 onClick={onOpenProfile}
@@ -177,15 +126,6 @@ export default function Navbar({
                 </div>
               </button>
 
-              {/* Ganti Akun Quick Button */}
-              <button
-                onClick={onOpenLoginModal}
-                className="hidden sm:flex items-center gap-1 px-2 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs font-medium transition-colors"
-                title="Ganti Akun Staf"
-              >
-                <KeyRound className="w-3.5 h-3.5 text-zinc-500" />
-              </button>
-
               {/* Logout Button */}
               {onLogout && (
                 <button
@@ -202,10 +142,10 @@ export default function Navbar({
           </div>
         </div>
 
-        {/* Desktop Tabs Bar */}
+        {/* Desktop Tabs Bar - Centered */}
         <div className="hidden md:block border-t border-zinc-800 bg-zinc-950">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <nav className="flex space-x-1 overflow-x-auto py-1.5 no-scrollbar">
+            <nav className="flex items-center justify-center space-x-1 overflow-x-auto py-1.5 no-scrollbar">
               {currentNavItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;

@@ -1,14 +1,28 @@
-import React, { useState } from 'react';
-import { Wrench, Plus } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Wrench, Plus, Users } from 'lucide-react';
 import { formatIDR } from '../data/mockData';
 import RoleBadge from './RoleBadge';
 
-export default function WorkshopService({ units = [], onAddRepair, mechanics = [] }) {
+export default function WorkshopService({ units = [], onAddRepair, mechanics = [], employees = [] }) {
+  // Ambil daftar mekanik terdaftar dari tabel employees & props mechanics
+  const registeredFromEmployees = useMemo(() => {
+    return (employees || []).filter(e => 
+      (e.role === 'mechanic' || e.role === 'mekanik') && e.status !== 'inactive' && e.status !== 'suspended'
+    );
+  }, [employees]);
+
+  const allMechanics = useMemo(() => {
+    return registeredFromEmployees.length > 0 
+      ? registeredFromEmployees 
+      : (mechanics.length > 0 ? mechanics : []);
+  }, [registeredFromEmployees, mechanics]);
+
   const [selectedUnitId, setSelectedUnitId] = useState(units[0]?.id || '');
   const [item, setItem] = useState('');
-  const [mechanic, setMechanic] = useState(mechanics[0]?.name || '');
+  const [mechanic, setMechanic] = useState('');
   const [cost, setCost] = useState(150000);
 
+  const activeMechanic = mechanic || (allMechanics.length > 0 ? allMechanics[0].name : 'Bengkel Luar / Pihak Ketiga');
   const selectedUnit = units.find(u => u.id === Number(selectedUnitId)) || units[0];
 
   const handleAdd = (e) => {
@@ -19,7 +33,7 @@ export default function WorkshopService({ units = [], onAddRepair, mechanics = [
       id: Date.now(),
       date: new Date().toISOString().split('T')[0],
       item,
-      mechanic,
+      mechanic: activeMechanic,
       cost: Number(cost)
     };
 
@@ -94,16 +108,22 @@ export default function WorkshopService({ units = [], onAddRepair, mechanics = [
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="text-xs font-medium text-zinc-300 block mb-1">Mekanik</label>
+                  <label className="text-xs font-medium text-zinc-300 block mb-1">Mekanik Pelaksana</label>
                   <select
-                    value={mechanic}
+                    value={activeMechanic}
                     onChange={(e) => setMechanic(e.target.value)}
                     className="w-full px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-100 text-xs focus:outline-none focus:border-amber-400"
                   >
-                    {mechanics.map((m) => (
-                      <option key={m.id} value={m.name}>{m.name}</option>
-                    ))}
-                    <option value="Bengkel Luar">Pihak Ketiga (Luar)</option>
+                    {allMechanics.length > 0 ? (
+                      allMechanics.map((m) => (
+                        <option key={m.id || m.username} value={m.name}>
+                          {m.name} (@{m.username || 'mekanik'})
+                        </option>
+                      ))
+                    ) : (
+                      <option value="">(Belum ada staf mekanik)</option>
+                    )}
+                    <option value="Bengkel Luar / Pihak Ketiga">Bengkel Luar / Pihak Ketiga</option>
                   </select>
                 </div>
 
@@ -129,17 +149,35 @@ export default function WorkshopService({ units = [], onAddRepair, mechanics = [
 
             {/* Roster Mekanik */}
             <div className="bg-zinc-900/80 rounded-xl p-4 border border-zinc-800 space-y-2 text-xs">
-              <h4 className="font-bold text-zinc-400 uppercase tracking-wider text-[10px]">Mekanik Showroom</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-zinc-400 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Mekanik Showroom</span>
+                </h4>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-zinc-800 text-zinc-300 border border-zinc-700">
+                  {allMechanics.length} Staf
+                </span>
+              </div>
               <div className="space-y-1.5">
-                {mechanics.map((m) => (
-                  <div key={m.id} className="p-2 rounded bg-zinc-950 flex items-center justify-between border border-zinc-800/60">
-                    <div>
-                      <span className="font-bold text-zinc-200 block">{m.name}</span>
-                      <RoleBadge role={m.role || 'mechanic'} className="h-4 w-auto mt-0.5" />
+                {allMechanics.length > 0 ? (
+                  allMechanics.map((m) => (
+                    <div key={m.id || m.username} className="p-2 rounded bg-zinc-950 flex items-center justify-between border border-zinc-800/60">
+                      <div>
+                        <span className="font-bold text-zinc-200 block">{m.name}</span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <RoleBadge role={m.role || 'mechanic'} className="h-4 w-auto" />
+                          <span className="text-[10px] text-zinc-500 font-mono">@{m.username}</span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold text-emerald-400">Aktif</span>
                     </div>
-                    <span className="text-[10px] font-bold text-emerald-400">Aktif</span>
+                  ))
+                ) : (
+                  <div className="p-3 rounded-lg bg-zinc-950/60 border border-zinc-800/80 text-center text-zinc-500 text-[11px] space-y-1">
+                    <p>Belum ada staf dengan role mekanik terdaftar.</p>
+                    <p className="text-[10px] text-zinc-400">Tambahkan akun staf role <strong>Mekanik</strong> di menu Karyawan.</p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>

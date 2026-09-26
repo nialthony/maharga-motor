@@ -500,6 +500,7 @@ export default function App() {
             units={units}
             onAddRepair={handleAddRepair}
             mechanics={mechanics}
+            employees={employees}
           />
         )}
 

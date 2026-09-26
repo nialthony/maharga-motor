@@ -55,9 +55,6 @@ export default function OwnerFinancialReport({ salesList = [], employees = [], u
             <h2 className="text-sm sm:text-base font-bold text-zinc-100 font-mono">
               Laporan Finansial & Penggajian Komisi Showroom
             </h2>
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-950 text-amber-400 border border-amber-800">
-              PORTAL OWNER
-            </span>
           </div>
           <p className="text-[11px] text-zinc-400 mt-0.5">
             Laporan laba kotor, perputaran modal HPP riil, dan rekapitulasi komisi seluruh tim sales.

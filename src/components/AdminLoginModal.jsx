@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import LogoLoadingOverlay from './LogoLoadingOverlay';
 import { prepareLoadingSfx } from '../lib/soundFx';
 import TurnstileWidget from './TurnstileWidget';
+import { TURNSTILE_SITE_KEY } from '../lib/turnstile';
 
 export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
   const [authStep, setAuthStep] = useState('credentials'); // 'credentials' | 'pin_factor'
@@ -37,7 +38,7 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
       return;
     }
 
-    if (import.meta.env.VITE_TURNSTILE_SITE_KEY && !captchaToken) {
+    if (TURNSTILE_SITE_KEY && !captchaToken) {
       setErrorMsg('Selesaikan verifikasi Cloudflare Turnstile terlebih dahulu.');
       return;
     }
@@ -57,11 +58,7 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
       if (authError || !authData.user) {
         let msg = authError?.message || 'Email atau kata sandi salah.';
         if (msg.toLowerCase().includes('no captcha_token found') || msg.toLowerCase().includes('captcha protection')) {
-          if (!import.meta.env.VITE_TURNSTILE_SITE_KEY) {
-            msg = 'Supabase Captcha Protection aktif di project Anda, namun VITE_TURNSTILE_SITE_KEY belum diisi di .env. Matikan Captcha di Supabase Dashboard (Auth > Bot Protection) atau pasang Site Key Turnstile di .env.';
-          } else {
-            msg = 'Verifikasi captcha diperlukan. Silakan centang kotak verifikasi Cloudflare Turnstile di bawah.';
-          }
+          msg = 'Verifikasi captcha diperlukan oleh Supabase. Silakan centang kotak verifikasi Cloudflare Turnstile di bawah.';
         }
         throw new Error(msg);
       }
@@ -246,16 +243,18 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
               </div>
             </div>
 
-            {/* Cloudflare Turnstile Widget (aktif jika VITE_TURNSTILE_SITE_KEY ada di .env) */}
-            <TurnstileWidget 
-              onVerify={(token) => setCaptchaToken(token)}
-              onExpire={() => setCaptchaToken(null)}
-              resetKey={captchaResetKey}
-            />
+            {/* Cloudflare Turnstile Widget */}
+            {TURNSTILE_SITE_KEY && (
+              <TurnstileWidget 
+                onVerify={(token) => setCaptchaToken(token)}
+                onExpire={() => setCaptchaToken(null)}
+                resetKey={captchaResetKey}
+              />
+            )}
 
             <button
               type="submit"
-              disabled={isLoading || !email.trim() || password.length < 12 || (Boolean(import.meta.env.VITE_TURNSTILE_SITE_KEY) && !captchaToken)}
+              disabled={isLoading || !email.trim() || password.length < 12 || (Boolean(TURNSTILE_SITE_KEY) && !captchaToken)}
               className="w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-zinc-950 font-bold text-xs transition-colors shadow-sm mt-2 min-h-[40px] flex items-center justify-center gap-1.5"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Lanjut ke PIN</span>}

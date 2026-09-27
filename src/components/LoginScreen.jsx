@@ -16,6 +16,7 @@ import LogoLoadingOverlay from './LogoLoadingOverlay';
 import { prepareLoadingSfx } from '../lib/soundFx';
 import RoleBadge from './RoleBadge';
 import TurnstileWidget from './TurnstileWidget';
+import { TURNSTILE_SITE_KEY } from '../lib/turnstile';
 
 export default function LoginScreen({ onLoginSuccess }) {
   // Step 1: Supabase Auth (Email + Password >= 12 chars)
@@ -60,7 +61,7 @@ export default function LoginScreen({ onLoginSuccess }) {
       return;
     }
 
-    if (import.meta.env.VITE_TURNSTILE_SITE_KEY && !captchaToken) {
+    if (TURNSTILE_SITE_KEY && !captchaToken) {
       setErrorMsg('Silakan selesaikan verifikasi Cloudflare Turnstile di bawah.');
       return;
     }
@@ -83,11 +84,7 @@ export default function LoginScreen({ onLoginSuccess }) {
       if (authError || !authData.user) {
         let msg = authError?.message || 'Email atau kata sandi tidak valid. Akses ditolak.';
         if (msg.toLowerCase().includes('no captcha_token found') || msg.toLowerCase().includes('captcha protection')) {
-          if (!import.meta.env.VITE_TURNSTILE_SITE_KEY) {
-            msg = 'Supabase Captcha Protection aktif di project Anda, namun VITE_TURNSTILE_SITE_KEY belum diisi di .env. Matikan Captcha di Supabase Dashboard (Auth > Bot Protection) atau pasang Site Key Turnstile di .env.';
-          } else {
-            msg = 'Verifikasi captcha diperlukan. Silakan centang kotak verifikasi Cloudflare Turnstile di bawah.';
-          }
+          msg = 'Verifikasi captcha diperlukan oleh Supabase. Silakan centang kotak verifikasi Cloudflare Turnstile di bawah.';
         }
         throw new Error(msg);
       }
@@ -329,17 +326,19 @@ export default function LoginScreen({ onLoginSuccess }) {
                   </div>
                 </div>
 
-                {/* Cloudflare Turnstile Widget (aktif jika VITE_TURNSTILE_SITE_KEY ada di .env) */}
-                <TurnstileWidget 
-                  onVerify={(token) => setCaptchaToken(token)}
-                  onExpire={() => setCaptchaToken(null)}
-                  resetKey={captchaResetKey}
-                />
+                {/* Cloudflare Turnstile Widget */}
+                {TURNSTILE_SITE_KEY && (
+                  <TurnstileWidget 
+                    onVerify={(token) => setCaptchaToken(token)}
+                    onExpire={() => setCaptchaToken(null)}
+                    resetKey={captchaResetKey}
+                  />
+                )}
 
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  disabled={isLoading || !email.trim() || password.length < 12 || (Boolean(import.meta.env.VITE_TURNSTILE_SITE_KEY) && !captchaToken)}
+                  disabled={isLoading || !email.trim() || password.length < 12 || (Boolean(TURNSTILE_SITE_KEY) && !captchaToken)}
                   className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-950 font-bold text-sm transition-all shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2 min-h-[48px] active:scale-[0.99] mt-2"
                 >
                   {isLoading ? (

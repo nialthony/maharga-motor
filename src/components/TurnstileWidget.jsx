@@ -2,20 +2,26 @@ import React, { useEffect, useRef } from 'react';
 
 /**
  * Cloudflare Turnstile Captcha Widget Component
- * Digunakan jika Supabase Auth mengaktifkan Captcha Protection.
+ * Digunakan untuk Cloudflare Turnstile bot protection di Supabase Auth.
  * Membaca Site Key dari VITE_TURNSTILE_SITE_KEY.
  */
-export default function TurnstileWidget({ onVerify, onExpire, onError }) {
+export default function TurnstileWidget({ onVerify, onExpire, onError, resetKey }) {
   const containerRef = useRef(null);
   const widgetIdRef = useRef(null);
   const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
+  // Simpan callbacks di ref agar perubahan fungsi parent tidak memicu re-render widget
+  const callbacksRef = useRef({ onVerify, onExpire, onError });
+  useEffect(() => {
+    callbacksRef.current = { onVerify, onExpire, onError };
+  });
+
+  // Effect untuk inisialisasi & render widget sekali saat siteKey tersedia
   useEffect(() => {
     if (!siteKey || !containerRef.current) return;
 
     let isMounted = true;
 
-    // Load Cloudflare Turnstile script dynamically if not present
     const loadScript = () => {
       if (document.getElementById('cloudflare-turnstile-script')) {
         return Promise.resolve();
@@ -36,7 +42,11 @@ export default function TurnstileWidget({ onVerify, onExpire, onError }) {
       if (!isMounted || !containerRef.current || !window.turnstile) return;
       try {
         if (widgetIdRef.current) {
-          window.turnstile.remove(widgetIdRef.current);
+          try {
+            window.turnstile.remove(widgetIdRef.current);
+          } catch {
+            // ignore
+          }
           widgetIdRef.current = null;
         }
 
@@ -44,13 +54,13 @@ export default function TurnstileWidget({ onVerify, onExpire, onError }) {
         const id = window.turnstile.render(containerRef.current, {
           sitekey: siteKey,
           callback: (token) => {
-            if (isMounted) onVerify?.(token);
+            if (isMounted) callbacksRef.current.onVerify?.(token);
           },
           'expired-callback': () => {
-            if (isMounted) onExpire?.();
+            if (isMounted) callbacksRef.current.onExpire?.();
           },
           'error-callback': (err) => {
-            if (isMounted) onError?.(err);
+            if (isMounted) callbacksRef.current.onError?.(err);
           },
           theme: isLight ? 'light' : 'dark',
           size: 'flexible'
@@ -90,7 +100,18 @@ export default function TurnstileWidget({ onVerify, onExpire, onError }) {
         widgetIdRef.current = null;
       }
     };
-  }, [siteKey, onVerify, onExpire, onError]);
+  }, [siteKey]);
+
+  // Effect untuk reset widget jika resetKey berubah (misal setelah login gagal)
+  useEffect(() => {
+    if (resetKey && widgetIdRef.current && window.turnstile) {
+      try {
+        window.turnstile.reset(widgetIdRef.current);
+      } catch (err) {
+        console.warn('Turnstile reset error:', err);
+      }
+    }
+  }, [resetKey]);
 
   if (!siteKey) return null;
 

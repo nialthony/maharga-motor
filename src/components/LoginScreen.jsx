@@ -27,6 +27,7 @@ export default function LoginScreen({ onLoginSuccess }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [captchaToken, setCaptchaToken] = useState(null);
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
 
   // Step 2 State
   const [employeeProfile, setEmployeeProfile] = useState(null);
@@ -56,6 +57,11 @@ export default function LoginScreen({ onLoginSuccess }) {
 
     if (password.length < 12) {
       setErrorMsg('Kata sandi harus minimal 12 karakter sesuai standar keamanan.');
+      return;
+    }
+
+    if (import.meta.env.VITE_TURNSTILE_SITE_KEY && !captchaToken) {
+      setErrorMsg('Silakan selesaikan verifikasi Cloudflare Turnstile di bawah.');
       return;
     }
 
@@ -120,6 +126,8 @@ export default function LoginScreen({ onLoginSuccess }) {
     } catch (err) {
       console.error('Login gagal:', err);
       setErrorMsg(err.message || 'Gagal masuk. Periksa email dan kata sandi Anda.');
+      setCaptchaToken(null);
+      setCaptchaResetKey(prev => prev + 1);
     } finally {
       setIsLoading(false);
     }
@@ -325,12 +333,13 @@ export default function LoginScreen({ onLoginSuccess }) {
                 <TurnstileWidget 
                   onVerify={(token) => setCaptchaToken(token)}
                   onExpire={() => setCaptchaToken(null)}
+                  resetKey={captchaResetKey}
                 />
 
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  disabled={isLoading || !email.trim() || password.length < 12}
+                  disabled={isLoading || !email.trim() || password.length < 12 || (Boolean(import.meta.env.VITE_TURNSTILE_SITE_KEY) && !captchaToken)}
                   className="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-950 font-bold text-sm transition-all shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2 min-h-[48px] active:scale-[0.99] mt-2"
                 >
                   {isLoading ? (

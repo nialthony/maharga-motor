@@ -11,6 +11,7 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [captchaToken, setCaptchaToken] = useState(null);
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
 
   const [pin, setPin] = useState('');
   const [employeeProfile, setEmployeeProfile] = useState(null);
@@ -33,6 +34,11 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
 
     if (password.length < 12) {
       setErrorMsg('Kata sandi harus minimal 12 karakter.');
+      return;
+    }
+
+    if (import.meta.env.VITE_TURNSTILE_SITE_KEY && !captchaToken) {
+      setErrorMsg('Selesaikan verifikasi Cloudflare Turnstile terlebih dahulu.');
       return;
     }
 
@@ -86,6 +92,8 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
     } catch (err) {
       console.error('Login modal error:', err);
       setErrorMsg(err.message || 'Kredensial tidak valid.');
+      setCaptchaToken(null);
+      setCaptchaResetKey(prev => prev + 1);
     } finally {
       setIsLoading(false);
     }
@@ -242,11 +250,12 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
             <TurnstileWidget 
               onVerify={(token) => setCaptchaToken(token)}
               onExpire={() => setCaptchaToken(null)}
+              resetKey={captchaResetKey}
             />
 
             <button
               type="submit"
-              disabled={isLoading || !email.trim() || password.length < 12}
+              disabled={isLoading || !email.trim() || password.length < 12 || (Boolean(import.meta.env.VITE_TURNSTILE_SITE_KEY) && !captchaToken)}
               className="w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-zinc-950 font-bold text-xs transition-colors shadow-sm mt-2 min-h-[40px] flex items-center justify-center gap-1.5"
             >
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Lanjut ke PIN</span>}

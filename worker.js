@@ -29,7 +29,7 @@ const SECURITY_HEADERS = {
 };
 
 // Regex untuk mendeteksi dotfiles atau ekstensi berkas non-SPA yang harus 404 jika tidak ada
-const BLOCKED_FILE_REGEX = /(\/\.[a-zA-Z0-9_\-]+|\.(env|git|sql|json|yml|yaml|toml|bak|config|lock|md|sh|ps1))$/i;
+const BLOCKED_FILE_REGEX = /(\/\.[a-zA-Z0-9_\-]+(\/.*)?$|\.(env|git|sql|json|yml|yaml|toml|bak|config|lock|md|sh|ps1)$)/i;
 
 export default {
   async fetch(request, env) {

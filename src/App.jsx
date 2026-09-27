@@ -384,6 +384,10 @@ export default function App() {
   const handleLogout = async () => {
     try {
       sessionStorage.removeItem('maharga_auth_user');
+      // Bersihkan cache data bisnis sensitif dari browser saat logout (keamanan perangkat bersama)
+      localStorage.removeItem('maharga_units_v3_clean');
+      localStorage.removeItem('maharga_sales_v3_clean');
+      localStorage.removeItem('maharga_employees_v3_clean');
       if (supabase) {
         await supabase.auth.signOut();
       }
@@ -391,6 +395,8 @@ export default function App() {
       console.warn('Logout error', e);
     }
     setCurrentUser(null);
+    setUnits([]);
+    setSalesList([]);
     setIsAdminPanelOpen(false);
     setIsLoginModalOpen(false);
   };

@@ -11,8 +11,7 @@ const securityHeadersPlugin = () => ({
   name: 'security-headers-and-404-guard',
   configureServer(server) {
     server.middlewares.use((req, res, next) => {
-      // 404 Sungguhan untuk dotfiles dan file sensitif
-      if (req.url && /(\/\.[a-zA-Z0-9_\-]+|\.(env|git|sql|json|yml|yaml|toml|bak|config|lock|md|sh|ps1))$/i.test(req.url.split('?')[0])) {
+      if (req.url && /(\/\.[a-zA-Z0-9_\-]+(\/.*)?$|\.(env|git|sql|json|yml|yaml|toml|bak|config|lock|md|sh|ps1)$)/i.test(req.url.split('?')[0])) {
         res.statusCode = 404;
         res.setHeader('Content-Type', 'text/plain');
         return res.end('404 Not Found');
@@ -33,8 +32,7 @@ const securityHeadersPlugin = () => ({
   },
   configurePreviewServer(server) {
     server.middlewares.use((req, res, next) => {
-      // 404 Sungguhan untuk dotfiles dan file sensitif pada Preview
-      if (req.url && /(\/\.[a-zA-Z0-9_\-]+|\.(env|git|sql|json|yml|yaml|toml|bak|config|lock|md|sh|ps1))$/i.test(req.url.split('?')[0])) {
+      if (req.url && /(\/\.[a-zA-Z0-9_\-]+(\/.*)?$|\.(env|git|sql|json|yml|yaml|toml|bak|config|lock|md|sh|ps1)$)/i.test(req.url.split('?')[0])) {
         res.statusCode = 404;
         res.setHeader('Content-Type', 'text/plain');
         return res.end('404 Not Found');

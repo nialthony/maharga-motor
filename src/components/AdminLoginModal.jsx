@@ -3,12 +3,14 @@ import { Lock, AlertCircle, X, Eye, EyeOff, Mail, KeyRound, Loader2 } from 'luci
 import { supabase } from '../lib/supabaseClient';
 import LogoLoadingOverlay from './LogoLoadingOverlay';
 import { prepareLoadingSfx } from '../lib/soundFx';
+import TurnstileWidget from './TurnstileWidget';
 
 export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
   const [authStep, setAuthStep] = useState('credentials'); // 'credentials' | 'pin_factor'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState(null);
 
   const [pin, setPin] = useState('');
   const [employeeProfile, setEmployeeProfile] = useState(null);
@@ -39,16 +41,24 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
     try {
       if (!supabase) throw new Error('Supabase client tidak tersedia.');
 
+      const signInOptions = captchaToken ? { captchaToken } : undefined;
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
-        password: password
+        password: password,
+        options: signInOptions
       });
 
       if (authError || !authData.user) {
-        throw new Error(authError?.message || 'Email atau kata sandi salah.');
+        let msg = authError?.message || 'Email atau kata sandi salah.';
+        if (msg.toLowerCase().includes('no captcha_token found') || msg.toLowerCase().includes('captcha protection')) {
+          if (!import.meta.env.VITE_TURNSTILE_SITE_KEY) {
+            msg = 'Supabase Captcha Protection aktif di project Anda, namun VITE_TURNSTILE_SITE_KEY belum diisi di .env. Matikan Captcha di Supabase Dashboard (Auth > Bot Protection) atau pasang Site Key Turnstile di .env.';
+          } else {
+            msg = 'Verifikasi captcha diperlukan. Silakan centang kotak verifikasi Cloudflare Turnstile di bawah.';
+          }
+        }
+        throw new Error(msg);
       }
-
-      setAuthenticatedSessionUser(authData.user);
 
       // Ambil data profil karyawan
       const { data: emp } = await supabase
@@ -227,6 +237,12 @@ export default function AdminLoginModal({ isOpen, onClose, onLoginSuccess }) {
                 </button>
               </div>
             </div>
+
+            {/* Cloudflare Turnstile Widget (aktif jika VITE_TURNSTILE_SITE_KEY ada di .env) */}
+            <TurnstileWidget 
+              onVerify={(token) => setCaptchaToken(token)}
+              onExpire={() => setCaptchaToken(null)}
+            />
 
             <button
               type="submit"

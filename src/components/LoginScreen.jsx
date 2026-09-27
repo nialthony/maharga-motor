@@ -15,6 +15,7 @@ import { supabase } from '../lib/supabaseClient';
 import LogoLoadingOverlay from './LogoLoadingOverlay';
 import { prepareLoadingSfx } from '../lib/soundFx';
 import RoleBadge from './RoleBadge';
+import TurnstileWidget from './TurnstileWidget';
 
 export default function LoginScreen({ onLoginSuccess }) {
   // Step 1: Supabase Auth (Email + Password >= 12 chars)
@@ -25,6 +26,7 @@ export default function LoginScreen({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState(null);
 
   // Step 2 State
   const [employeeProfile, setEmployeeProfile] = useState(null);
@@ -65,13 +67,23 @@ export default function LoginScreen({ onLoginSuccess }) {
       }
 
       // 1. Otentikasi Resmi via Supabase Auth
+      const signInOptions = captchaToken ? { captchaToken } : undefined;
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
-        password: password
+        password: password,
+        options: signInOptions
       });
 
       if (authError || !authData.user) {
-        throw new Error(authError?.message || 'Email atau kata sandi tidak valid. Akses ditolak.');
+        let msg = authError?.message || 'Email atau kata sandi tidak valid. Akses ditolak.';
+        if (msg.toLowerCase().includes('no captcha_token found') || msg.toLowerCase().includes('captcha protection')) {
+          if (!import.meta.env.VITE_TURNSTILE_SITE_KEY) {
+            msg = 'Supabase Captcha Protection aktif di project Anda, namun VITE_TURNSTILE_SITE_KEY belum diisi di .env. Matikan Captcha di Supabase Dashboard (Auth > Bot Protection) atau pasang Site Key Turnstile di .env.';
+          } else {
+            msg = 'Verifikasi captcha diperlukan. Silakan centang kotak verifikasi Cloudflare Turnstile di bawah.';
+          }
+        }
+        throw new Error(msg);
       }
 
       // 2. Ambil data profil karyawan yang terhubung
@@ -198,7 +210,6 @@ export default function LoginScreen({ onLoginSuccess }) {
       // ignore
     }
     setAuthStep('credentials');
-    setAuthenticatedSessionUser(null);
     setEmployeeProfile(null);
     setPin('');
     setPassword('');
@@ -309,6 +320,12 @@ export default function LoginScreen({ onLoginSuccess }) {
                     </button>
                   </div>
                 </div>
+
+                {/* Cloudflare Turnstile Widget (aktif jika VITE_TURNSTILE_SITE_KEY ada di .env) */}
+                <TurnstileWidget 
+                  onVerify={(token) => setCaptchaToken(token)}
+                  onExpire={() => setCaptchaToken(null)}
+                />
 
                 {/* Submit Button */}
                 <button

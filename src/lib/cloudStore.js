@@ -530,3 +530,37 @@ export const subscribeToCloudRealtime = (onRemoteUpdate) => {
   }
 };
 
+/**
+ * Simpan pengaturan sistem showroom ke Supabase Cloud
+ */
+export const saveSystemSettingsToCloud = async (settings) => {
+  if (!isSupabaseConfigured() || !supabase) return false;
+  try {
+    await supabase.from('system_settings').upsert({
+      key: 'showroom_profile',
+      value: settings
+    }, { onConflict: 'key' });
+    return true;
+  } catch (err) {
+    console.warn('Gagal simpan pengaturan sistem ke Supabase:', err);
+    return false;
+  }
+};
+
+/**
+ * Simpan master merk dan tipe motor ke Supabase Cloud
+ */
+export const saveMasterTypesToCloud = async (brands, types) => {
+  if (!isSupabaseConfigured() || !supabase) return false;
+  try {
+    await supabase.from('system_settings').upsert([
+      { key: 'master_motor_brands', value: brands },
+      { key: 'master_motor_types', value: types }
+    ], { onConflict: 'key' });
+    return true;
+  } catch (err) {
+    console.warn('Gagal simpan master jenis motor ke Supabase:', err);
+    return false;
+  }
+};
+

@@ -1,20 +1,30 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   X, 
   Calculator,
   Upload,
   Image as ImageIcon,
   Check,
-  FileText,
   ShieldCheck
 } from 'lucide-react';
-import { formatIDR } from '../data/mockData';
+import { formatIDR, initialBrands, initialTypes } from '../data/mockData';
 
-export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
+export default function NewUnitModal({ 
+  isOpen, 
+  onClose, 
+  onAddUnit, 
+  brands = initialBrands, 
+  types = initialTypes 
+}) {
   const [brand, setBrand] = useState('Honda');
   const [model, setModel] = useState('');
   const [year, setYear] = useState(2023);
-  const [plate, setPlate] = useState('AD ');
+  
+  // 3-Part Plate Input matching live system (nopol_1, nopol_2, nopol_3)
+  const [nopol1, setNopol1] = useState('AD');
+  const [nopol2, setNopol2] = useState('');
+  const [nopol3, setNopol3] = useState('');
+
   const [color, setColor] = useState('Hitam');
   const [odometer, setOdometer] = useState(12000);
   const [taxStatus, setTaxStatus] = useState('Hidup');
@@ -22,10 +32,10 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
   const [taxDeadYears, setTaxDeadYears] = useState(0);
   const [condition, setCondition] = useState('Bodi orisinil mulus, mesin segel pabrik, ban 85%');
   
-  // Kelengkapan Dokumen (STNK, BPKB, dll)
-  const [documents, setDocuments] = useState(['STNK', 'BPKB']);
+  // Kelengkapan Dokumen (STNK, BPKB, Faktur, KTP Pemilik)
+  const [documents, setDocuments] = useState(['STNK', 'BPKB', 'Faktur']);
   
-  // Analisa Modal & Harga Jual (Tanpa Est. Servis sesuai instruksi)
+  // Analisa Modal & Kebijakan Harga Jual
   const [buyPrice, setBuyPrice] = useState(15000000);
   const [minMarginPercent, setMinMarginPercent] = useState(10);
   const [displayPrice, setDisplayPrice] = useState(17500000);
@@ -33,11 +43,22 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
   const [uploadPreview, setUploadPreview] = useState(null);
   const fileInputRef = useRef(null);
 
-  const totalModal = buyPrice;
-  const minPrice = Math.round(totalModal * (1 + (minMarginPercent / 100)));
+  // Available document options matching live system
+  const availableDocs = ['STNK', 'BPKB', 'Faktur', 'KTP Pemilik'];
 
-  // Available document options
-  const availableDocs = ['STNK', 'BPKB', 'Faktur', 'Notice Pajak'];
+  // Filter models based on selected brand
+  const brandModels = types.filter(t => t.brandName?.toLowerCase() === brand.toLowerCase() || t.brandId === brands.find(b => b.name === brand)?.id);
+
+  // Set default model when brand changes
+  useEffect(() => {
+    if (brandModels.length > 0 && !brandModels.some(m => m.name === model)) {
+      setModel(brandModels[0].name);
+    }
+  }, [brand]);
+
+  // Recalculate minimum selling price dynamically
+  const totalModal = Number(buyPrice) || 0;
+  const minPrice = Math.round(totalModal * (1 + ((Number(minMarginPercent) || 0) / 100)));
 
   const toggleDocument = (doc) => {
     setDocuments(prev => 
@@ -52,6 +73,11 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.size > 800 * 1024) {
+      alert('Ukuran foto terlalu besar. Maksimal 800KB!');
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const base64Data = event.target?.result;
@@ -63,7 +89,11 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!model.trim() || !plate.trim()) return;
+    const finalPlate = `${nopol1.trim()} ${nopol2.trim()} ${nopol3.trim()}`.trim().toUpperCase();
+    if (!model.trim() || !finalPlate) {
+      alert('Mohon lengkapi data merk, model, dan nomor polisi unit.');
+      return;
+    }
 
     const finalImage = uploadPreview || imageUrl.trim() || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=800&q=80';
 
@@ -72,14 +102,14 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
       brand,
       model,
       year: Number(year),
-      plate: plate.toUpperCase().trim(),
+      plate: finalPlate,
       color,
       odometer: Number(odometer),
       engineNo: 'ENG' + Math.floor(100000 + Math.random() * 900000),
       frameNo: 'MH' + Math.floor(1000000000 + Math.random() * 9000000000),
       taxStatus,
       taxValidUntil,
-      taxDeadYears: Number(taxDeadYears),
+      taxDeadYears: taxStatus === 'Mati' ? Number(taxDeadYears) : 0,
       documents: documents.length > 0 ? documents : ['STNK', 'BPKB'],
       condition,
       buyPrice: Number(buyPrice),
@@ -106,10 +136,10 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
           <div>
             <h3 className="text-sm font-bold text-zinc-100 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-amber-400" />
-              Input Data Motor Masuk Showroom
+              <span>Input Data Unit Motor Baru</span>
             </h3>
             <p className="text-[11px] text-zinc-400 mt-0.5">
-              Langsung tersimpan dan tampil di katalog stok tanpa perlu redeploy
+              Standar input Maharga Showroom lengkap dengan nopol 3 bagian & kalkulasi margin
             </p>
           </div>
           <button 
@@ -124,14 +154,13 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 max-h-[78vh] overflow-y-auto text-xs">
           
-          {/* Section 1: Photo Upload Box (Clean, without preset clutter) */}
+          {/* Section 1: Photo Upload Box */}
           <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-2.5">
             <label className="font-bold text-amber-400 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
-              <ImageIcon className="w-3.5 h-3.5" /> Foto Katalog Unit
+              <ImageIcon className="w-3.5 h-3.5" /> Foto Unit Motor (Katalog & Detail)
             </label>
 
             <div className="flex flex-col sm:flex-row gap-3 items-center">
-              {/* Preview Thumbnail */}
               <div className="w-24 h-24 rounded-xl overflow-hidden border border-zinc-700 bg-zinc-900 shrink-0 relative shadow-sm">
                 <img 
                   src={uploadPreview || imageUrl} 
@@ -143,7 +172,6 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
                 </span>
               </div>
 
-              {/* Upload Trigger */}
               <div className="space-y-2 flex-1 w-full">
                 <input
                   type="file"
@@ -158,16 +186,16 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
                   className="w-full py-2.5 px-3 rounded-xl bg-zinc-850 hover:bg-zinc-800 text-zinc-200 font-semibold text-xs border border-zinc-700 hover:border-amber-400/50 flex items-center justify-center gap-2 transition-all shadow-sm"
                 >
                   <Upload className="w-4 h-4 text-amber-400" />
-                  <span>Pilih File Foto dari HP / PC</span>
+                  <span>Unggah Foto Unit (Kamera HP / File)</span>
                 </button>
                 <p className="text-[10px] text-zinc-500">
-                  Format gambar JPG, PNG, atau WebP. Foto akan otomatis dioptimalkan.
+                  Format JPG, PNG, atau WebP. Foto akan tersimpan di database showroom.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Section 2: Unit Details */}
+          {/* Section 2: Unit Details & Cascading Merk/Tipe */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="font-medium text-zinc-300 block mb-1">Merk Motor *</label>
@@ -176,47 +204,85 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
                 onChange={(e) => setBrand(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 font-bold focus:outline-none focus:border-amber-400 transition-colors"
               >
-                <option value="Honda">Honda</option>
-                <option value="Yamaha">Yamaha</option>
-                <option value="Vespa">Vespa</option>
-                <option value="Kawasaki">Kawasaki</option>
-                <option value="Suzuki">Suzuki</option>
+                {brands.map(b => (
+                  <option key={b.id} value={b.name}>{b.name}</option>
+                ))}
               </select>
             </div>
 
             <div>
               <label className="font-medium text-zinc-300 block mb-1">Tipe / Model Motor *</label>
-              <input
-                type="text"
-                required
-                placeholder="Contoh: Vario 160 CBS"
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400 transition-colors"
-              />
+              <div className="space-y-1">
+                <input
+                  type="text"
+                  required
+                  list="model-suggestions"
+                  placeholder="Pilih atau ketik model..."
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400 transition-colors"
+                />
+                <datalist id="model-suggestions">
+                  {brandModels.map(m => (
+                    <option key={m.id} value={m.name} />
+                  ))}
+                </datalist>
+              </div>
+            </div>
+
+            {/* 3-Box Plate Input (nopol_1, nopol_2, nopol_3) */}
+            <div className="sm:col-span-2">
+              <label className="font-medium text-zinc-300 block mb-1">
+                Nomor Polisi (Plat) *
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <input
+                    type="text"
+                    required
+                    placeholder="AD"
+                    value={nopol1}
+                    onChange={(e) => setNopol1(e.target.value.toUpperCase())}
+                    className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-amber-400 font-mono font-bold text-center uppercase focus:outline-none focus:border-amber-400"
+                    maxLength={3}
+                  />
+                  <span className="text-[9px] text-zinc-500 text-center block mt-0.5">Wilayah</span>
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    required
+                    placeholder="1234"
+                    value={nopol2}
+                    onChange={(e) => setNopol2(e.target.value.replace(/[^0-9]/g, ''))}
+                    className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-amber-400 font-mono font-bold text-center focus:outline-none focus:border-amber-400"
+                    maxLength={5}
+                  />
+                  <span className="text-[9px] text-zinc-500 text-center block mt-0.5">Nomor</span>
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    required
+                    placeholder="ABC"
+                    value={nopol3}
+                    onChange={(e) => setNopol3(e.target.value.toUpperCase())}
+                    className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-amber-400 font-mono font-bold text-center uppercase focus:outline-none focus:border-amber-400"
+                    maxLength={4}
+                  />
+                  <span className="text-[9px] text-zinc-500 text-center block mt-0.5">Seri</span>
+                </div>
+              </div>
             </div>
 
             <div>
-              <label className="font-medium text-zinc-300 block mb-1">Nomor Polisi (Plat) *</label>
-              <input
-                type="text"
-                required
-                placeholder="AD 1234 XX"
-                value={plate}
-                onChange={(e) => setPlate(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-amber-400 font-mono font-bold focus:outline-none focus:border-amber-400 uppercase transition-colors"
-              />
-            </div>
-
-            <div>
-              <label className="font-medium text-zinc-300 block mb-1">Tahun Pembuatan *</label>
+              <label className="font-medium text-zinc-300 block mb-1">Tahun Motor *</label>
               <input
                 type="number"
                 required
-                value={year === '' ? '' : year}
-                placeholder="2024"
-                onFocus={(e) => e.target.select()}
-                onChange={(e) => setYear(e.target.value === '' ? '' : e.target.value)}
+                value={year}
+                placeholder="2023"
+                onChange={(e) => setYear(Number(e.target.value))}
                 className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400 font-mono transition-colors"
               />
             </div>
@@ -233,13 +299,12 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
             </div>
 
             <div>
-              <label className="font-medium text-zinc-300 block mb-1">Odometer (KM)</label>
+              <label className="font-medium text-zinc-300 block mb-1">Kilometer (Odometer)</label>
               <input
                 type="number"
-                value={odometer === '' ? '' : odometer}
-                placeholder="0"
-                onFocus={(e) => e.target.select()}
-                onChange={(e) => setOdometer(e.target.value === '' ? '' : Number(e.target.value))}
+                value={odometer}
+                onChange={(e) => setOdometer(Number(e.target.value))}
+                placeholder="Contoh: 15000"
                 className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400 font-mono transition-colors"
               />
             </div>
@@ -252,11 +317,24 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
                 className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400 transition-colors"
               >
                 <option value="Hidup">Pajak Hidup</option>
-                <option value="Mati Pajak">Pajak Mati</option>
+                <option value="Mati">Pajak Mati</option>
               </select>
             </div>
 
-            {taxStatus === 'Hidup' ? (
+            {taxStatus === 'Mati' ? (
+              <div>
+                <label className="font-medium text-zinc-300 block mb-1">Pajak Mati (Berapa Tahun)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={taxDeadYears}
+                  onChange={(e) => setTaxDeadYears(Number(e.target.value))}
+                  placeholder="Contoh: 2"
+                  className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-rose-400 font-bold focus:outline-none focus:border-amber-400 font-mono transition-colors"
+                />
+              </div>
+            ) : (
               <div>
                 <label className="font-medium text-zinc-300 block mb-1">Pajak Berlaku Hingga</label>
                 <input
@@ -266,149 +344,113 @@ export default function NewUnitModal({ isOpen, onClose, onAddUnit }) {
                   className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400 font-mono transition-colors"
                 />
               </div>
-            ) : (
-              <div>
-                <label className="font-medium text-zinc-300 block mb-1">Mati Pajak (Tahun)</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="20"
-                  value={taxDeadYears === '' ? '' : taxDeadYears}
-                  placeholder="0"
-                  onFocus={(e) => e.target.select()}
-                  onChange={(e) => setTaxDeadYears(e.target.value === '' ? '' : Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400 font-mono transition-colors"
-                />
-              </div>
             )}
           </div>
 
-          {/* Section 2.5: Pilihan Kelengkapan Dokumen (STNK, BPKB) */}
+          {/* Section 3: Kelengkapan Dokumen */}
           <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="font-bold text-amber-400 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5" /> Kelengkapan Dokumen Motor *
-              </label>
-              <span className="text-[10px] text-zinc-500 font-mono">
-                {documents.length} Dokumen Dipilih
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+            <label className="font-medium text-zinc-300 block text-[11px]">
+              Kelengkapan Dokumen Kendaraan
+            </label>
+            <div className="flex flex-wrap gap-2">
               {availableDocs.map((doc) => {
                 const isSelected = documents.includes(doc);
-                const isCore = doc === 'STNK' || doc === 'BPKB';
                 return (
                   <button
                     key={doc}
                     type="button"
                     onClick={() => toggleDocument(doc)}
-                    className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-between gap-1.5 transition-all ${
-                      isSelected
-                        ? isCore
-                          ? 'bg-amber-500/15 border-amber-500/60 text-amber-300 shadow-sm font-bold'
-                          : 'bg-emerald-500/15 border-emerald-500/60 text-emerald-300 font-bold'
-                        : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                      isSelected 
+                        ? 'bg-amber-500 text-zinc-950 font-bold shadow-sm' 
+                        : 'bg-zinc-900 text-zinc-400 border border-zinc-800 hover:text-zinc-200'
                     }`}
                   >
+                    <Check className={`w-3.5 h-3.5 ${isSelected ? 'opacity-100' : 'opacity-0'}`} />
                     <span>{doc}</span>
-                    <div className={`w-4 h-4 rounded-md flex items-center justify-center border text-[10px] ${
-                      isSelected 
-                        ? isCore
-                          ? 'bg-amber-500 text-zinc-950 border-amber-400 font-black' 
-                          : 'bg-emerald-500 text-zinc-950 border-emerald-400 font-black'
-                        : 'border-zinc-700 bg-zinc-950'
-                    }`}>
-                      {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
-                    </div>
                   </button>
                 );
               })}
             </div>
-            <p className="text-[10px] text-zinc-500">
-              Pilih dokumen resmi yang telah diverifikasi fisik oleh pihak showroom.
-            </p>
           </div>
 
-          {/* Kondisi Singkat Unit */}
+          {/* Section 4: Kondisi Awal */}
           <div>
-            <label className="font-medium text-zinc-300 block mb-1">Kondisi Singkat Unit</label>
-            <input
-              type="text"
+            <label className="font-medium text-zinc-300 block mb-1">Kondisi Awal Motor (Saat Masuk)</label>
+            <textarea
+              rows={2}
               value={condition}
               onChange={(e) => setCondition(e.target.value)}
-              placeholder="Contoh: Bodi orisinil 95%, mesin halus segel pabrik, ban baru"
+              placeholder="Catatan kondisi mesin, fisik, bodi, kelistrikan..."
               className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400 transition-colors"
             />
           </div>
 
-          {/* Section 3: Pricing & Economics (Tanpa Est. Servis) */}
-          <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
-            <h4 className="font-bold text-amber-400 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
-              <Calculator className="w-3.5 h-3.5" /> Analisa Modal & Harga Jual
+          {/* Section 5: Analisa Modal Internal & Kebijakan Harga Jual */}
+          <div className="p-4 rounded-xl bg-zinc-950/80 border border-zinc-800 space-y-3">
+            <h4 className="font-bold text-amber-400 uppercase tracking-wider text-[10px] flex items-center gap-1.5 border-b border-zinc-800 pb-2">
+              <Calculator className="w-3.5 h-3.5" /> Analisa Modal & Kebijakan Harga Jual
             </h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-zinc-400 block mb-1 text-[11px] font-semibold">Harga Beli Masuk (Rp):</label>
+                <label className="font-medium text-zinc-400 block mb-1">Harga Beli Unit (Modal)</label>
                 <input
                   type="number"
                   required
-                  value={buyPrice === '' ? '' : buyPrice}
-                  placeholder="0"
-                  onFocus={(e) => e.target.select()}
-                  onChange={(e) => setBuyPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-100 font-mono font-bold focus:outline-none focus:border-amber-400 transition-colors"
+                  step="100000"
+                  value={buyPrice}
+                  onChange={(e) => setBuyPrice(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-emerald-400 font-mono font-bold focus:outline-none focus:border-amber-400"
                 />
               </div>
 
               <div>
-                <label className="text-zinc-400 block mb-1 text-[11px] font-semibold">Margin Min. Sales (%):</label>
+                <label className="font-medium text-zinc-400 block mb-1">Margin Target (%)</label>
                 <input
                   type="number"
-                  value={minMarginPercent === '' ? '' : minMarginPercent}
-                  placeholder="0"
-                  onFocus={(e) => e.target.select()}
-                  onChange={(e) => setMinMarginPercent(e.target.value === '' ? '' : Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-100 font-mono font-bold focus:outline-none focus:border-amber-400 transition-colors"
+                  min="0"
+                  max="100"
+                  value={minMarginPercent}
+                  onChange={(e) => setMinMarginPercent(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-100 font-mono font-bold focus:outline-none focus:border-amber-400"
                 />
               </div>
 
               <div>
-                <label className="text-amber-400 font-bold block mb-1 text-[11px]">Harga Display Iklan (Rp):</label>
+                <label className="font-medium text-zinc-400 block mb-1">Harga Display (Iklan)</label>
                 <input
                   type="number"
-                  required
-                  value={displayPrice === '' ? '' : displayPrice}
-                  placeholder="0"
-                  onFocus={(e) => e.target.select()}
-                  onChange={(e) => setDisplayPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-amber-500/50 text-amber-400 font-mono font-black focus:outline-none focus:border-amber-400 transition-colors"
+                  step="100000"
+                  value={displayPrice}
+                  onChange={(e) => setDisplayPrice(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-amber-400 font-mono font-bold focus:outline-none focus:border-amber-400"
                 />
               </div>
             </div>
 
-            <div className="p-2.5 rounded-xl bg-zinc-900/80 border border-zinc-850 flex justify-between items-center text-xs text-zinc-300">
-              <span>Total HPP Modal: <strong className="text-zinc-100 font-mono">{formatIDR(totalModal)}</strong></span>
-              <span>Batas Min. Sales: <strong className="text-rose-400 font-mono">{formatIDR(minPrice)}</strong></span>
+            {/* Calculated Minimum Sell Price Banner */}
+            <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-between text-[11px]">
+              <span className="text-zinc-400">Harga Minimal Jual (Margin {minMarginPercent}%):</span>
+              <span className="font-mono font-bold text-rose-400">{formatIDR(minPrice)}</span>
             </div>
           </div>
 
-          {/* Form Actions */}
-          <div className="pt-2 flex justify-end gap-2">
+          {/* Footer Submit Buttons */}
+          <div className="flex justify-end gap-2 pt-2 border-t border-zinc-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-750 text-zinc-300 font-semibold transition-colors"
+              className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold transition-colors"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold shadow-md shadow-amber-500/20 flex items-center gap-1.5 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold shadow-md transition-all flex items-center gap-1.5"
             >
-              <Check className="w-4 h-4 stroke-[3]" />
-              Simpan & Masukkan ke Katalog
+              <Check className="w-4 h-4" />
+              <span>Simpan & Terbitkan Unit</span>
             </button>
           </div>
         </form>

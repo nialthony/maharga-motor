@@ -16,7 +16,9 @@ import {
   Copy,
   Zap,
   Save,
-  Loader2
+  Loader2,
+  Tag,
+  Settings
 } from 'lucide-react';
 import { formatIDR } from '../data/mockData';
 import { 
@@ -27,6 +29,8 @@ import {
 } from '../lib/supabaseClient';
 import { syncAllToCloud, clearShowroomDataInCloud, deleteUnitFromCloud } from '../lib/cloudStore';
 import RoleBadge from './RoleBadge';
+import MotorTypeManagement from './MotorTypeManagement';
+import ShowroomSettings from './ShowroomSettings';
 
 export default function AdminPanel({ 
   units = [], 
@@ -35,10 +39,17 @@ export default function AdminPanel({
   setSalesList,
   employees = [], 
   onBackToERP,
-  currentUser
+  currentUser,
+  brands = [],
+  setBrands,
+  types = [],
+  setTypes,
+  onSaveMasterTypes,
+  settings = {},
+  onSaveSettings
 }) {
   // Modul Showroom:
-  // 'photos' (Kelola Foto Motor) | 'stok' (Kelola & Hapus Stok Satuan) | 'db' (Koneksi Supabase Cloud) | 'backup' (Backup & Reset)
+  // 'types' (Master Jenis Motor) | 'settings' (Pengaturan Showroom) | 'photos' (Kelola Foto Motor) | 'stok' (Kelola Stok) | 'db' (Supabase Cloud) | 'backup' (Backup & Reset)
   const [activeModule, setActiveModule] = useState('photos');
   
   // Single Unit Delete State
@@ -524,6 +535,33 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
           </button>
 
           <button
+            onClick={() => setActiveModule('types')}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 shadow-sm ${
+              activeModule === 'types' 
+                ? 'bg-amber-500 text-zinc-950 font-bold shadow-md' 
+                : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-800/40 dark:hover:bg-zinc-800'
+            }`}
+          >
+            <Tag className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+            <span>Jenis Motor (Merk & Tipe)</span>
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-zinc-950/20 dark:bg-zinc-950/40">
+              {types.length} Tipe
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveModule('settings')}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 shadow-sm ${
+              activeModule === 'settings' 
+                ? 'bg-amber-500 text-zinc-950 font-bold shadow-md' 
+                : 'text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-800/40 dark:hover:bg-zinc-800'
+            }`}
+          >
+            <Settings className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
+            <span>Pengaturan Showroom</span>
+          </button>
+
+          <button
             onClick={() => setActiveModule('backup')}
             className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 shadow-sm ${
               activeModule === 'backup' 
@@ -535,6 +573,33 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
             <span>Backup & Reset Data</span>
           </button>
         </div>
+
+        {/* ========================================================= */}
+        {/* MODULE: MASTER JENIS MOTOR (MERK & TIPE) */}
+        {/* ========================================================= */}
+        {activeModule === 'types' && (
+          <div className="space-y-5 animate-fadeIn">
+            <MotorTypeManagement
+              brands={brands}
+              setBrands={setBrands}
+              types={types}
+              setTypes={setTypes}
+              onSave={onSaveMasterTypes}
+            />
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* MODULE: PENGATURAN SISTEM SHOWROOM */}
+        {/* ========================================================= */}
+        {activeModule === 'settings' && (
+          <div className="space-y-5 animate-fadeIn">
+            <ShowroomSettings
+              settings={settings}
+              onSaveSettings={onSaveSettings}
+            />
+          </div>
+        )}
 
         {/* ========================================================= */}
         {/* MODULE 1: MOTOR PHOTO & MEDIA MANAGER */}

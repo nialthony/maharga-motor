@@ -121,7 +121,8 @@ export default function Inventory({
             >
               <option value="All">Semua Status Unit</option>
               <option value="Tersedia">🟢 Unit Ready (Tersedia)</option>
-              <option value="Titip DP / Tempo">🟡 Titip DP / Tempo</option>
+              <option value="Perbaikan">🟡 Di Bengkel (Perbaikan)</option>
+              <option value="Titip DP / Tempo">🟠 Titip DP / Tempo</option>
               <option value="Terjual">🔴 Terjual</option>
             </select>
           </div>

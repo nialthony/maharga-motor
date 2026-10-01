@@ -30,6 +30,10 @@ export default function EmployeeManagement({ employees, setEmployees, onDeleteEm
   const [role, setRole] = useState('sales');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [nik, setNik] = useState('');
+  const [targetSales, setTargetSales] = useState(10);
+  const [address, setAddress] = useState('');
+  const [specialization, setSpecialization] = useState('Salon + Bengkel');
 
   const filteredEmployees = employees.filter(e => 
     e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -55,6 +59,10 @@ export default function EmployeeManagement({ employees, setEmployees, onDeleteEm
       role,
       email: email.trim(),
       phone: phone.trim(),
+      nik: role === 'sales' ? nik.trim() : '-',
+      targetSales: role === 'sales' ? Number(targetSales) || 0 : 0,
+      address: address.trim(),
+      specialization: role === 'mechanic' ? specialization.trim() : '',
       status: 'active',
       joinedDate: new Date().toISOString().split('T')[0],
       permissions: role === 'owner' ? ['all_access'] : role === 'admin' ? ['inventory_manage', 'pos_access', 'file_manager'] : ['pos_access', 'view_catalog']
@@ -67,6 +75,9 @@ export default function EmployeeManagement({ employees, setEmployees, onDeleteEm
     setName('');
     setEmail('');
     setPhone('');
+    setNik('');
+    setTargetSales(10);
+    setAddress('');
   };
 
   const handleUpdatePin = async (e) => {
@@ -274,11 +285,24 @@ export default function EmployeeManagement({ employees, setEmployees, onDeleteEm
                       </div>
                       <span>{emp.name}</span>
                     </td>
-                    <td className="py-3 px-4 font-mono text-zinc-400">@{emp.username}</td>
+                    <td className="py-3 px-4 font-mono text-zinc-400">
+                      <div>@{emp.username}</div>
+                      {emp.role === 'sales' && (
+                        <div className="text-[10px] text-amber-400 font-sans">Target: {emp.targetSales || 0} unit</div>
+                      )}
+                      {emp.role === 'mechanic' && (
+                        <div className="text-[10px] text-zinc-400 font-sans">Bidang: {emp.specialization || emp.address || 'Bengkel'}</div>
+                      )}
+                    </td>
                     <td className="py-3 px-4">{getRoleBadge(emp.role)}</td>
                     <td className="py-3 px-4 text-zinc-400">
-                      <div>{emp.phone}</div>
-                      <div className="text-[10px] text-zinc-500 font-mono">{emp.email}</div>
+                      <div className="font-semibold text-zinc-200">{emp.phone}</div>
+                      {emp.role === 'sales' && emp.nik && emp.nik !== '-' && (
+                        <div className="text-[10px] text-zinc-500 font-mono">NIK: {emp.nik}</div>
+                      )}
+                      {emp.address && emp.role !== 'mechanic' && (
+                        <div className="text-[10px] text-zinc-500 truncate max-w-xs">{emp.address}</div>
+                      )}
                     </td>
                     <td className="py-3 px-4">
                       <button
@@ -399,10 +423,66 @@ export default function EmployeeManagement({ employees, setEmployees, onDeleteEm
                   className="w-full px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400"
                 >
                   <option value="sales">Sales Executive</option>
-                  <option value="admin">Admin Showroom</option>
                   <option value="mechanic">Mekanik Bengkel</option>
+                  <option value="admin">Admin Showroom</option>
                   <option value="owner">Owner Showroom</option>
                 </select>
+              </div>
+
+              {/* Dynamic Section: Mekanik vs Sales (Matching Live System) */}
+              {role === 'mechanic' ? (
+                <div>
+                  <label className="text-zinc-300 block mb-1 font-medium">Spesialisasi Mekanik *</label>
+                  <select
+                    value={specialization}
+                    onChange={(e) => setSpecialization(e.target.value)}
+                    className="w-full px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400"
+                  >
+                    <option value="Salon + Bengkel">Salon + Bengkel</option>
+                    <option value="Repaint Body Kasar">Repaint Body Kasar</option>
+                    <option value="Cuci Kompon">Cuci Kompon</option>
+                    <option value="Servis Mesin & CVT">Servis Mesin & CVT</option>
+                    <option value="Kelistrikan & Karbu/Injeksi">Kelistrikan & Karbu/Injeksi</option>
+                    <option value="Umum">Mekanik Umum</option>
+                  </select>
+                </div>
+              ) : role === 'sales' ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-zinc-300 block mb-1 font-medium">NIK Karyawan *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="33xxxxxxxxxxxxxx"
+                      value={nik}
+                      onChange={(e) => setNik(e.target.value)}
+                      className="w-full px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-zinc-300 block mb-1 font-medium">Target Penjualan (Unit/Bln)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={targetSales}
+                      onChange={(e) => setTargetSales(e.target.value)}
+                      className="w-full px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400 font-mono"
+                    />
+                  </div>
+                </div>
+              ) : null}
+
+              <div>
+                <label className="text-zinc-300 block mb-1 font-medium">
+                  {role === 'mechanic' ? 'Catatan Tambahan' : 'Alamat Lengkap'}
+                </label>
+                <input
+                  type="text"
+                  placeholder={role === 'mechanic' ? 'Contoh: Bengkel Utama' : 'Contoh: Tombol Dalangan Tulung Klaten'}
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="w-full px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400"
+                />
               </div>
 
               <div>

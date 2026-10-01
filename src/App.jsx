@@ -23,7 +23,10 @@ import {
   initialUnits, 
   initialSalesList, 
   initialEmployees,
-  initialMechanics 
+  initialMechanics,
+  initialBrands,
+  initialTypes,
+  initialSettings
 } from './data/mockData';
 import { 
   fetchCloudData, 
@@ -33,7 +36,9 @@ import {
   saveSettlementToCloud,
   saveEmployeeProfileToCloud,
   deleteEmployeeFromCloud,
-  subscribeToCloudRealtime 
+  subscribeToCloudRealtime,
+  saveSystemSettingsToCloud,
+  saveMasterTypesToCloud
 } from './lib/cloudStore';
 
 export default function App() {
@@ -64,6 +69,34 @@ export default function App() {
       return initialEmployees;
     }
   });
+
+  const [brands, setBrands] = useState(() => {
+    try {
+      const saved = localStorage.getItem('maharga_brands_v3');
+      return saved !== null ? JSON.parse(saved) : initialBrands;
+    } catch {
+      return initialBrands;
+    }
+  });
+
+  const [types, setTypes] = useState(() => {
+    try {
+      const saved = localStorage.getItem('maharga_types_v3');
+      return saved !== null ? JSON.parse(saved) : initialTypes;
+    } catch {
+      return initialTypes;
+    }
+  });
+
+  const [settings, setSettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem('maharga_settings_v3');
+      return saved !== null ? JSON.parse(saved) : initialSettings;
+    } catch {
+      return initialSettings;
+    }
+  });
+
   const [mechanics] = useState(initialMechanics);
   const [cloudSyncStatus, setCloudSyncStatus] = useState('syncing'); // 'synced' | 'syncing' | 'offline'
 
@@ -91,6 +124,30 @@ export default function App() {
       console.warn('localStorage sync error for employees', e);
     }
   }, [employees]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('maharga_brands_v3', JSON.stringify(brands));
+    } catch (e) {
+      console.warn('localStorage sync error for brands', e);
+    }
+  }, [brands]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('maharga_types_v3', JSON.stringify(types));
+    } catch (e) {
+      console.warn('localStorage sync error for types', e);
+    }
+  }, [types]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('maharga_settings_v3', JSON.stringify(settings));
+    } catch (e) {
+      console.warn('localStorage sync error for settings', e);
+    }
+  }, [settings]);
 
   // Reusable Auto Fetch function for cloud database
   const refreshCloudData = async () => {
@@ -309,6 +366,52 @@ export default function App() {
     saveSettlementToCloud(txId, targetUnitId, updatedUnits, updatedSales, employees);
   };
 
+  const handleCancelTempo = (txId) => {
+    const targetTx = salesList.find(tx => tx.id === txId);
+    if (!targetTx) return;
+
+    const confirmCancel = window.confirm(
+      `Batalkan transaksi tempo untuk ${targetTx.plate || 'unit ini'}?\n\nUnit akan dikembalikan ke status 'Tersedia' dan transaksi akan dihapus.`
+    );
+    if (!confirmCancel) return;
+
+    const updatedSales = salesList.filter(tx => tx.id !== txId);
+    const targetUnitId = targetTx.unitId;
+    const targetPlate = targetTx.plate;
+    const updatedUnits = units.map(u => {
+      if ((targetUnitId && u.id === targetUnitId) || (targetPlate && u.plate === targetPlate)) {
+        return {
+          ...u,
+          status: 'Tersedia'
+        };
+      }
+      return u;
+    });
+
+    setSalesList(updatedSales);
+    setUnits(updatedUnits);
+    syncAllToCloud(updatedUnits, updatedSales, employees);
+  };
+
+  const handleSaveMasterTypes = async (newBrands, newTypes) => {
+    setBrands(newBrands);
+    setTypes(newTypes);
+    try {
+      await saveMasterTypesToCloud(newBrands, newTypes);
+    } catch (err) {
+      console.warn('Failed to sync master types to cloud:', err);
+    }
+  };
+
+  const handleSaveSettings = async (newSettings) => {
+    setSettings(newSettings);
+    try {
+      await saveSystemSettingsToCloud(newSettings);
+    } catch (err) {
+      console.warn('Failed to sync settings to cloud:', err);
+    }
+  };
+
   const isOwnerOrAdmin = currentUser?.role === 'owner' || currentUser?.role === 'admin';
 
   const handleOpenAdminPanel = () => {
@@ -424,6 +527,13 @@ export default function App() {
         employees={employees}
         currentUser={currentUser}
         onBackToERP={() => setIsAdminPanelOpen(false)}
+        brands={brands}
+        setBrands={setBrands}
+        types={types}
+        setTypes={setTypes}
+        onSaveMasterTypes={handleSaveMasterTypes}
+        settings={settings}
+        onSaveSettings={handleSaveSettings}
       />
     );
   }
@@ -456,6 +566,8 @@ export default function App() {
             onSelectUnit={handleSelectUnit}
             onOpenPOS={handleOpenPOS}
             onOpenNewUnit={handleOpenNewUnit}
+            employees={employees}
+            settings={settings}
           />
         )}
 
@@ -498,6 +610,7 @@ export default function App() {
           <TempoMonitor
             salesList={salesList}
             onPayRemaining={handlePayRemaining}
+            onCancelTempo={handleCancelTempo}
           />
         )}
 
@@ -561,6 +674,8 @@ export default function App() {
           isOpen={isNewUnitModalOpen}
           onClose={() => setIsNewUnitModalOpen(false)}
           onAddUnit={handleAddUnit}
+          brands={brands}
+          types={types}
         />
       )}
 

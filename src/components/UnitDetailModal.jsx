@@ -138,28 +138,49 @@ export default function UnitDetailModal({ unit, salesList = [], role, onClose, o
             </div>
           )}
 
-          {/* Owner Only Breakdown */}
-          {role === 'owner' && (
-            <div className="p-3.5 rounded-lg bg-zinc-950 border border-zinc-800 space-y-2">
-              <h4 className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
-                👑 Analisa Modal HPP Showroom (Khusus Owner)
-              </h4>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                <div className="p-2 rounded bg-zinc-900 border border-zinc-800">
-                  <span className="text-[10px] text-zinc-500 block">Harga Beli:</span>
-                  <span className="font-mono font-bold text-zinc-200">{formatIDR(unit.buyPrice)}</span>
+          {/* Analisa Modal & Kebijakan Harga Jual (Matching Live System Modal Detail) */}
+          {(role === 'owner' || role === 'admin') && (
+            <div className="space-y-3">
+              {/* Analisa Modal Internal */}
+              <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-2">
+                <h4 className="text-[10px] font-bold text-rose-400 uppercase tracking-wider flex items-center justify-between border-b border-zinc-800/80 pb-1.5">
+                  <span>ANALISA MODAL (INTERNAL)</span>
+                  <span className="text-zinc-500 font-normal">Showroom Exclusive</span>
+                </h4>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400">Harga Beli Unit:</span>
+                    <span className="font-mono font-bold text-zinc-100">{formatIDR(unit.buyPrice)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400">Total Biaya Tindakan:</span>
+                    <span className="font-mono font-bold text-rose-400">+ {formatIDR(unit.repairCost || 0)}</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-1 border-t border-zinc-800 text-sm font-bold bg-amber-500/10 px-2 py-1 rounded-lg">
+                    <span className="text-amber-300">TOTAL MODAL:</span>
+                    <span className="font-mono font-black text-amber-400">{formatIDR(eco.totalModal)}</span>
+                  </div>
                 </div>
-                <div className="p-2 rounded bg-zinc-900 border border-zinc-800">
-                  <span className="text-[10px] text-zinc-500 block">Biaya Servis:</span>
-                  <span className="font-mono font-bold text-rose-400">+{formatIDR(unit.repairCost)}</span>
-                </div>
-                <div className="p-2 rounded bg-zinc-900 border border-zinc-800">
-                  <span className="text-[10px] text-zinc-500 block">Total HPP:</span>
-                  <span className="font-mono font-black text-amber-400">{formatIDR(eco.totalModal)}</span>
-                </div>
-                <div className="p-2 rounded bg-zinc-900 border border-zinc-800">
-                  <span className="text-[10px] text-zinc-500 block">Estimasi Laba:</span>
-                  <span className="font-mono font-black text-emerald-400">+{formatIDR(eco.estimatedProfit)} ({eco.marginPercent}%)</span>
+              </div>
+
+              {/* Kebijakan Harga Jual */}
+              <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-2">
+                <h4 className="text-[10px] font-bold text-amber-400 uppercase tracking-wider border-b border-zinc-800/80 pb-1.5">
+                  KEBIJAKAN HARGA JUAL
+                </h4>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400">Margin Target:</span>
+                    <span className="font-mono font-bold text-zinc-200">{unit.minMarginPercent || 10}%</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400">Harga Minimal Jual (Margin):</span>
+                    <span className="font-mono font-bold text-rose-400 text-sm">{formatIDR(eco.minPrice)}</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-1 border-t border-zinc-800 text-sm font-bold bg-emerald-500/10 px-2 py-1.5 rounded-lg">
+                    <span className="text-emerald-300">HARGA DISPLAY (IKLAN):</span>
+                    <span className="font-mono font-black text-emerald-400 text-base">{formatIDR(unit.displayPrice)}</span>
+                  </div>
                 </div>
               </div>
             </div>

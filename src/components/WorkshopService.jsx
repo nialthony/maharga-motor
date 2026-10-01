@@ -170,6 +170,26 @@ export default function WorkshopService({ units = [], onAddRepair, mechanics = [
                   onChange={(e) => setItem(e.target.value)}
                   className="w-full px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-100 text-xs focus:outline-none focus:border-amber-400"
                 />
+                {/* Preset quick buttons */}
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {[
+                    'Servis Mesin & CVT',
+                    'Ganti Oli Mesin & Gardan',
+                    'Detailing & Poles Salon',
+                    'Repaint Body Kasar',
+                    'Ganti Aki & Kelistrikan',
+                    'Kampas Rem Depan Belakang'
+                  ].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setItem(preset)}
+                      className="px-2 py-0.5 rounded text-[10px] bg-zinc-950 hover:bg-zinc-800 text-zinc-400 hover:text-amber-400 border border-zinc-800 transition-colors"
+                    >
+                      +{preset}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">

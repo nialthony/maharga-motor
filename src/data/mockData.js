@@ -128,6 +128,53 @@ export const initialFiles = [
   }
 ];
 
+export const initialBrands = [
+  { id: 1, name: "Yamaha" },
+  { id: 2, name: "Honda" },
+  { id: 3, name: "Kawasaki" },
+  { id: 4, name: "Suzuki" },
+  { id: 5, name: "Daihatsu" },
+  { id: 6, name: "Toyota" },
+  { id: 7, name: "SM SPORTS" },
+  { id: 8, name: "Japstyle" }
+];
+
+export const initialTypes = [
+  { id: 1, brandId: 1, brandName: "Yamaha", name: "NMAX" },
+  { id: 2, brandId: 1, brandName: "Yamaha", name: "Aerox" },
+  { id: 3, brandId: 1, brandName: "Yamaha", name: "LEXi" },
+  { id: 4, brandId: 1, brandName: "Yamaha", name: "MX KING" },
+  { id: 5, brandId: 1, brandName: "Yamaha", name: "MX KING V1" },
+  { id: 6, brandId: 1, brandName: "Yamaha", name: "MX KING V2" },
+  { id: 7, brandId: 1, brandName: "Yamaha", name: "NMAX NEW" },
+  { id: 8, brandId: 1, brandName: "Yamaha", name: "NMAX NEO" },
+  { id: 9, brandId: 1, brandName: "Yamaha", name: "R15" },
+  { id: 10, brandId: 1, brandName: "Yamaha", name: "MIO" },
+  { id: 11, brandId: 1, brandName: "Yamaha", name: "Rx King 135" },
+  { id: 12, brandId: 1, brandName: "Yamaha", name: "Vixion" },
+  { id: 13, brandId: 2, brandName: "Honda", name: "Vario 125" },
+  { id: 14, brandId: 2, brandName: "Honda", name: "Scoopy" },
+  { id: 15, brandId: 2, brandName: "Honda", name: "PCX" },
+  { id: 16, brandId: 2, brandName: "Honda", name: "Stylo" },
+  { id: 17, brandId: 2, brandName: "Honda", name: "Beat" },
+  { id: 18, brandId: 2, brandName: "Honda", name: "Vario 160" },
+  { id: 19, brandId: 3, brandName: "Kawasaki", name: "KLX 150" },
+  { id: 20, brandId: 3, brandName: "Kawasaki", name: "Ninja 250" },
+  { id: 21, brandId: 3, brandName: "Kawasaki", name: "W175" },
+  { id: 22, brandId: 4, brandName: "Suzuki", name: "Satria F150" },
+  { id: 23, brandId: 4, brandName: "Suzuki", name: "GSX-R150" }
+];
+
+export const initialSettings = {
+  commission_per_unit: 200000,
+  store_phone: "0821-3564-1774",
+  store_address: "Jl. Ponggok - Krajan KM.1, Ds Tombol Rt 09/10, Ds. Dalangan, Kec. Tulung, Kab. Klaten",
+  cashier_name: "Admin Maharga",
+  store_logo: "/logo.png",
+  license_status: "TERVERIFIKASI EXTEND",
+  license_expired: "2027-03-19"
+};
+
 export const initialMechanics = [];
 
 export const formatIDR = (val) => {

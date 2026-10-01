@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { formatIDR } from '../data/mockData';
 
-export default function TempoMonitor({ salesList = [], onPayRemaining }) {
+export default function TempoMonitor({ salesList = [], onPayRemaining, onCancelTempo }) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const tempoList = salesList.filter(s => {
@@ -49,6 +49,15 @@ Jika sudah melakukan transfer, mohon kirimkan bukti pelunasan agar berkas jamina
 
     const url = `https://wa.me/${tx.buyerPhone?.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
+  };
+
+  const handleCancelClick = (tx) => {
+    const confirmCancel = window.confirm(
+      `Batalkan pesanan tempo untuk transaksi #${tx.id}?\n\n• Unit: ${tx.unitName} (${tx.plate})\n• Pembeli: ${tx.buyerName}\n\nTransaksi akan dibatalkan dan status unit motor akan otomatis kembali menjadi 'Tersedia' di katalog showroom.`
+    );
+    if (confirmCancel && onCancelTempo) {
+      onCancelTempo(tx.id);
+    }
   };
 
   return (
@@ -196,6 +205,16 @@ Jika sudah melakukan transfer, mohon kirimkan bukti pelunasan agar berkas jamina
                             <Check className="w-3 h-3 stroke-[3]" />
                             Pelunasan
                           </button>
+                          {onCancelTempo && (
+                            <button
+                              onClick={() => handleCancelClick(tx)}
+                              aria-label={`Batalkan pesanan tempo ${tx.id}`}
+                              className="p-1.5 rounded bg-zinc-800 hover:bg-rose-950 text-zinc-400 hover:text-rose-400 transition-colors border border-zinc-700 min-h-[32px] min-w-[32px] flex items-center justify-center"
+                              title="Batalkan Pesanan & Kembalikan ke Stok"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -260,6 +279,16 @@ Jika sudah melakukan transfer, mohon kirimkan bukti pelunasan agar berkas jamina
                       <Check className="w-3.5 h-3.5 stroke-[3]" />
                       Pelunasan
                     </button>
+                    {onCancelTempo && (
+                      <button
+                        onClick={() => handleCancelClick(tx)}
+                        aria-label={`Batalkan transaksi ${tx.id}`}
+                        className="p-2 rounded-lg bg-zinc-800 hover:bg-rose-950 text-zinc-400 hover:text-rose-400 transition-colors border border-zinc-700 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                        title="Batalkan Pesanan & Kembalikan ke Stok"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

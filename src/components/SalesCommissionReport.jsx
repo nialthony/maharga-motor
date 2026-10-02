@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Wallet, Download } from 'lucide-react';
+import { Wallet, Download, Printer } from 'lucide-react';
 import { formatIDR } from '../data/mockData';
 
-export default function SalesCommissionReport({ salesList, currentUser }) {
+export default function SalesCommissionReport({ salesList, currentUser, onPrintReceipt }) {
   const [startDate, setStartDate] = useState('2026-09-01');
   const [endDate, setEndDate] = useState('2026-09-30');
 
@@ -108,6 +108,7 @@ export default function SalesCommissionReport({ salesList, currentUser }) {
                 <th className="py-2.5 px-4">Metode</th>
                 <th className="py-2.5 px-4 text-end">Harga Deal</th>
                 <th className="py-2.5 px-4 text-end font-mono">Komisi</th>
+                <th className="py-2.5 px-4 text-center">Kwitansi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/60">
@@ -133,11 +134,23 @@ export default function SalesCommissionReport({ salesList, currentUser }) {
                     <td className="py-2.5 px-4 text-end font-mono font-bold text-emerald-400">
                       {formatIDR(tx.commission)}
                     </td>
+                    <td className="py-2.5 px-4 text-center">
+                      {onPrintReceipt && (
+                        <button
+                          onClick={() => onPrintReceipt(tx)}
+                          className="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-amber-400 border border-zinc-700 font-semibold text-[11px] inline-flex items-center gap-1 transition-colors"
+                          title="Cetak Kwitansi Transaksi"
+                        >
+                          <Printer className="w-3 h-3" />
+                          <span>Kwitansi</span>
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-zinc-500">
+                  <td colSpan={8} className="text-center py-8 text-zinc-500">
                     Belum ada transaksi penjualan pada rentang tanggal ini.
                   </td>
                 </tr>
@@ -155,6 +168,7 @@ export default function SalesCommissionReport({ salesList, currentUser }) {
                   <td className="py-3 px-4 text-end font-mono text-emerald-400 text-sm">
                     {formatIDR(totalCommission)}
                   </td>
+                  <td></td>
                 </tr>
               </tfoot>
             )}
@@ -183,9 +197,20 @@ export default function SalesCommissionReport({ salesList, currentUser }) {
 
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="text-zinc-500">Harga Deal: {formatIDR(tx.dealPrice)}</span>
-                  <span className="uppercase text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300">
-                    {tx.paymentMethod}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="uppercase text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-300">
+                      {tx.paymentMethod}
+                    </span>
+                    {onPrintReceipt && (
+                      <button
+                        onClick={() => onPrintReceipt(tx)}
+                        className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-amber-400 border border-zinc-700 font-semibold text-[10px] inline-flex items-center gap-1"
+                      >
+                        <Printer className="w-3 h-3" />
+                        <span>Kwitansi</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))

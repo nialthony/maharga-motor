@@ -9,7 +9,12 @@ import {
 } from 'lucide-react';
 import { formatIDR } from '../data/mockData';
 
-export default function OwnerFinancialReport({ salesList = [], employees = [], units = [] }) {
+export default function OwnerFinancialReport({ 
+  salesList = [], 
+  employees = [], 
+  units = [], 
+  onPrintReceipt 
+}) {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reportMode, setReportMode] = useState('accrual'); // 'accrual' | 'cash_flow'
@@ -234,7 +239,7 @@ export default function OwnerFinancialReport({ salesList = [], employees = [], u
                 <th className="py-3 px-4">Status & Metode</th>
                 <th className="py-3 px-4 text-end">Harga Deal</th>
                 <th className="py-3 px-4 text-end">Laba Bersih</th>
-                <th className="py-3 px-4 text-center">Detail</th>
+                <th className="py-3 px-4 text-center">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/60 font-sans">
@@ -275,13 +280,24 @@ export default function OwnerFinancialReport({ salesList = [], employees = [], u
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <button
-                        onClick={() => setSelectedUnitDetail(item)}
-                        className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-amber-400 transition-colors"
-                        title="Lihat Rincian Analisa Unit"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-center gap-1.5">
+                        {onPrintReceipt && (
+                          <button
+                            onClick={() => onPrintReceipt(item)}
+                            className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition-colors"
+                            title="Cetak Kwitansi Resmi"
+                          >
+                            <Printer className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setSelectedUnitDetail(item)}
+                          className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-amber-400 transition-colors"
+                          title="Lihat Rincian Analisa Unit"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -422,6 +438,24 @@ export default function OwnerFinancialReport({ salesList = [], employees = [], u
                   </div>
                 </div>
               )}
+            </div>
+
+            <div className="p-3 bg-zinc-950 border-t border-zinc-800 flex items-center justify-between">
+              {onPrintReceipt && (
+                <button
+                  onClick={() => onPrintReceipt(selectedUnitDetail)}
+                  className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center gap-1.5 shadow-sm transition-colors"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Cetak Kwitansi</span>
+                </button>
+              )}
+              <button
+                onClick={() => setSelectedUnitDetail(null)}
+                className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium ml-auto"
+              >
+                Tutup
+              </button>
             </div>
           </div>
         </div>

@@ -6,11 +6,12 @@ import {
   CheckCircle2, 
   Calendar,
   Check,
-  X
+  X,
+  Printer
 } from 'lucide-react';
 import { formatIDR } from '../data/mockData';
 
-export default function TempoMonitor({ salesList = [], onPayRemaining, onCancelTempo }) {
+export default function TempoMonitor({ salesList = [], onPayRemaining, onCancelTempo, onPrintReceipt }) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const tempoList = salesList.filter(s => {
@@ -205,6 +206,16 @@ Jika sudah melakukan transfer, mohon kirimkan bukti pelunasan agar berkas jamina
                             <Check className="w-3 h-3 stroke-[3]" />
                             Pelunasan
                           </button>
+                          {onPrintReceipt && (
+                            <button
+                              onClick={() => onPrintReceipt(tx)}
+                              aria-label={`Cetak kwitansi / SPK ${tx.id}`}
+                              className="p-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-amber-400 transition-colors border border-zinc-700 min-h-[32px] min-w-[32px] flex items-center justify-center"
+                              title="Cetak Kwitansi / SPK Titip DP"
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                           {onCancelTempo && (
                             <button
                               onClick={() => handleCancelClick(tx)}
@@ -279,6 +290,17 @@ Jika sudah melakukan transfer, mohon kirimkan bukti pelunasan agar berkas jamina
                       <Check className="w-3.5 h-3.5 stroke-[3]" />
                       Pelunasan
                     </button>
+                    {onPrintReceipt && (
+                      <button
+                        onClick={() => onPrintReceipt(tx)}
+                        aria-label={`Cetak kwitansi ${tx.id}`}
+                        className="py-2 px-3 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-amber-400 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 border border-zinc-700 min-h-[44px]"
+                        title="Cetak Kwitansi / SPK"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                        <span>Kwitansi</span>
+                      </button>
+                    )}
                     {onCancelTempo && (
                       <button
                         onClick={() => handleCancelClick(tx)}

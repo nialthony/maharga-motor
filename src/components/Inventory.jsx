@@ -4,7 +4,8 @@ import {
   Search, 
   Plus, 
   Grid3X3, 
-  List
+  List,
+  Printer
 } from 'lucide-react';
 import { formatIDR, calculateUnitEconomics } from '../data/mockData';
 
@@ -13,7 +14,8 @@ export default function Inventory({
   role, 
   onSelectUnit, 
   onOpenPOS, 
-  onOpenNewUnit 
+  onOpenNewUnit,
+  onPrintReceipt
 }) {
   const isOwnerOrAdmin = role === 'owner' || role === 'admin';
   const [searchTerm, setSearchTerm] = useState('');
@@ -278,6 +280,16 @@ export default function Inventory({
                           >
                             Detail
                           </button>
+                          {unit.status === 'Terjual' && (
+                            <button
+                              onClick={() => onPrintReceipt && onPrintReceipt(unit)}
+                              className="px-2.5 py-1 rounded bg-rose-950/80 hover:bg-rose-900 border border-rose-800 text-rose-300 text-[11px] font-bold transition-colors flex items-center gap-1 shadow-sm"
+                              title="Cetak Kwitansi / Nota PDF"
+                            >
+                              <Printer className="w-3 h-3 text-rose-400" />
+                              <span>Kwitansi</span>
+                            </button>
+                          )}
                           {isOwnerOrAdmin && unit.status === 'Tersedia' && (
                             <button
                               onClick={() => onOpenPOS(unit)}
@@ -370,6 +382,16 @@ export default function Inventory({
                       >
                         Detail
                       </button>
+                      {unit.status === 'Terjual' && (
+                        <button
+                          onClick={() => onPrintReceipt && onPrintReceipt(unit)}
+                          className="px-2.5 py-1 rounded bg-rose-950/80 hover:bg-rose-900 border border-rose-800 text-rose-300 text-xs font-bold flex items-center gap-1 transition-colors shadow-sm"
+                          title="Cetak Kwitansi / Nota PDF"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-rose-400" />
+                          <span>Kwitansi</span>
+                        </button>
+                      )}
                       {isOwnerOrAdmin && unit.status === 'Tersedia' && (
                         <button
                           onClick={() => onOpenPOS(unit)}

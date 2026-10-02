@@ -1,8 +1,15 @@
 import React from 'react';
-import { X, CreditCard, CheckCircle2, ExternalLink } from 'lucide-react';
+import { X, CreditCard, CheckCircle2, ExternalLink, Printer } from 'lucide-react';
 import { formatIDR, calculateUnitEconomics } from '../data/mockData';
 
-export default function UnitDetailModal({ unit, salesList = [], role, onClose, onOpenPOS }) {
+export default function UnitDetailModal({ 
+  unit, 
+  salesList = [], 
+  role, 
+  onClose, 
+  onOpenPOS,
+  onPrintReceipt 
+}) {
   if (!unit) return null;
 
   const eco = calculateUnitEconomics(unit);
@@ -88,9 +95,21 @@ export default function UnitDetailModal({ unit, salesList = [], role, onClose, o
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Data Pembeli & Transaksi Terjual</span>
                 </h4>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 dark:border-emerald-800 font-mono">
-                  {matchedSale.paymentType || (matchedSale.paymentMethod === 'dp-tempo' ? 'Tempo DP' : 'Cash Lunas')}
-                </span>
+                <div className="flex items-center gap-2">
+                  {onPrintReceipt && (
+                    <button
+                      onClick={() => onPrintReceipt(matchedSale)}
+                      className="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-[11px] flex items-center gap-1.5 shadow-sm transition-colors"
+                      title="Cetak Kwitansi Penjualan"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>Cetak Kwitansi</span>
+                    </button>
+                  )}
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 dark:border-emerald-800 font-mono">
+                    {matchedSale.paymentType || (matchedSale.paymentMethod === 'dp-tempo' ? 'Tempo DP' : 'Cash Lunas')}
+                  </span>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
@@ -207,19 +226,38 @@ export default function UnitDetailModal({ unit, salesList = [], role, onClose, o
         </div>
 
         {/* Footer */}
-        <div className="p-3.5 bg-zinc-950 border-t border-zinc-800 flex items-center justify-end gap-2">
-          {(role === 'owner' || role === 'admin') && unit.status === 'Tersedia' && (
+        <div className="p-3.5 bg-zinc-950 border-t border-zinc-800 flex items-center justify-between gap-2">
+          <div>
+            {(unit.status === 'Terjual' || matchedSale) && onPrintReceipt && (
+              <button
+                onClick={() => onPrintReceipt(matchedSale || unit)}
+                className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Cetak Kwitansi Resmi (PDF)</span>
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {(role === 'owner' || role === 'admin') && unit.status === 'Tersedia' && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenPOS(unit);
+                }}
+                className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                Jual Unit Ini
+              </button>
+            )}
             <button
-              onClick={() => {
-                onClose();
-                onOpenPOS(unit);
-              }}
-              className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
+              onClick={onClose}
+              className="px-3.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium transition-colors"
             >
-              <CreditCard className="w-3.5 h-3.5" />
-              Jual Unit Ini
+              Tutup
             </button>
-          )}
+          </div>
         </div>
       </div>
     </div>

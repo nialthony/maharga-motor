@@ -264,6 +264,40 @@ export default function App() {
     setIsDetailModalOpen(true);
   };
 
+  const handlePrintReceipt = (transactionOrUnit) => {
+    if (!transactionOrUnit) return;
+    // Jika parameter adalah objek transaksi penjualan
+    if (transactionOrUnit.dealPrice !== undefined) {
+      setCurrentTransaction(transactionOrUnit);
+      setIsPrintModalOpen(true);
+      return;
+    }
+    // Jika parameter adalah unit motor, cari transaksi di salesList
+    const matchedTx = salesList.find(s => s.unitId === transactionOrUnit.id || s.plate === transactionOrUnit.plate);
+    if (matchedTx) {
+      setCurrentTransaction(matchedTx);
+      setIsPrintModalOpen(true);
+      return;
+    }
+    // Fallback kwitansi untuk unit terjual
+    const synthTx = {
+      id: `TX-${transactionOrUnit.id || Date.now().toString().slice(-6)}`,
+      unitId: transactionOrUnit.id,
+      unitName: `${transactionOrUnit.brand || ''} ${transactionOrUnit.model || 'Unit Motor'}`.trim(),
+      plate: transactionOrUnit.plate || '-',
+      dealPrice: transactionOrUnit.displayPrice || 0,
+      buyerName: transactionOrUnit.buyerName || 'Konsumen Showroom',
+      buyerPhone: transactionOrUnit.buyerPhone || '-',
+      buyerAddress: transactionOrUnit.buyerAddress || 'Klaten',
+      paymentMethod: 'cash',
+      paymentType: 'Cash Lunas',
+      date: transactionOrUnit.soldDate || new Date().toISOString().split('T')[0],
+      salesName: transactionOrUnit.salesName || 'Admin Showroom'
+    };
+    setCurrentTransaction(synthTx);
+    setIsPrintModalOpen(true);
+  };
+
   const handleOpenPOS = (unit) => {
     if (currentUser?.role !== 'owner' && currentUser?.role !== 'admin') {
       alert('Kasir hanya dapat diakses oleh Owner dan Admin Showroom.');
@@ -568,6 +602,7 @@ export default function App() {
             onOpenNewUnit={handleOpenNewUnit}
             employees={employees}
             settings={settings}
+            onPrintReceipt={handlePrintReceipt}
           />
         )}
 
@@ -578,6 +613,7 @@ export default function App() {
             onSelectUnit={handleSelectUnit}
             onOpenPOS={handleOpenPOS}
             onOpenNewUnit={handleOpenNewUnit}
+            onPrintReceipt={handlePrintReceipt}
           />
         )}
 
@@ -587,10 +623,13 @@ export default function App() {
               units={units}
               selectedUnit={selectedUnit}
               setSelectedUnit={setSelectedUnit}
+              salesList={salesList}
               onTransactionComplete={handleTransactionComplete}
               currentUser={currentUser}
               employees={employees}
               onOpenNewUnit={() => setIsNewUnitModalOpen(true)}
+              onPrintReceipt={handlePrintReceipt}
+              onSelectUnit={handleSelectUnit}
             />
           ) : (
             <div className="p-8 text-center bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md mx-auto my-12 space-y-3">
@@ -611,6 +650,7 @@ export default function App() {
             salesList={salesList}
             onPayRemaining={handlePayRemaining}
             onCancelTempo={handleCancelTempo}
+            onPrintReceipt={handlePrintReceipt}
           />
         )}
 
@@ -629,6 +669,7 @@ export default function App() {
             salesList={salesList}
             employees={employees}
             units={units}
+            onPrintReceipt={handlePrintReceipt}
           />
         )}
 
@@ -637,6 +678,7 @@ export default function App() {
           <SalesCommissionReport
             salesList={salesList}
             currentUser={currentUser}
+            onPrintReceipt={handlePrintReceipt}
           />
         )}
 
@@ -659,6 +701,7 @@ export default function App() {
           role={currentUser.role}
           onClose={() => setIsDetailModalOpen(false)}
           onOpenPOS={handleOpenPOS}
+          onPrintReceipt={handlePrintReceipt}
         />
       )}
 

@@ -1,16 +1,26 @@
 import React, { useState, useMemo } from 'react';
-import { Wrench, Plus, Users, Search, X, ChevronRight } from 'lucide-react';
+import { Wrench, Plus, Users, Search, X, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { formatIDR } from '../data/mockData';
 import RoleBadge from './RoleBadge';
 
-export default function WorkshopService({ units = [], onAddRepair, mechanics = [], employees = [] }) {
-  // Hanya tampilkan unit yang belum terjual (stok ready showroom)
+export default function WorkshopService({ 
+  units = [], 
+  salesList = [], 
+  onAddRepair, 
+  onUpdateUnitStatus, 
+  mechanics = [], 
+  employees = [] 
+}) {
+  // Hanya tampilkan unit yang belum terjual (unit masuk showroom / bengkel / ready)
   const availableUnits = useMemo(() => {
     return (units || []).filter(u => {
+      if (!u) return false;
       const st = (u.status || '').toLowerCase();
-      return st !== 'terjual' && st !== 'sold';
+      if (st === 'terjual' || st === 'sold' || st === 'tempo aktif' || st === 'lunas') return false;
+      if (salesList && salesList.some(s => (s.unitId && s.unitId === u.id) || (u.plate && s.plate && s.plate.toLowerCase() === u.plate.toLowerCase()))) return false;
+      return true;
     });
-  }, [units]);
+  }, [units, salesList]);
 
   // Ambil daftar mekanik terdaftar dari tabel employees & props mechanics
   const registeredFromEmployees = useMemo(() => {
@@ -117,38 +127,81 @@ export default function WorkshopService({ units = [], onAddRepair, mechanics = [
                   Unit Motor (Stok Tersedia) *
                 </label>
                 {selectedUnit ? (
-                  <button
-                    type="button"
-                    onClick={() => setIsUnitModalOpen(true)}
-                    className="w-full p-2.5 rounded-xl bg-zinc-950 hover:bg-zinc-850 border border-zinc-800 hover:border-amber-500/50 flex items-center justify-between text-left transition-all group"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      {(selectedUnit.images?.[0] || selectedUnit.image) && (
-                        <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
-                          <img 
-                            src={selectedUnit.images?.[0] || selectedUnit.image} 
-                            alt={selectedUnit.model} 
-                            className="w-full h-full object-cover" 
-                          />
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                            {selectedUnit.plate}
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setIsUnitModalOpen(true)}
+                      className="w-full p-2.5 rounded-xl bg-zinc-950 hover:bg-zinc-855 border border-zinc-800 hover:border-amber-500/50 flex items-center justify-between text-left transition-all group"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {(selectedUnit.images?.[0] || selectedUnit.image) && (
+                          <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
+                            <img 
+                              src={selectedUnit.images?.[0] || selectedUnit.image} 
+                              alt={selectedUnit.model} 
+                              className="w-full h-full object-cover" 
+                            />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                              {selectedUnit.plate}
+                            </span>
+                            <span className="text-xs font-bold text-zinc-100 truncate">{selectedUnit.brand} {selectedUnit.model}</span>
+                            <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                              selectedUnit.status === 'Tersedia' 
+                                ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' 
+                                : selectedUnit.status === 'Belum Tersedia'
+                                ? 'bg-blue-950 text-blue-400 border border-blue-800'
+                                : 'bg-yellow-950 text-yellow-400 border border-yellow-800'
+                            }`}>
+                              {selectedUnit.status || 'Perbaikan'}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-zinc-400 block mt-0.5 truncate">
+                            Tahun {selectedUnit.year} • {selectedUnit.color || 'Standar'} • Total Servis: {formatIDR(selectedUnit.repairCost || 0)}
                           </span>
-                          <span className="text-xs font-bold text-zinc-100 truncate">{selectedUnit.brand} {selectedUnit.model}</span>
                         </div>
-                        <span className="text-[10px] text-zinc-400 block mt-0.5 truncate">
-                          Tahun {selectedUnit.year} • {selectedUnit.color || 'Standar'} • Total Servis: {formatIDR(selectedUnit.repairCost || 0)}
-                        </span>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-1 text-[11px] font-semibold text-amber-400 shrink-0 ml-2 group-hover:translate-x-0.5 transition-transform">
-                      <span>Ganti</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </div>
-                  </button>
+                      <div className="flex items-center gap-1 text-[11px] font-semibold text-amber-400 shrink-0 ml-2 group-hover:translate-x-0.5 transition-transform">
+                        <span>Ganti</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </div>
+                    </button>
+
+                    {/* Status Progression: Masuk > Bengkel (Perbaikan) > Tersedia */}
+                    {selectedUnit && onUpdateUnitStatus && (
+                      <div className="mt-2 p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 flex flex-wrap items-center justify-between gap-2">
+                        <div className="text-[11px] text-zinc-400">
+                          Status Saat Ini: <strong className="text-zinc-200">{selectedUnit.status || 'Perbaikan'}</strong>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {selectedUnit.status !== 'Tersedia' ? (
+                            <button
+                              type="button"
+                              onClick={() => onUpdateUnitStatus(selectedUnit.id, 'Tersedia')}
+                              className="px-2.5 py-1 rounded-md bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-[11px] flex items-center gap-1 transition-all shadow-sm"
+                              title="Selesaikan servis dan ubah status unit menjadi Siap Jual (Tersedia)"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Selesai Servis &gt; Tandai Tersedia</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => onUpdateUnitStatus(selectedUnit.id, 'Perbaikan')}
+                              className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-yellow-400 font-semibold text-[11px] flex items-center gap-1 transition-all border border-zinc-700"
+                              title="Kembalikan unit ke bengkel untuk perbaikan tambahan"
+                            >
+                              <Wrench className="w-3 h-3" />
+                              <span>Kembalikan ke Bengkel (Perbaikan)</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <button
                     type="button"

@@ -25,12 +25,30 @@ export default function Dashboard({
   onOpenPOS, 
   onOpenNewUnit,
   employees = [],
-  settings = {},
+  _settings = {},
   onPrintReceipt
 }) {
   const [drilldownType, setDrilldownType] = useState(null); // 'ready' | 'repair' | 'sold' | 'sales'
 
-  const readyUnits = units.filter(u => u.status === 'Tersedia');
+  const isUnitSold = (u) => {
+    if (!u) return false;
+    const st = (u.status || '').toLowerCase();
+    if (st === 'terjual' || st === 'sold' || st === 'tempo aktif' || st === 'lunas') return true;
+    if (salesList.some(s => (s.unitId && s.unitId === u.id) || (u.plate && s.plate && s.plate.toLowerCase() === u.plate.toLowerCase()))) return true;
+    return false;
+  };
+
+  const readyUnits = units.filter(u => {
+    const st = (u.status || '').toLowerCase();
+    return (st === 'tersedia' || st === 'ready') && !isUnitSold(u);
+  });
+
+  const repairUnits = units.filter(u => {
+    if (isUnitSold(u)) return false;
+    const st = (u.status || '').toLowerCase();
+    return st === 'perbaikan' || st === 'servis' || st === 'workshop' || st === 'dalam perbaikan' || st === 'belum tersedia';
+  });
+
   const tempoUnits = salesList.filter(s => s.paymentMethod === 'dp-tempo' && s.status === 'Tempo Aktif');
   const isOwnerOrAdmin = role === 'owner' || role === 'admin';
 
@@ -213,7 +231,7 @@ export default function Dashboard({
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl sm:text-3xl font-black font-mono text-yellow-400">
-              {units.filter(u => u.status === 'Perbaikan' || (u.repairs && u.repairs.length > 0 && u.status !== 'Terjual')).length}
+              {repairUnits.length}
             </span>
             <span className="text-[11px] font-semibold text-zinc-500">Unit</span>
           </div>
@@ -257,18 +275,6 @@ export default function Dashboard({
         </div>
       </div>
 
-      {/* Showroom License Status Widget (Matching Live System) */}
-      <div className="p-3.5 rounded-xl bg-zinc-900/70 border border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
-          <span className="text-zinc-300">
-            Status Lisensi: <strong className="text-emerald-400 font-bold">{settings?.license_status || 'TERVERIFIKASI EXTEND'}</strong>
-          </span>
-        </div>
-        <div className="text-zinc-500 font-mono text-[11px]">
-          Berlaku Hingga: <strong className="text-amber-400 font-bold">{settings?.license_expired || '19 March 2027'}</strong>
-        </div>
-      </div>
 
       {/* Dead Tax Warning Alert Banner */}
       {deadTaxUnits.length > 0 && (
@@ -646,7 +652,6 @@ export default function Dashboard({
               {drilldownType === 'repair' && (
                 <div className="space-y-2">
                   {(() => {
-                    const repairUnits = units.filter(u => u.status === 'Perbaikan' || (u.repairs && u.repairs.length > 0 && u.status !== 'Terjual'));
                     if (repairUnits.length === 0) {
                       return (
                         <div className="text-center py-10 text-zinc-500">

@@ -26,6 +26,7 @@ export default function Navbar({
   onOpenAdminPanel,
   onOpenProfile,
   availableCount,
+  repairCount,
   tempoAlertCount,
   onLogout
 }) {
@@ -34,13 +35,13 @@ export default function Navbar({
   const isSales = currentUser.role === 'sales';
   const isMechanic = currentUser.role === 'mechanic' || currentUser.role === 'mekanik';
 
-  // Role-Specific Navigation Architecture
+  // Role-Specific Navigation: Unit Masuk & Stok -> Bengkel (Servis) -> Kasir POS -> Piutang (Tempo)
   const ownerNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'inventory', label: 'Stok & HPP', icon: Layers, badge: availableCount },
+    { id: 'workshop', label: 'Bengkel & Servis', icon: Wrench, badge: repairCount, badgeColor: 'bg-yellow-500' },
     { id: 'pos', label: 'Kasir', icon: CreditCard },
     { id: 'tempo', label: 'Piutang DP', icon: Clock, badge: tempoAlertCount, badgeColor: 'bg-amber-500' },
-    { id: 'workshop', label: 'Bengkel', icon: Wrench },
     { id: 'financial_report', label: 'Keuangan & Komisi Sales', icon: DollarSign },
     { id: 'employees', label: 'Karyawan', icon: Users },
     { id: 'admin_panel', label: 'Admin Panel', icon: Settings, special: true }

@@ -1,11 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   X, 
   Calculator,
   Upload,
   Image as ImageIcon,
   Check,
-  ShieldCheck
+  ShieldCheck,
+  Wrench
 } from 'lucide-react';
 import { formatIDR, initialBrands, initialTypes } from '../data/mockData';
 
@@ -35,6 +36,9 @@ export default function NewUnitModal({
   // Kelengkapan Dokumen (STNK, BPKB, Faktur, KTP Pemilik)
   const [documents, setDocuments] = useState(['STNK', 'BPKB', 'Faktur']);
   
+  // Alur Status Unit Masuk: Masuk Bengkel (Perbaikan) -> Belum Tersedia -> Tersedia (Siap Jual)
+  const [status, setStatus] = useState('Perbaikan');
+
   // Analisa Modal & Kebijakan Harga Jual
   const [buyPrice, setBuyPrice] = useState(15000000);
   const [minMarginPercent, setMinMarginPercent] = useState(10);
@@ -50,11 +54,13 @@ export default function NewUnitModal({
   const brandModels = types.filter(t => t.brandName?.toLowerCase() === brand.toLowerCase() || t.brandId === brands.find(b => b.name === brand)?.id);
 
   // Set default model when brand changes
-  useEffect(() => {
-    if (brandModels.length > 0 && !brandModels.some(m => m.name === model)) {
-      setModel(brandModels[0].name);
+  const handleBrandChange = (newBrand) => {
+    setBrand(newBrand);
+    const matched = types.filter(t => t.brandName?.toLowerCase() === newBrand.toLowerCase() || t.brandId === brands.find(b => b.name === newBrand)?.id);
+    if (matched.length > 0) {
+      setModel(matched[0].name);
     }
-  }, [brand]);
+  };
 
   // Recalculate minimum selling price dynamically
   const totalModal = Number(buyPrice) || 0;
@@ -116,7 +122,7 @@ export default function NewUnitModal({
       repairCost: 0,
       minMarginPercent: Number(minMarginPercent),
       displayPrice: Number(displayPrice),
-      status: 'Tersedia',
+      status: status || 'Perbaikan',
       images: [finalImage],
       entryDate: new Date().toISOString().split('T')[0],
       repairs: []
@@ -201,7 +207,7 @@ export default function NewUnitModal({
               <label className="font-medium text-zinc-300 block mb-1">Merk Motor *</label>
               <select
                 value={brand}
-                onChange={(e) => setBrand(e.target.value)}
+                onChange={(e) => handleBrandChange(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 font-bold focus:outline-none focus:border-amber-400 transition-colors"
               >
                 {brands.map(b => (
@@ -384,6 +390,66 @@ export default function NewUnitModal({
               placeholder="Catatan kondisi mesin, fisik, bodi, kelistrikan..."
               className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400 transition-colors"
             />
+          </div>
+
+          {/* Section 4b: Alur Status Unit Masuk (Input Unit Masuk -> Bengkel -> Tersedia) */}
+          <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 space-y-2.5">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-1.5">
+              <label className="font-bold text-amber-400 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                <Wrench className="w-3.5 h-3.5" /> Alur Status Unit Masuk
+              </label>
+              <span className="text-[10px] text-zinc-500 font-mono">Urutan: Masuk &gt; Bengkel &gt; Tersedia</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setStatus('Perbaikan')}
+                className={`p-2.5 rounded-xl border text-left transition-all ${
+                  status === 'Perbaikan'
+                    ? 'bg-yellow-500/15 border-yellow-500/60 text-yellow-300 font-bold shadow-sm'
+                    : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-yellow-400"></span>
+                  <span className="text-xs">Masuk Bengkel</span>
+                </div>
+                <span className="text-[10px] text-zinc-500 block mt-0.5">Servis / perbaikan / poles</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStatus('Belum Tersedia')}
+                className={`p-2.5 rounded-xl border text-left transition-all ${
+                  status === 'Belum Tersedia'
+                    ? 'bg-blue-500/15 border-blue-500/60 text-blue-300 font-bold shadow-sm'
+                    : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                  <span className="text-xs">Belum Tersedia</span>
+                </div>
+                <span className="text-[10px] text-zinc-500 block mt-0.5">Antrean / cek dokumen</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStatus('Tersedia')}
+                className={`p-2.5 rounded-xl border text-left transition-all ${
+                  status === 'Tersedia'
+                    ? 'bg-emerald-500/15 border-emerald-500/60 text-emerald-300 font-bold shadow-sm'
+                    : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                  <span className="text-xs">Tersedia (Ready)</span>
+                </div>
+                <span className="text-[10px] text-zinc-500 block mt-0.5">Langsung siap jual</span>
+              </button>
+            </div>
           </div>
 
           {/* Section 5: Analisa Modal Internal & Kebijakan Harga Jual */}

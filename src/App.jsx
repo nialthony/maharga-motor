@@ -357,6 +357,21 @@ export default function App() {
     }
   };
 
+  const handleUpdateUnitStatus = async (unitId, newStatus) => {
+    const updatedUnits = units.map(u => u.id === unitId ? { ...u, status: newStatus } : u);
+    setUnits(updatedUnits);
+    if (selectedUnit && selectedUnit.id === unitId) {
+      setSelectedUnit(prev => ({ ...prev, status: newStatus }));
+    }
+    if (supabase) {
+      try {
+        await supabase.from('units').update({ status: newStatus }).eq('id', unitId);
+      } catch (err) {
+        console.warn('Gagal update status unit di Supabase:', err);
+      }
+    }
+  };
+
   const handleAddUnit = (newUnit) => {
     const updatedUnits = [newUnit, ...units];
     setUnits(updatedUnits);
@@ -547,7 +562,20 @@ export default function App() {
     );
   }
 
-  const readyCount = units.filter(u => u.status === 'Tersedia').length;
+  const isUnitSold = (u) => {
+    if (!u) return false;
+    const st = (u.status || '').toLowerCase();
+    if (st === 'terjual' || st === 'sold' || st === 'tempo aktif' || st === 'lunas') return true;
+    if (salesList.some(s => (s.unitId && s.unitId === u.id) || (u.plate && s.plate && s.plate.toLowerCase() === u.plate.toLowerCase()))) return true;
+    return false;
+  };
+
+  const readyCount = units.filter(u => (u.status === 'Tersedia' || u.status === 'Ready') && !isUnitSold(u)).length;
+  const repairCount = units.filter(u => {
+    if (isUnitSold(u)) return false;
+    const st = (u.status || '').toLowerCase();
+    return st === 'perbaikan' || st === 'servis' || st === 'workshop' || st === 'belum tersedia';
+  }).length;
   const tempoAlertCount = salesList.filter(s => s.paymentMethod === 'dp-tempo' && s.status === 'Tempo Aktif').length;
 
   // Dedicated Admin Panel Full View (Hanya untuk Owner dan Admin)
@@ -584,6 +612,7 @@ export default function App() {
         onOpenAdminPanel={handleOpenAdminPanel}
         onOpenProfile={() => setIsProfileModalOpen(true)}
         availableCount={readyCount}
+        repairCount={repairCount}
         tempoAlertCount={tempoAlertCount}
         cloudSyncStatus={cloudSyncStatus}
         onLogout={() => setIsLogoutConfirmOpen(true)}
@@ -657,7 +686,9 @@ export default function App() {
         {activeTab === 'workshop' && (
           <WorkshopService
             units={units}
+            salesList={salesList}
             onAddRepair={handleAddRepair}
+            onUpdateUnitStatus={handleUpdateUnitStatus}
             mechanics={mechanics}
             employees={employees}
           />
@@ -702,6 +733,7 @@ export default function App() {
           onClose={() => setIsDetailModalOpen(false)}
           onOpenPOS={handleOpenPOS}
           onPrintReceipt={handlePrintReceipt}
+          onUpdateUnitStatus={handleUpdateUnitStatus}
         />
       )}
 

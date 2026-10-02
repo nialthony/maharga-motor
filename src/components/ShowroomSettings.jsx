@@ -6,7 +6,6 @@ import {
   MapPin, 
   CreditCard, 
   DollarSign, 
-  ShieldCheck, 
   Upload, 
   Check, 
   User,
@@ -81,31 +80,7 @@ export default function ShowroomSettings({
         </div>
       )}
 
-      {/* License Status Card (Matching Live System) */}
-      <div className="bg-gradient-to-r from-amber-500/10 via-zinc-900 to-zinc-900 rounded-2xl border border-amber-500/30 p-5 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h4 className="text-sm font-bold text-zinc-100">Status Lisensi Showroom</h4>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
-                  {formData.license_status}
-                </span>
-              </div>
-              <p className="text-xs text-zinc-400 mt-0.5">
-                Lisensi aktif dan terverifikasi untuk Maharga Motor Management System.
-              </p>
-            </div>
-          </div>
-          <div className="px-3.5 py-2 rounded-xl bg-zinc-950/80 border border-zinc-800 text-right">
-            <span className="text-[10px] uppercase font-bold text-zinc-500 block">Berlaku Hingga</span>
-            <span className="text-xs font-mono font-bold text-amber-400">{formData.license_expired}</span>
-          </div>
-        </div>
-      </div>
+
 
       {/* Main Settings Form */}
       <form onSubmit={handleSubmit} className="bg-zinc-900/90 rounded-2xl border border-zinc-800 p-5 sm:p-6 space-y-6">

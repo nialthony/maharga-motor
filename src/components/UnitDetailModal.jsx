@@ -8,12 +8,14 @@ export default function UnitDetailModal({
   role, 
   onClose, 
   onOpenPOS,
-  onPrintReceipt 
+  onPrintReceipt,
+  onUpdateUnitStatus 
 }) {
   if (!unit) return null;
 
   const eco = calculateUnitEconomics(unit);
   const matchedSale = salesList.find(s => s.unitId === unit.id || (unit.plate && s.plate === unit.plate));
+  const isSold = unit.status === 'Terjual' || unit.status === 'Sold' || Boolean(matchedSale);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm overflow-y-auto">
@@ -25,6 +27,14 @@ export default function UnitDetailModal({
               {unit.plate}
             </span>
             <h3 className="text-sm font-bold text-zinc-100">{unit.brand} {unit.model} ({unit.year})</h3>
+            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+              isSold ? 'bg-rose-950 text-rose-400 border border-rose-800' :
+              unit.status === 'Tersedia' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' :
+              unit.status === 'Belum Tersedia' ? 'bg-blue-950 text-blue-400 border border-blue-800' :
+              'bg-yellow-950 text-yellow-400 border border-yellow-800'
+            }`}>
+              {isSold ? 'Terjual' : (unit.status || 'Perbaikan')}
+            </span>
           </div>
 
           <button
@@ -239,7 +249,20 @@ export default function UnitDetailModal({
             )}
           </div>
           <div className="flex items-center gap-2">
-            {(role === 'owner' || role === 'admin') && unit.status === 'Tersedia' && (
+            {(role === 'owner' || role === 'admin') && !isSold && onUpdateUnitStatus && unit.status !== 'Tersedia' && (
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdateUnitStatus(unit.id, 'Tersedia');
+                  onClose();
+                }}
+                className="px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Selesai Servis &gt; Tandai Tersedia</span>
+              </button>
+            )}
+            {(role === 'owner' || role === 'admin') && !isSold && unit.status === 'Tersedia' && (
               <button
                 onClick={() => {
                   onClose();

@@ -58,6 +58,11 @@ export default function DocumentPrintModal({ transaction, onClose }) {
         return;
       }
 
+      // Collect all active stylesheets and style tags from current page so Tailwind & fonts carry over
+      const currentStyles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+        .map(el => el.outerHTML)
+        .join('\n');
+
       frameDoc.open();
       frameDoc.write(`
         <!DOCTYPE html>
@@ -65,46 +70,65 @@ export default function DocumentPrintModal({ transaction, onClose }) {
           <head>
             <meta charset="utf-8">
             <title>${docType === 'spk' ? 'SPK' : 'Kwitansi_Nota'} - ${transaction.plate || transaction.id}</title>
-            <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap">
+            <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap">
+            ${currentStyles}
             <style>
               @page {
                 size: A4 portrait;
                 margin: 12mm 18mm;
               }
-              * {
-                box-sizing: border-box;
+              *, *::before, *::after {
+                box-sizing: border-box !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
               }
               html, body {
-                font-family: 'Segoe UI', 'Plus Jakarta Sans', Arial, -apple-system, sans-serif;
-                color: #18181b;
-                background: #ffffff;
-                margin: 0;
-                padding: 0;
-                font-size: 12px;
-                line-height: 1.45;
+                font-family: 'Segoe UI', 'Plus Jakarta Sans', Arial, -apple-system, sans-serif !important;
+                color: #111827 !important;
+                background: #ffffff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                font-size: 12px !important;
+                line-height: 1.45 !important;
+                width: 100% !important;
               }
               .doc-wrapper {
-                margin: 0;
-                padding: 0;
-                position: relative;
-                page-break-inside: avoid;
-                break-inside: avoid;
+                margin: 0 !important;
+                padding: 0 !important;
+                position: relative !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                background: #ffffff !important;
               }
-              .font-mono { font-family: 'JetBrains Mono', Courier, monospace; }
-              .font-bold { font-weight: 700; }
-              .font-black { font-weight: 900; }
-              .font-semibold { font-weight: 600; }
-              .text-center { text-align: center; }
-              .text-right { text-align: right; }
-              .uppercase { text-transform: uppercase; }
-              .underline { text-decoration: underline; }
-              table { width: 100%; border-collapse: collapse; margin-top: 6px; margin-bottom: 6px; }
-              td, th { border: 1px solid #d4d4d8; padding: 7px 10px; font-size: 12px; }
-              .grid { display: flex; gap: 24px; }
-              .grid-cols-2 > div { flex: 1; }
-              img { max-height: 65px; width: auto; }
+              /* Explicit styles ensuring print layout never collapses */
+              .nota-flex { display: flex !important; }
+              .nota-justify-between { justify-content: space-between !important; }
+              .nota-justify-end { justify-content: flex-end !important; }
+              .nota-items-start { align-items: flex-start !important; }
+              .nota-items-end { align-items: flex-end !important; }
+              .nota-items-center { align-items: center !important; }
+              .nota-text-center { text-align: center !important; }
+              .nota-text-right { text-align: right !important; }
+              .nota-w-full { width: 100% !important; }
+              .nota-grid-2 { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 32px !important; }
+              .nota-table { width: 100% !important; border-collapse: collapse !important; border: 1px solid #d4d4d8 !important; }
+              .nota-table th, .nota-table td { border: 1px solid #d4d4d8 !important; }
+              .nota-watermark {
+                position: absolute !important;
+                left: 50% !important;
+                top: 50% !important;
+                transform: translate(-50%, -50%) rotate(-18deg) !important;
+                pointer-events: none !important;
+                user-select: none !important;
+                font-size: 78px !important;
+                font-weight: 900 !important;
+                letter-spacing: 14px !important;
+                padding: 8px 40px !important;
+                border-radius: 16px !important;
+                text-transform: uppercase !important;
+                z-index: 0 !important;
+              }
+              .font-mono { font-family: 'JetBrains Mono', Courier, monospace !important; }
             </style>
           </head>
           <body>
@@ -116,15 +140,41 @@ export default function DocumentPrintModal({ transaction, onClose }) {
       `);
       frameDoc.close();
 
-      setTimeout(() => {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
+      // Wait for images inside iframe to complete before triggering print
+      const triggerPrint = () => {
         setTimeout(() => {
-          if (document.body.contains(iframe)) {
-            document.body.removeChild(iframe);
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+          setTimeout(() => {
+            if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+            }
+          }, 1500);
+        }, 150);
+      };
+
+      const imgs = iframe.contentWindow?.document.images;
+      if (imgs && imgs.length > 0) {
+        let loaded = 0;
+        const total = imgs.length;
+        const onDone = () => {
+          loaded++;
+          if (loaded >= total) triggerPrint();
+        };
+        for (let i = 0; i < total; i++) {
+          if (imgs[i].complete) {
+            loaded++;
+          } else {
+            imgs[i].onload = onDone;
+            imgs[i].onerror = onDone;
           }
-        }, 1500);
-      }, 350);
+        }
+        if (loaded >= total) {
+          triggerPrint();
+        }
+      } else {
+        triggerPrint();
+      }
     } catch {
       window.print();
     }
@@ -182,15 +232,20 @@ export default function DocumentPrintModal({ transaction, onClose }) {
         <div className="p-6 sm:p-10 bg-white text-zinc-900 font-sans overflow-y-auto flex-1 select-text" id="printable-document">
           
           {/* ======================================================== */}
-          {/* FORMAT KWITANSI PENJUALAN 1:1 MATCHING anti-slop/Nota_T 6430 RA.pdf */}
+          {/* FORMAT KWITANSI PENJUALAN MATCHING anti-slop/Nota_T 6430 RA.pdf */}
+          {/* Menggunakan Logo.png awal showroom di Kop Surat */}
           {/* ======================================================== */}
           {docType === 'kwitansi' && (
-            <div className="relative space-y-6 text-zinc-900 font-sans" style={{ minHeight: '620px' }}>
+            <div className="relative text-zinc-900 font-sans" style={{ minHeight: '640px', position: 'relative' }}>
               
               {/* WATERMARK STAMP "LUNAS" / "TEMPO" */}
               <div 
-                className="pointer-events-none select-none absolute left-1/2 top-[52%] -translate-x-1/2 -translate-y-1/2 -rotate-[18deg] z-0"
+                className="nota-watermark pointer-events-none select-none"
                 style={{
+                  position: 'absolute',
+                  left: '50%',
+                  top: '52%',
+                  transform: 'translate(-50%, -50%) rotate(-18deg)',
                   border: isTempo ? '5px solid rgba(217, 119, 6, 0.18)' : '5px solid rgba(16, 185, 129, 0.18)',
                   color: isTempo ? 'rgba(217, 119, 6, 0.16)' : 'rgba(16, 185, 129, 0.16)',
                   fontSize: '78px',
@@ -198,120 +253,133 @@ export default function DocumentPrintModal({ transaction, onClose }) {
                   letterSpacing: '14px',
                   padding: '8px 40px',
                   borderRadius: '16px',
-                  textTransform: 'uppercase'
+                  textTransform: 'uppercase',
+                  zIndex: 0
                 }}
               >
                 {isTempo ? 'TEMPO' : 'LUNAS'}
               </div>
 
-              {/* KOP SURAT (HEADER MAHARGA MOTOR) */}
-              <div className="relative z-10">
-                <div className="flex items-start justify-between">
+              {/* KOP SURAT (HEADER DENGAN LOGO.PNG AWAL MAHARGA MOTOR) */}
+              <div style={{ position: 'relative', zIndex: 1, marginBottom: '22px' }}>
+                <div 
+                  className="nota-flex nota-justify-between nota-items-end" 
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingBottom: '12px' }}
+                >
                   <div>
-                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight" style={{ color: '#D32F2F', fontFamily: "'Segoe UI', sans-serif" }}>
-                      MAHARGA MOTOR
-                    </h1>
-                    <p className="text-xs text-zinc-700 font-normal mt-0.5 max-w-md leading-relaxed">
+                    <img 
+                      src="/logo.png" 
+                      alt="Maharga Motor" 
+                      style={{ height: '52px', width: 'auto', objectFit: 'contain', display: 'block', marginBottom: '8px' }} 
+                    />
+                    <p style={{ fontSize: '11px', color: '#374151', margin: 0, lineHeight: 1.45 }}>
                       Jl. Ponggok - Krajan KM.1, Ds Tombol Rt 09/10, Ds. Dalangan, Kec. Tulung, Kab. Klaten
                     </p>
-                    <p className="text-xs text-zinc-700 font-normal mt-0.5">
-                      WA: 0821-3564-1774
+                    <p style={{ fontSize: '11px', color: '#111827', margin: '2px 0 0 0', fontWeight: 600 }}>
+                      WhatsApp: 0821-3564-1774
                     </p>
                   </div>
-                  <div className="shrink-0 pl-4">
-                    <img 
-                      src="/kwitansi_logo.png" 
-                      alt="Maharga Motor Logo" 
-                      className="h-16 w-auto object-contain"
-                    />
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.8px', display: 'block' }}>
+                      Showroom Resmi
+                    </span>
+                    <span style={{ fontSize: '13px', fontWeight: 800, color: '#111827' }}>
+                      Pusat Jual Beli Motor Bekas
+                    </span>
                   </div>
                 </div>
 
-                {/* SOLID 3PX DIVIDER BAR (MATCHING 38 119 718 3 re in PDF) */}
-                <div className="w-full h-[3px] bg-zinc-900 mt-3 mb-6"></div>
+                {/* SOLID 3PX DIVIDER BAR (MATCHING NOTA PDF) */}
+                <div style={{ width: '100%', height: '3px', backgroundColor: '#18181b', marginTop: '6px' }}></div>
               </div>
 
               {/* TITLE: KWITANSI PENJUALAN & NOMOR TRANSAKSI */}
-              <div className="relative z-10 text-center space-y-1">
-                <h2 className="text-xl sm:text-2xl font-black uppercase tracking-wide text-zinc-900">
+              <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', marginBottom: '22px' }}>
+                <h2 style={{ fontSize: '20px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#111827', margin: '0 0 4px 0' }}>
                   KWITANSI PENJUALAN
                 </h2>
                 {/* 2PX SOLID CENTERED UNDERLINE */}
-                <div className="w-64 h-[2px] bg-zinc-900 mx-auto"></div>
-                <p className="text-sm font-semibold text-zinc-800 pt-0.5">
-                  No. Transaksi: <span className="font-bold">{invoiceNumber}</span>
+                <div style={{ width: '260px', height: '2px', backgroundColor: '#18181b', margin: '0 auto 6px auto' }}></div>
+                <p style={{ fontSize: '13px', fontWeight: 600, color: '#374151', margin: 0 }}>
+                  No. Transaksi: <strong style={{ color: '#111827' }}>{invoiceNumber}</strong>
                 </p>
               </div>
 
               {/* DUA KOLOM: INFORMASI PEMBELI & DETAIL PENJUALAN */}
-              <div className="relative z-10 grid grid-cols-2 gap-8 text-xs pt-1">
+              <div 
+                className="nota-grid-2" 
+                style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', fontSize: '12px', marginBottom: '22px', position: 'relative', zIndex: 1 }}
+              >
                 {/* Kolom Kiri: INFORMASI PEMBELI */}
-                <div className="space-y-1.5">
-                  <div className="border-b border-zinc-300 pb-1 mb-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ borderBottom: '1px solid #d4d4d8', paddingBottom: '4px', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#111827' }}>
                       INFORMASI PEMBELI
-                    </h3>
+                    </span>
                   </div>
-                  <div className="font-bold text-sm text-zinc-900 uppercase">
+                  <div style={{ fontSize: '13px', fontWeight: 800, color: '#111827', textTransform: 'uppercase' }}>
                     {transaction.buyerName || 'PARJANTO'}
                   </div>
-                  <div className="text-zinc-700 leading-snug">
+                  <div style={{ color: '#374151', lineHeight: 1.4 }}>
                     Alamat: {transaction.buyerAddress || 'Karangasem 01/05, Sraten, Gatak, Sukoharjo'}
                   </div>
-                  <div className="text-zinc-700">
+                  <div style={{ color: '#374151' }}>
                     WhatsApp: {transaction.buyerPhone || '085750886535'}
                   </div>
                 </div>
 
                 {/* Kolom Kanan: DETAIL PENJUALAN */}
-                <div className="space-y-1.5 text-right">
-                  <div className="border-b border-zinc-300 pb-1 mb-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'right' }}>
+                  <div style={{ borderBottom: '1px solid #d4d4d8', paddingBottom: '4px', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#111827' }}>
                       DETAIL PENJUALAN
-                    </h3>
+                    </span>
                   </div>
-                  <div className="text-zinc-700">
-                    Tanggal: <span className="font-medium">{formatDate(transaction.date)}</span>
+                  <div style={{ color: '#374151' }}>
+                    Tanggal: <span style={{ fontWeight: 600, color: '#111827' }}>{formatDate(transaction.date)}</span>
                   </div>
-                  <div className="text-zinc-700">
-                    Sales: <strong className="text-zinc-900">{transaction.salesName || 'Adi Wibakso'}</strong>
+                  <div style={{ color: '#374151' }}>
+                    Sales: <strong style={{ color: '#111827' }}>{transaction.salesName || 'Adi Wibakso'}</strong>
                   </div>
-                  <div className="text-zinc-700">
-                    Metode: <strong className="text-zinc-900 uppercase">{displayPaymentMethod}</strong>
+                  <div style={{ color: '#374151' }}>
+                    Metode: <strong style={{ color: '#111827', textTransform: 'uppercase' }}>{displayPaymentMethod}</strong>
                   </div>
                 </div>
               </div>
 
               {/* TABEL UNIT KENDARAAN (MATCHING EXACT TABLE anti-slop/Nota_T 6430 RA.pdf) */}
-              <div className="relative z-10 pt-2">
-                <table className="w-full text-left border-collapse border border-zinc-300 text-xs">
+              <div style={{ position: 'relative', zIndex: 1, marginBottom: '14px' }}>
+                <table 
+                  className="nota-table" 
+                  style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #d4d4d8', fontSize: '12px' }}
+                >
                   <thead>
-                    <tr className="border-b border-zinc-300 bg-zinc-50/50">
-                      <th className="py-2.5 px-4 font-bold text-zinc-900 border-r border-zinc-300 w-1/2">
+                    <tr style={{ backgroundColor: '#fafafa', borderBottom: '1px solid #d4d4d8' }}>
+                      <th style={{ padding: '8px 12px', fontWeight: 700, color: '#111827', textAlign: 'left', borderRight: '1px solid #d4d4d8', width: '50%' }}>
                         Deskripsi Unit Kendaraan
                       </th>
-                      <th className="py-2.5 px-4 font-bold text-zinc-900 text-center border-r border-zinc-300 w-1/4">
+                      <th style={{ padding: '8px 12px', fontWeight: 700, color: '#111827', textAlign: 'center', borderRight: '1px solid #d4d4d8', width: '25%' }}>
                         No. Polisi
                       </th>
-                      <th className="py-2.5 px-4 font-bold text-zinc-900 text-right w-1/4">
+                      <th style={{ padding: '8px 12px', fontWeight: 700, color: '#111827', textAlign: 'right', width: '25%' }}>
                         Harga Deal
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border-b border-zinc-300">
-                      <td className="py-3 px-4 border-r border-zinc-300 align-top">
-                        <div className="font-bold text-zinc-900 text-sm">
+                    <tr>
+                      <td style={{ padding: '10px 12px', verticalAlign: 'top', borderRight: '1px solid #d4d4d8' }}>
+                        <div style={{ fontWeight: 800, color: '#111827', fontSize: '13px' }}>
                           {transaction.unitName || 'Yamaha NMAX'}
                         </div>
-                        <div className="text-zinc-500 text-[11px] mt-0.5">
+                        <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>
                           Warna : {transaction.color || 'Biru'}
                         </div>
                       </td>
-                      <td className="py-3 px-4 border-r border-zinc-300 text-center align-top font-bold text-zinc-900 text-sm font-mono">
+                      <td style={{ padding: '10px 12px', verticalAlign: 'top', textAlign: 'center', fontWeight: 800, color: '#111827', fontSize: '13px', fontFamily: "'JetBrains Mono', Courier, monospace", borderRight: '1px solid #d4d4d8' }}>
                         {transaction.plate || 'T 6430 RA'}
                       </td>
-                      <td className="py-3 px-4 text-right align-top font-bold text-zinc-900 text-sm font-mono">
+                      <td style={{ padding: '10px 12px', verticalAlign: 'top', textAlign: 'right', fontWeight: 800, color: '#111827', fontSize: '13px', fontFamily: "'JetBrains Mono', Courier, monospace' " }}>
                         Rp {formatIDR(dealPrice)}
                       </td>
                     </tr>
@@ -319,34 +387,37 @@ export default function DocumentPrintModal({ transaction, onClose }) {
                 </table>
 
                 {/* TOTAL SUMMARY SECTION (RIGHT ALIGNED UNDER TABLE) */}
-                <div className="flex justify-end pt-3 text-xs">
-                  <div className="w-72 space-y-1.5">
-                    <div className="flex justify-between text-zinc-700">
+                <div 
+                  className="nota-flex nota-justify-end" 
+                  style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '10px', fontSize: '12px' }}
+                >
+                  <div style={{ width: '280px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#4b5563' }}>
                       <span>Total Harga Deal</span>
-                      <span className="font-semibold text-zinc-900 font-mono">Rp {formatIDR(dealPrice)}</span>
+                      <span style={{ fontWeight: 700, color: '#111827', fontFamily: "'JetBrains Mono', monospace" }}>Rp {formatIDR(dealPrice)}</span>
                     </div>
 
                     {isTempo ? (
                       <>
-                        <div className="flex justify-between text-zinc-700">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#4b5563' }}>
                           <span>Jumlah Titip DP</span>
-                          <span className="font-semibold text-emerald-700 font-mono">Rp {formatIDR(dpAmount)}</span>
+                          <span style={{ fontWeight: 700, color: '#047857', fontFamily: "'JetBrains Mono', monospace" }}>Rp {formatIDR(dpAmount)}</span>
                         </div>
-                        <div className="w-full h-[2px] bg-zinc-900 my-1"></div>
-                        <div className="flex justify-between font-black text-sm text-rose-700">
+                        <div style={{ width: '100%', height: '2px', backgroundColor: '#18181b', margin: '4px 0' }}></div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 900, fontSize: '14px', color: '#b91c1c' }}>
                           <span>SISA TAGIHAN</span>
-                          <span className="font-mono">Rp {formatIDR(remainingAmount)}</span>
+                          <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>Rp {formatIDR(remainingAmount)}</span>
                         </div>
-                        <div className="text-[11px] text-zinc-500 text-right pt-0.5">
+                        <div style={{ fontSize: '11px', color: '#6b7280', textAlign: 'right', paddingTop: '2px' }}>
                           Jatuh Tempo: {formatDate(transaction.dueDate)}
                         </div>
                       </>
                     ) : (
                       <>
-                        <div className="w-full h-[2px] bg-zinc-900 my-1"></div>
-                        <div className="flex justify-between font-black text-base text-zinc-950">
+                        <div style={{ width: '100%', height: '2px', backgroundColor: '#18181b', margin: '4px 0' }}></div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 900, fontSize: '15px', color: '#111827' }}>
                           <span>TOTAL LUNAS</span>
-                          <span className="font-mono">Rp {formatIDR(dealPrice)}</span>
+                          <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>Rp {formatIDR(dealPrice)}</span>
                         </div>
                       </>
                     )}
@@ -355,27 +426,30 @@ export default function DocumentPrintModal({ transaction, onClose }) {
               </div>
 
               {/* TANDA TANGAN (SIGNATURES) */}
-              <div className="relative z-10 pt-10 grid grid-cols-2 text-center text-xs">
+              <div 
+                className="nota-grid-2" 
+                style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', textAlign: 'center', fontSize: '12px', paddingTop: '45px', position: 'relative', zIndex: 1 }}
+              >
                 <div>
-                  <p className="text-zinc-700 font-normal">Hormat Kami (Kasir),</p>
-                  <div className="h-20"></div>
-                  <p className="font-bold text-zinc-900 uppercase">
+                  <p style={{ color: '#4b5563', margin: 0 }}>Hormat Kami (Kasir),</p>
+                  <div style={{ height: '70px' }}></div>
+                  <p style={{ fontWeight: 800, color: '#111827', textTransform: 'uppercase', margin: 0 }}>
                     ( ADMIN MAHARGA )
                   </p>
                 </div>
                 <div>
-                  <p className="text-zinc-700 font-normal">Pembeli,</p>
-                  <div className="h-20"></div>
-                  <p className="font-bold text-zinc-900 uppercase">
+                  <p style={{ color: '#4b5563', margin: 0 }}>Pembeli,</p>
+                  <div style={{ height: '70px' }}></div>
+                  <p style={{ fontWeight: 800, color: '#111827', textTransform: 'uppercase', margin: 0 }}>
                     ( {transaction.buyerName || 'PARJANTO'} )
                   </p>
                 </div>
               </div>
 
               {/* FOOTER NOTE DENGAN GARIS TITIK-TITIK */}
-              <div className="relative z-10 pt-8">
-                <div className="w-full border-t border-dotted border-zinc-400 mb-3"></div>
-                <p className="text-center text-[11px] text-zinc-500 italic">
+              <div style={{ paddingTop: '35px', position: 'relative', zIndex: 1 }}>
+                <div style={{ width: '100%', borderTop: '1px dotted #9ca3af', marginBottom: '10px' }}></div>
+                <p style={{ textAlign: 'center', fontSize: '11px', color: '#6b7280', fontStyle: 'italic', margin: 0 }}>
                   Kwitansi ini adalah bukti pembayaran yang sah. Terima kasih atas pembelian Anda di Maharga Motor.
                 </p>
               </div>
@@ -387,90 +461,95 @@ export default function DocumentPrintModal({ transaction, onClose }) {
           {/* FORMAT SURAT PERJANJIAN KENDARAAN (SPK) */}
           {/* ======================================================== */}
           {docType === 'spk' && (
-            <div className="space-y-4 text-xs text-zinc-800 font-sans">
-              {/* Header SPK */}
-              <div className="border-b-2 border-zinc-900 pb-3 mb-5 flex items-center justify-between">
+            <div className="space-y-4 text-xs text-zinc-800 font-sans" style={{ minHeight: '640px' }}>
+              {/* Header SPK dengan Logo.png */}
+              <div 
+                className="nota-flex nota-justify-between nota-items-end" 
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '2px solid #18181b', paddingBottom: '12px', marginBottom: '20px' }}
+              >
                 <div>
-                  <h1 className="text-2xl font-black tracking-tight" style={{ color: '#D32F2F' }}>
-                    MAHARGA MOTOR
-                  </h1>
-                  <p className="text-xs text-zinc-600 font-medium">
+                  <img 
+                    src="/logo.png" 
+                    alt="Maharga Motor" 
+                    style={{ height: '48px', width: 'auto', objectFit: 'contain', display: 'block', marginBottom: '6px' }} 
+                  />
+                  <p style={{ fontSize: '11px', color: '#4b5563', margin: 0, fontWeight: 500 }}>
                     Pusat Jual Beli Sepeda Motor Bekas Berkualitas & Bergaransi
                   </p>
-                  <p className="text-[11px] text-zinc-500 font-medium">
+                  <p style={{ fontSize: '11px', color: '#6b7280', margin: '2px 0 0 0' }}>
                     Jl. Ponggok - Krajan KM.1, Ds Tombol, Dalangan, Tulung, Klaten • WA: 0821-3564-1774
                   </p>
                 </div>
 
-                <div className="text-right font-mono">
-                  <span className="px-2 py-0.5 rounded bg-zinc-100 text-zinc-800 font-bold text-xs border border-zinc-300">
+                <div style={{ textAlign: 'right', fontFamily: "'JetBrains Mono', monospace" }}>
+                  <span style={{ padding: '2px 8px', borderRadius: '4px', backgroundColor: '#f4f4f5', color: '#18181b', fontWeight: 700, fontSize: '12px', border: '1px solid #d4d4d8', display: 'inline-block' }}>
                     {transaction.id}
                   </span>
-                  <p className="text-[11px] text-zinc-500 mt-1">Tgl: {formatDate(transaction.date)}</p>
+                  <p style={{ fontSize: '11px', color: '#6b7280', margin: '4px 0 0 0' }}>Tgl: {formatDate(transaction.date)}</p>
                 </div>
               </div>
 
-              <div className="text-center space-y-0.5">
-                <h2 className="text-sm font-black uppercase underline tracking-wide">
+              <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                <h2 style={{ fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', textDecoration: 'underline', letterSpacing: '0.5px', margin: 0 }}>
                   SURAT PERJANJIAN JUAL BELI & SERAH TERIMA KENDARAAN (SPK)
                 </h2>
-                <p className="text-[10px] text-zinc-500">Nomor: SPK/{transaction.id}/MM/2026</p>
+                <p style={{ fontSize: '10px', color: '#6b7280', margin: '2px 0 0 0' }}>Nomor: SPK/{transaction.id}/MM/2026</p>
               </div>
 
-              <div className="space-y-2">
-                <h3 className="font-bold text-zinc-900 border-b pb-0.5">I. PIHAK TERKAIT</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-2.5 bg-zinc-50 rounded border border-zinc-200">
-                    <span className="font-bold block text-[10px] text-zinc-500">PENJUAL:</span>
-                    <p className="font-bold">Showroom Maharga Motor</p>
-                    <p>Sales: {transaction.salesName || 'Staff Sales'}</p>
+              <div style={{ marginBottom: '14px' }}>
+                <h3 style={{ fontWeight: 700, color: '#111827', borderBottom: '1px solid #e4e4e7', paddingBottom: '2px', marginBottom: '6px' }}>I. PIHAK TERKAIT</h3>
+                <div className="nota-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div style={{ padding: '10px', backgroundColor: '#fafafa', borderRadius: '6px', border: '1px solid #e4e4e7' }}>
+                    <span style={{ fontWeight: 700, display: 'block', fontSize: '10px', color: '#6b7280' }}>PENJUAL:</span>
+                    <p style={{ fontWeight: 700, margin: '2px 0' }}>Showroom Maharga Motor</p>
+                    <p style={{ margin: 0 }}>Sales: {transaction.salesName || 'Staff Sales'}</p>
                   </div>
-                  <div className="p-2.5 bg-zinc-50 rounded border border-zinc-200">
-                    <span className="font-bold block text-[10px] text-zinc-500">PEMBELI:</span>
-                    <p className="font-bold">{transaction.buyerName || '-'}</p>
-                    <p>HP: {transaction.buyerPhone || '-'}</p>
-                    <p>Alamat: {transaction.buyerAddress || '-'}</p>
+                  <div style={{ padding: '10px', backgroundColor: '#fafafa', borderRadius: '6px', border: '1px solid #e4e4e7' }}>
+                    <span style={{ fontWeight: 700, display: 'block', fontSize: '10px', color: '#6b7280' }}>PEMBELI:</span>
+                    <p style={{ fontWeight: 700, margin: '2px 0' }}>{transaction.buyerName || '-'}</p>
+                    <p style={{ margin: 0 }}>HP: {transaction.buyerPhone || '-'}</p>
+                    <p style={{ margin: 0 }}>Alamat: {transaction.buyerAddress || '-'}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <h3 className="font-bold text-zinc-900 border-b pb-0.5">II. DETAIL OBJEK KENDARAAN</h3>
-                <table className="w-full text-left border-collapse border border-zinc-300">
+              <div style={{ marginBottom: '14px' }}>
+                <h3 style={{ fontWeight: 700, color: '#111827', borderBottom: '1px solid #e4e4e7', paddingBottom: '2px', marginBottom: '6px' }}>II. DETAIL OBJEK KENDARAAN</h3>
+                <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #d4d4d8', textAlign: 'left' }}>
                   <tbody>
-                    <tr className="border-b border-zinc-300">
-                      <td className="p-2 bg-zinc-100 font-bold w-1/3">Tipe / Merk:</td>
-                      <td className="p-2 font-bold">{transaction.unitName}</td>
+                    <tr style={{ borderBottom: '1px solid #d4d4d8' }}>
+                      <td style={{ padding: '8px', backgroundColor: '#f4f4f5', fontWeight: 700, width: '35%' }}>Tipe / Merk:</td>
+                      <td style={{ padding: '8px', fontWeight: 700 }}>{transaction.unitName}</td>
                     </tr>
-                    <tr className="border-b border-zinc-300">
-                      <td className="p-2 bg-zinc-100 font-bold">Nomor Polisi:</td>
-                      <td className="p-2 font-mono font-bold text-amber-800">{transaction.plate}</td>
+                    <tr style={{ borderBottom: '1px solid #d4d4d8' }}>
+                      <td style={{ padding: '8px', backgroundColor: '#f4f4f5', fontWeight: 700 }}>Nomor Polisi:</td>
+                      <td style={{ padding: '8px', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: '#92400e' }}>{transaction.plate}</td>
                     </tr>
-                    <tr className="border-b border-zinc-300">
-                      <td className="p-2 bg-zinc-100 font-bold">Harga Kesepakatan:</td>
-                      <td className="p-2 font-bold text-emerald-800 text-sm font-mono">{formatIDR(dealPrice)}</td>
+                    <tr style={{ borderBottom: '1px solid #d4d4d8' }}>
+                      <td style={{ padding: '8px', backgroundColor: '#f4f4f5', fontWeight: 700 }}>Harga Kesepakatan:</td>
+                      <td style={{ padding: '8px', fontWeight: 700, color: '#047857', fontSize: '13px', fontFamily: "'JetBrains Mono', monospace" }}>{formatIDR(dealPrice)}</td>
                     </tr>
-                    <tr className="border-b border-zinc-300">
-                      <td className="p-2 bg-zinc-100 font-bold">Metode Pembayaran:</td>
-                      <td className="p-2 font-mono uppercase font-bold">{displayPaymentMethod}</td>
+                    <tr style={{ borderBottom: '1px solid #d4d4d8' }}>
+                      <td style={{ padding: '8px', backgroundColor: '#f4f4f5', fontWeight: 700 }}>Metode Pembayaran:</td>
+                      <td style={{ padding: '8px', fontFamily: "'JetBrains Mono', monospace", textTransform: 'uppercase', fontWeight: 700 }}>{displayPaymentMethod}</td>
                     </tr>
                     {isTempo && (
                       <>
-                        <tr className="border-b border-zinc-300">
-                          <td className="p-2 bg-zinc-100 font-bold">Uang Muka (DP Masuk):</td>
-                          <td className="p-2 font-bold text-emerald-800 font-mono">{formatIDR(dpAmount)}</td>
+                        <tr style={{ borderBottom: '1px solid #d4d4d8' }}>
+                          <td style={{ padding: '8px', backgroundColor: '#f4f4f5', fontWeight: 700 }}>Uang Muka (DP Masuk):</td>
+                          <td style={{ padding: '8px', fontWeight: 700, color: '#047857', fontFamily: "'JetBrains Mono', monospace" }}>{formatIDR(dpAmount)}</td>
                         </tr>
-                        <tr className="border-b border-zinc-300">
-                          <td className="p-2 bg-zinc-100 font-bold">Sisa Pelunasan:</td>
-                          <td className="p-2 font-bold text-rose-800 font-mono">{formatIDR(remainingAmount)}</td>
+                        <tr style={{ borderBottom: '1px solid #d4d4d8' }}>
+                          <td style={{ padding: '8px', backgroundColor: '#f4f4f5', fontWeight: 700 }}>Sisa Pelunasan:</td>
+                          <td style={{ padding: '8px', fontWeight: 700, color: '#b91c1c', fontFamily: "'JetBrains Mono', monospace" }}>{formatIDR(remainingAmount)}</td>
                         </tr>
-                        <tr className="border-b border-zinc-300">
-                          <td className="p-2 bg-zinc-100 font-bold">Jatuh Tempo:</td>
-                          <td className="p-2 font-bold">{formatDate(transaction.dueDate)}</td>
+                        <tr style={{ borderBottom: '1px solid #d4d4d8' }}>
+                          <td style={{ padding: '8px', backgroundColor: '#f4f4f5', fontWeight: 700 }}>Jatuh Tempo:</td>
+                          <td style={{ padding: '8px', fontWeight: 700 }}>{formatDate(transaction.dueDate)}</td>
                         </tr>
-                        <tr className="border-b border-zinc-300">
-                          <td className="p-2 bg-zinc-100 font-bold">Jaminan yang Dititipkan:</td>
-                          <td className="p-2 font-bold">{transaction.guarantee || '-'}</td>
+                        <tr style={{ borderBottom: '1px solid #d4d4d8' }}>
+                          <td style={{ padding: '8px', backgroundColor: '#f4f4f5', fontWeight: 700 }}>Jaminan yang Dititipkan:</td>
+                          <td style={{ padding: '8px', fontWeight: 700 }}>{transaction.guarantee || '-'}</td>
                         </tr>
                       </>
                     )}
@@ -478,21 +557,23 @@ export default function DocumentPrintModal({ transaction, onClose }) {
                 </table>
               </div>
 
-              <div className="space-y-1 text-[10px] text-zinc-600 bg-zinc-50 p-2.5 rounded border border-zinc-200">
-                <span className="font-bold text-zinc-900 block">KETENTUAN & GARANSI:</span>
-                <p>1. Kendaraan diserahkan dalam kondisi fisik dan mesin baik sebagaimana dicek bersama.</p>
-                <p>2. Showroom Maharga Motor memberikan Garansi Mesin selama 30 Hari sejak tanggal serah terima.</p>
-                <p>3. Keabsahan dokumen (STNK & BPKB) dijamin 100% legal dan bebas masalah hukum.</p>
+              <div style={{ fontSize: '10px', color: '#4b5563', backgroundColor: '#fafafa', padding: '10px', borderRadius: '6px', border: '1px solid #e4e4e7', marginBottom: '20px' }}>
+                <span style={{ fontWeight: 700, color: '#111827', display: 'block', marginBottom: '2px' }}>KETENTUAN & GARANSI:</span>
+                <p style={{ margin: '1px 0' }}>1. Kendaraan diserahkan dalam kondisi fisik dan mesin baik sebagaimana dicek bersama.</p>
+                <p style={{ margin: '1px 0' }}>2. Showroom Maharga Motor memberikan Garansi Mesin selama 30 Hari sejak tanggal serah terima.</p>
+                <p style={{ margin: '1px 0' }}>3. Keabsahan dokumen (STNK & BPKB) dijamin 100% legal dan bebas masalah hukum.</p>
               </div>
 
-              <div className="pt-6 grid grid-cols-2 text-center gap-8">
+              <div className="nota-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', textAlign: 'center', paddingTop: '20px' }}>
                 <div>
-                  <p className="text-zinc-600 mb-12">Pihak Kedua (Pembeli)</p>
-                  <p className="font-bold text-zinc-900 underline">( {transaction.buyerName || 'PEMBELI'} )</p>
+                  <p style={{ color: '#4b5563', margin: 0 }}>Pihak Kedua (Pembeli)</p>
+                  <div style={{ height: '50px' }}></div>
+                  <p style={{ fontWeight: 800, color: '#111827', textDecoration: 'underline', margin: 0 }}>( {transaction.buyerName || 'PEMBELI'} )</p>
                 </div>
                 <div>
-                  <p className="text-zinc-600 mb-12">Pihak Pertama (Maharga Motor)</p>
-                  <p className="font-bold text-zinc-900 underline">( {transaction.salesName || 'ADMIN MAHARGA'} )</p>
+                  <p style={{ color: '#4b5563', margin: 0 }}>Pihak Pertama (Maharga Motor)</p>
+                  <div style={{ height: '50px' }}></div>
+                  <p style={{ fontWeight: 800, color: '#111827', textDecoration: 'underline', margin: 0 }}>( {transaction.salesName || 'ADMIN MAHARGA'} )</p>
                 </div>
               </div>
             </div>

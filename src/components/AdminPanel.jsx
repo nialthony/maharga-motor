@@ -28,11 +28,13 @@ import {
   testSupabaseConnection 
 } from '../lib/supabaseClient';
 import { syncAllToCloud, clearShowroomDataInCloud, deleteUnitFromCloud, describeDbError } from '../lib/cloudStore';
+import { dataUrlToBlob, uploadUnitPhoto, removeUnitPhoto, isStoragePath } from '../lib/imageStorage';
 import RoleBadge from './RoleBadge';
 import MotorTypeManagement from './MotorTypeManagement';
 import ShowroomSettings from './ShowroomSettings';
 
 import Badge from './ui/Badge';
+import UnitImage from './ui/UnitImage';
 
 export default function AdminPanel({ 
   units = [], 
@@ -176,8 +178,8 @@ export default function AdminPanel({
       alert('Belum ada unit motor yang dipilih.');
       return;
     }
-    const photoUrl = urlToApply || uploadPreview || newImageUrl.trim();
-    if (!photoUrl) {
+    const photoSource = urlToApply || uploadPreview || newImageUrl.trim();
+    if (!photoSource) {
       alert('Silakan pilih berkas foto atau masukkan link URL terlebih dahulu.');
       return;
     }
@@ -186,6 +188,17 @@ export default function AdminPanel({
     setSaveSuccessMsg('');
 
     try {
+      // ---------------------------------------------------------------------
+      // FOTO BARU: kalau sumbernya data URI base64 (hasil picker/kamera),
+      // unggah ke bucket private dan simpan PATH-nya saja ke database.
+      // Link URL web biasa (http/https) dibiarkan apa adanya.
+      // ---------------------------------------------------------------------
+      let photoUrl = photoSource;
+      if (photoSource.startsWith('data:')) {
+        const uploadedPath = await uploadUnitPhoto(dataUrlToBlob(photoSource), 'units');
+        photoUrl = uploadedPath;
+      }
+
       const currentImages = selectedUnit.images || [];
       const updatedImages = [photoUrl, ...currentImages.filter(img => img !== photoUrl)];
 
@@ -259,6 +272,12 @@ export default function AdminPanel({
           console.error('Gagal hapus foto di tabel units:', dbError);
           alert(`Foto TIDAK terhapus dari database:\n\n${describeDbError(dbError)}`);
           return;
+        }
+
+        // Baris database sudah tidak mereferensikan berkasnya -> hapus objek di
+        // storage agar kuota tidak dipenuhi foto yatim (orphan).
+        if (isStoragePath(photoUrl)) {
+          removeUnitPhoto(photoUrl);
         }
       }
 
@@ -679,10 +698,10 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
                                 : 'bg-zinc-950/60 border-zinc-800/80 hover:bg-zinc-800/50 hover:border-zinc-700'
                             }`}
                           >
-                            <img 
-                              src={thumb} 
-                              alt={unit.model} 
-                              className="w-12 h-12 rounded-lg object-cover bg-zinc-900 border border-zinc-800 shrink-0" 
+                            <UnitImage
+                              path={thumb}
+                              alt={unit.model}
+                              className="w-12 h-12 rounded-lg object-cover bg-zinc-900 border border-zinc-800 shrink-0"
                             />
                             <div className="min-w-0 flex-1">
                               <h4 className="text-xs font-bold text-zinc-100 truncate">
@@ -888,10 +907,10 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
                               key={index}
                               className="relative group rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950 aspect-video"
                             >
-                              <img 
-                                src={imgUrl} 
-                                alt={`Unit angle ${index + 1}`} 
-                                className="w-full h-full object-cover" 
+                              <UnitImage
+                                path={imgUrl}
+                                alt={`Unit angle ${index + 1}`}
+                                className="w-full h-full object-cover"
                               />
 
                               {index === 0 && (
@@ -1006,10 +1025,10 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
                           return (
                             <tr key={unit.id} className="hover:bg-zinc-800/40 transition-colors">
                               <td className="py-2.5 px-4 flex items-center gap-3">
-                                <img 
-                                  src={thumb} 
-                                  alt={unit.model} 
-                                  className="w-10 h-10 rounded-lg object-cover bg-zinc-950 border border-zinc-800 shrink-0" 
+                                <UnitImage
+                                  path={thumb}
+                                  alt={unit.model}
+                                  className="w-10 h-10 rounded-lg object-cover bg-zinc-950 border border-zinc-800 shrink-0"
                                 />
                                 <div>
                                   <div className="font-bold text-zinc-100">{unit.brand} {unit.model}</div>

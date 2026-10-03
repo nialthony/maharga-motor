@@ -10,7 +10,10 @@
     "deploy": "npm run build && wrangler deploy",
     "lint": "oxlint",
     "preview": "vite preview",
-    "check:status": "node scripts/check-unit-status-parity.mjs"
+    "check:status": "node scripts/check-unit-status-parity.mjs",
+    "test:images": "node --import ./test/register-loader.mjs test/imageStorage.test.mjs",
+    "migrate:images": "node scripts/migrate-images-to-storage.js",
+    "migrate:images:dry": "node scripts/migrate-images-to-storage.js --dry-run"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.109.0",

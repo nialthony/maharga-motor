@@ -17,6 +17,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ouuxgwskivkugrndgsiv.supabase.co';
 const SERVICE_ROLE_KEY = process.argv[2] || process.env.SUPABASE_SERVICE_ROLE_KEY;
+const DRY_RUN = process.argv.includes('--dry-run');
 const BUCKET_NAME = 'showroom-assets';
 
 if (!SERVICE_ROLE_KEY) {
@@ -41,7 +42,10 @@ async function migrateImages() {
   }
 
   const hasBucket = buckets.some(b => b.name === BUCKET_NAME || b.id === BUCKET_NAME);
-  if (!hasBucket) {
+  if (!hasBucket && DRY_RUN) {
+    console.log(`ℹ️  [dry-run] Bucket '${BUCKET_NAME}' belum ada dan AKAN dibuat saat migrasi dijalankan.\n`);
+  }
+  if (!hasBucket && !DRY_RUN) {
     console.log(`Creating private bucket '${BUCKET_NAME}'...`);
     const { error: createErr } = await supabase.storage.createBucket(BUCKET_NAME, {
       public: false,
@@ -90,6 +94,13 @@ async function migrateImages() {
           const buffer = Buffer.from(base64Data, 'base64');
           const storagePath = `units/${unit.id}_img_${i + 1}_${Date.now()}.${ext}`;
 
+          if (DRY_RUN) {
+            console.log(`  🔍 [dry-run] Unit #${unit.id} (${unit.plate}) foto ${i + 1}: ${(buffer.length / 1024).toFixed(0)} KB -> ${storagePath}`);
+            newImagePaths.push(storagePath);
+            totalUploadedImages++;
+            continue;
+          }
+
           const { error: uploadErr } = await supabase.storage
             .from(BUCKET_NAME)
             .upload(storagePath, buffer, {
@@ -116,7 +127,12 @@ async function migrateImages() {
       }
     }
 
-    if (hasBase64) {
+    if (hasBase64 && DRY_RUN) {
+      totalMigratedUnits++;
+      console.log(`  🔍 [dry-run] Unit #${unit.id} (${unit.plate}) AKAN diperbarui (${newImagePaths.length} foto).\n`);
+    }
+
+    if (hasBase64 && !DRY_RUN) {
       const { error: updateErr } = await supabase
         .from('units')
         .update({ images: newImagePaths })
@@ -132,9 +148,9 @@ async function migrateImages() {
   }
 
   console.log('----------------------------------------------------');
-  console.log(`🎉 MIGRASI SELESAI:`);
-  console.log(`   - Total unit diperbarui: ${totalMigratedUnits}`);
-  console.log(`   - Total gambar diunggah ke storage: ${totalUploadedImages}`);
+  console.log(DRY_RUN ? `🔍 DRY-RUN SELESAI (tidak ada perubahan yang ditulis):` : `🎉 MIGRASI SELESAI:`);
+  console.log(`   - Total unit ${DRY_RUN ? 'yang akan diperbarui' : 'diperbarui'}: ${totalMigratedUnits}`);
+  console.log(`   - Total gambar ${DRY_RUN ? 'yang akan diunggah' : 'diunggah'} ke storage: ${totalUploadedImages}`);
   console.log('----------------------------------------------------\n');
 }
 

@@ -1,0 +1,108 @@
+# ==============================================================================
+# BACKUP HARIAN SUPABASE (pg_dump) — pengganti backup otomatis Supabase Pro
+# ==============================================================================
+# MASALAH: Supabase Free TIDAK punya backup otomatis dan TIDAK punya PITR.
+# Kalau data showroom (omzet, komisi, HPP, transaksi) terhapus / kena migrasi
+# gagal, hilang permanen. Untuk aplikasi yang dijual, ini risiko paling mahal.
+#
+# SOLUSI: dump database tiap hari lewat GitHub Actions, simpan sebagai artifact
+# 30 hari + (opsional) kirim ke Cloudflare R2 / S3 / Google Drive via rclone.
+#
+# CARA PASANG:
+#   1. Salin file ini ke: .github/workflows/backup-supabase.yml
+#   2. Ambil connection string: Supabase Dashboard → Settings → Database →
+#      Connection string → URI (pakai "Direct connection", port 5432).
+#      Format: postgresql://postgres.<ref>:<PASSWORD>@aws-0-<region>.pooler.supabase.com:5432/postgres
+#      Ganti [YOUR-PASSWORD] dengan password database.
+#   3. Repo → Settings → Secrets and variables → Actions → New repository secret:
+#        SUPABASE_DB_URL = <connection string di atas>
+#      (opsional, kalau mau simpan ke R2) tambahkan:
+#        R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_ENDPOINT, R2_BUCKET
+#   4. Commit. Uji dengan "Run workflow" manual, lalu CEK hasilnya di tab Actions.
+#
+# PENTING — UJI RESTORE SEKALI:
+#   Backup yang belum pernah diuji restore BUKAN backup. Setelah workflow jalan,
+#   coba restore ke project Supabase lain (gratis, project ke-2):
+#     pg_restore --no-owner --no-privileges -d "<URL_PROJECT_BARU>" backup.dump
+# ==============================================================================
+
+name: Backup Supabase (harian)
+
+on:
+  schedule:
+    # Setiap hari 18:00 UTC = 01:00 WIB (sebelum showroom buka)
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Cek secret tersedia
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "${DB_URL:-}" ]; then
+            echo "::error::Secret SUPABASE_DB_URL belum diisi."
+            exit 1
+          fi
+
+      - name: Pastikan client postgres tersedia
+        run: |
+          if ! command -v pg_dump >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql-client
+          fi
+          pg_dump --version
+
+      - name: Jalankan pg_dump (format custom, bisa di-restore selektif)
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+
+          STAMP=$(date -u +'%Y-%m-%d_%H%M')
+          FILE="maharga_backup_${STAMP}.dump"
+
+          # --no-owner/--no-privileges agar bisa di-restore ke project Supabase lain
+          # -Fc = format custom (mendukung pg_restore & kompresi)
+          pg_dump "$DB_URL" \
+            --no-owner \
+            --no-privileges \
+            --format=custom \
+            --file="$FILE"
+
+          SIZE=$(du -h "$FILE" | cut -f1)
+          echo "BACKUP_FILE=$FILE" >> "$GITHUB_ENV"
+          echo "✅ Dump selesai: $FILE ($SIZE)"
+
+          # Simpan versi plain-SQL juga: berguna untuk dibuka manual / dibaca manusia
+          pg_dump "$DB_URL" --no-owner --no-privileges --format=plain --file="maharga_backup_${STAMP}.sql" || true
+
+      - name: Simpan sebagai artifact GitHub (retensi 30 hari)
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-backup-${{ github.run_number }}
+          path: |
+            ${{ env.BACKUP_FILE }}
+            *.sql
+          retention-days: 30
+          if-no-files-found: error
+
+      # -------------------------------------------------------------------
+      # OPSIONAL: kirim juga ke Cloudflare R2 / S3 (retensi lebih panjang).
+      # Aktifkan dengan menghapus tanda komentar setelah 4 secret R2 diisi.
+      # -------------------------------------------------------------------
+      # - name: Kirim ke Cloudflare R2
+      #   if: ${{ env.R2_BUCKET != '' }}
+      #   env:
+      #     AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      #     R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      #   run: |
+      #     pip install --quiet awscli
+      #     aws s3 cp "$BACKUP_FILE" "s3://${R2_BUCKET}/maharga/" \
+      #       --endpoint-url "${{ secrets.R2_ENDPOINT }}"
+      #     echo "✅ Terkirim ke R2"

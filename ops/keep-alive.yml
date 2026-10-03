@@ -1,0 +1,72 @@
+# ==============================================================================
+# KEEP-ALIVE SUPABASE — mencegah project Free tier di-pause otomatis
+# ==============================================================================
+# MASALAH: Supabase Free mem-pause project yang tidak ada aktivitas 7 hari.
+# Kalau showroom tutup seminggu (libur panjang), aplikasi jadi mati total
+# sampai di-restore manual dari dashboard.
+#
+# SOLUSI: ping ringan ke REST API Supabase setiap 2 hari.
+#
+# CARA PASANG:
+#   1. Salin file ini ke: .github/workflows/keep-alive.yml
+#   2. Buka repo → Settings → Secrets and variables → Actions → New repository secret:
+#        SUPABASE_URL       = https://<project-ref>.supabase.co
+#        SUPABASE_ANON_KEY  = <anon / publishable key>
+#   3. Commit. Selesai (bisa juga dijalankan manual dari tab Actions).
+#
+# CATATAN: kalau nanti pakai Supabase Pro, workflow ini boleh dihapus
+# (project Pro tidak pernah di-pause). Biayanya ±30 detik/bulan dari kuota
+# Actions gratis 2.000 menit/bulan.
+# ==============================================================================
+
+name: Supabase Keep-Alive
+
+on:
+  schedule:
+    # Setiap 2 hari pukul 02:00 UTC (09:00 WIB) — aman di bawah ambang 7 hari
+    - cron: '0 2 */2 * *'
+  workflow_dispatch:   # tombol "Run workflow" manual
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST (catat aktivitas database)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_ANON_KEY:-}" ]; then
+            echo "::error::Secret SUPABASE_URL / SUPABASE_ANON_KEY belum diisi."
+            echo "Buka Settings → Secrets and variables → Actions, lalu tambahkan keduanya."
+            exit 1
+          fi
+
+          echo "Ping ke ${SUPABASE_URL}/rest/v1/units ..."
+
+          # Query paling ringan: ambil 1 kolom dari 1 baris.
+          # Header apikey + Authorization wajib agar terhitung sebagai aktivitas API.
+          HTTP_CODE=$(curl -sS -o /tmp/out.json -w '%{http_code}' \
+            -X GET "${SUPABASE_URL}/rest/v1/units?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -H "Accept: application/json")
+
+          echo "HTTP status: ${HTTP_CODE}"
+          cat /tmp/out.json || true
+          echo
+
+          case "${HTTP_CODE}" in
+            200|206)
+              echo "✅ Project aktif — tidak akan di-pause."
+              ;;
+            401|403)
+              echo "::warning::Terhubung tapi ditolak (${HTTP_CODE}) — cek anon key / RLS."
+              ;;
+            *)
+              echo "::error::Ping gagal dengan status ${HTTP_CODE}. Cek apakah project sedang paused atau URL salah."
+              exit 1
+              ;;
+          esac

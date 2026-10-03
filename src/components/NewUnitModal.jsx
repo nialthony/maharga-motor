@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { formatIDR, initialBrands, initialTypes } from '../data/mockData';
 import { generateUnitId } from '../lib/cloudStore';
+import { compressImageBlob, uploadUnitPhoto } from '../lib/imageStorage';
 
 export default function NewUnitModal({ 
   isOpen, 
@@ -18,6 +19,10 @@ export default function NewUnitModal({
   brands = initialBrands, 
   types = initialTypes 
 }) {
+  // Foto bawaan bila operator tidak mengunggah apa pun. Foto yang dipilih akan
+  // diunggah ke Supabase Storage; hanya PATH-nya yang disimpan ke database.
+  const DEFAULT_UNIT_IMAGE = 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=800&q=80';
+
   const [brand, setBrand] = useState('Honda');
   const [model, setModel] = useState('');
   const [year, setYear] = useState(2023);
@@ -44,8 +49,11 @@ export default function NewUnitModal({
   const [buyPrice, setBuyPrice] = useState(15000000);
   const [minMarginPercent, setMinMarginPercent] = useState(10);
   const [displayPrice, setDisplayPrice] = useState(17500000);
-  const [imageUrl, setImageUrl] = useState('https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=800&q=80');
+
   const [uploadPreview, setUploadPreview] = useState(null);
+  // Berkas asli disimpan supaya saat submit bisa dikompres lalu diunggah ke storage.
+  // (Sebelumnya hanya base64 yang disimpan, lalu base64 itu ikut masuk DATABASE.)
+  const [selectedFile, setSelectedFile] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const fileInputRef = useRef(null);
@@ -82,16 +90,19 @@ export default function NewUnitModal({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 800 * 1024) {
-      alert('Ukuran foto terlalu besar. Maksimal 800KB!');
+    // 5 MB = batas berkas bucket 'showroom-assets'. Foto dikecilkan otomatis
+    // (sisi terpanjang 1200px, JPEG q0.82 -> biasanya < 200 KB) sebelum diunggah.
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Ukuran foto terlalu besar. Maksimal 5 MB (akan dikompres otomatis).');
       return;
     }
 
+    setSelectedFile(file);
+
     const reader = new FileReader();
     reader.onload = (event) => {
-      const base64Data = event.target?.result;
-      setUploadPreview(base64Data);
-      setImageUrl(base64Data);
+      // Hanya untuk PRATINJAU di dalam form — bukan nilai yang disimpan.
+      setUploadPreview(event.target?.result);
     };
     reader.readAsDataURL(file);
   };
@@ -105,7 +116,29 @@ export default function NewUnitModal({
     }
     if (isSaving) return;
 
-    const finalImage = uploadPreview || imageUrl.trim() || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=800&q=80';
+    setIsSaving(true);
+    setSaveError('');
+
+    // ---------------------------------------------------------------------
+    // FOTO: unggah ke bucket private 'showroom-assets', lalu simpan PATH-nya
+    // ke kolom units.images. Yang TIDAK boleh lagi: menyimpan base64 di
+    // database — itu penyebab utama kuota Supabase (500 MB / 5 GB egress)
+    // habis dalam hitungan minggu.
+    // ---------------------------------------------------------------------
+    let finalImage;
+    try {
+      if (selectedFile) {
+        const compressed = await compressImageBlob(selectedFile);
+        finalImage = await uploadUnitPhoto(compressed, 'units');
+      } else {
+        finalImage = DEFAULT_UNIT_IMAGE;
+      }
+    } catch (uploadErr) {
+      console.error('Gagal mengunggah foto ke storage:', uploadErr);
+      setSaveError(`Foto gagal diunggah ke storage: ${uploadErr?.message || uploadErr}. Unit belum disimpan — coba lagi atau lewati foto.`);
+      setIsSaving(false);
+      return;
+    }
 
     const newUnit = {
       // ID aman (anti-tabrakan milidetik) — lihat generateUnitId() di cloudStore.
@@ -133,8 +166,6 @@ export default function NewUnitModal({
       repairs: []
     };
 
-    setIsSaving(true);
-    setSaveError('');
     try {
       const result = await onAddUnit(newUnit);
 
@@ -190,7 +221,7 @@ export default function NewUnitModal({
             <div className="flex flex-col sm:flex-row gap-3 items-center">
               <div className="w-24 h-24 rounded-xl overflow-hidden border border-zinc-700 bg-zinc-900 shrink-0 relative shadow-sm">
                 <img 
-                  src={uploadPreview || imageUrl} 
+                  src={uploadPreview || DEFAULT_UNIT_IMAGE} 
                   alt="Preview" 
                   className="w-full h-full object-cover" 
                 />

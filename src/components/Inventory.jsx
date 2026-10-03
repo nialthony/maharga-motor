@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { formatIDR, calculateUnitEconomics } from '../data/mockData';
 import Badge from './ui/Badge';
+import UnitImage from './ui/UnitImage';
 
 export default function Inventory({ 
   units = [], 
@@ -321,8 +322,8 @@ export default function Inventory({
               >
                 <div>
                   <div className="relative h-44 bg-zinc-950 overflow-hidden">
-                    <img
-                      src={thumb}
+                    <UnitImage
+                      path={thumb}
                       alt={unit.model}
                       className="w-full h-full object-cover"
                     />

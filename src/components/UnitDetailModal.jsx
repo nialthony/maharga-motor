@@ -3,6 +3,7 @@ import { X, CreditCard, CheckCircle2, ExternalLink, Printer } from 'lucide-react
 import { formatIDR, calculateUnitEconomics } from '../data/mockData';
 
 import Badge from './ui/Badge';
+import UnitImage from './ui/UnitImage';
 
 export default function UnitDetailModal({ 
   unit, 
@@ -54,7 +55,7 @@ export default function UnitDetailModal({
           <div className="grid grid-cols-2 gap-2.5">
             {unit.images.map((img, idx) => (
               <div key={idx} className="relative h-40 rounded-lg overflow-hidden bg-zinc-950 border border-zinc-800">
-                <img src={img} alt={unit.model} className="w-full h-full object-cover" />
+                <UnitImage path={img} alt={unit.model} className="w-full h-full object-cover" />
               </div>
             ))}
           </div>

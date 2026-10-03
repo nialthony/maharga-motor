@@ -26,6 +26,7 @@ import { formatIDR, calculateUnitEconomics } from '../data/mockData';
 const generateTransactionId = () => `TX-${Date.now().toString().slice(-6)}`;
 
 import Badge from './ui/Badge';
+import UnitImage from './ui/UnitImage';
 
 export default function SalesPOS({ 
   units = [], 
@@ -363,10 +364,10 @@ export default function SalesPOS({
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
                     {(activeUnit.images?.[0] || activeUnit.image) ? (
-                      <img 
-                        src={activeUnit.images?.[0] || activeUnit.image} 
-                        alt={activeUnit.model} 
-                        className="w-full h-full object-cover" 
+                      <UnitImage
+                        path={activeUnit.images?.[0] || activeUnit.image}
+                        alt={activeUnit.model}
+                        className="w-full h-full object-cover"
                       />
                     ) : (
                       <span className="text-xs font-mono font-bold text-amber-500">
@@ -1148,7 +1149,7 @@ export default function SalesPOS({
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-14 h-14 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
                           {(u.images?.[0] || u.image) ? (
-                            <img src={u.images?.[0] || u.image} alt={u.model} className="w-full h-full object-cover" />
+                            <UnitImage path={u.images?.[0] || u.image} alt={u.model} className="w-full h-full object-cover" />
                           ) : (
                             <span className="text-xs font-mono font-bold text-amber-500/80">{u.brand?.slice(0, 3)}</span>
                           )}

@@ -4,6 +4,7 @@ import { formatIDR } from '../data/mockData';
 import RoleBadge from './RoleBadge';
 
 import Badge from './ui/Badge';
+import UnitImage from './ui/UnitImage';
 
 export default function WorkshopService({ 
   units = [], 
@@ -138,10 +139,10 @@ export default function WorkshopService({
                       <div className="flex items-center gap-2.5 min-w-0">
                         {(selectedUnit.images?.[0] || selectedUnit.image) && (
                           <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
-                            <img 
-                              src={selectedUnit.images?.[0] || selectedUnit.image} 
-                              alt={selectedUnit.model} 
-                              className="w-full h-full object-cover" 
+                            <UnitImage
+                              path={selectedUnit.images?.[0] || selectedUnit.image}
+                              alt={selectedUnit.model}
+                              className="w-full h-full object-cover"
                             />
                           </div>
                         )}
@@ -451,7 +452,7 @@ export default function WorkshopService({
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div className="w-12 h-12 rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
                           {(u.images?.[0] || u.image) ? (
-                            <img src={u.images?.[0] || u.image} alt={u.model} className="w-full h-full object-cover" />
+                            <UnitImage path={u.images?.[0] || u.image} alt={u.model} className="w-full h-full object-cover" />
                           ) : (
                             <span className="text-[11px] font-bold font-mono text-amber-500/80">{u.brand?.slice(0, 3)}</span>
                           )}

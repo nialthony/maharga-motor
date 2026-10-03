@@ -36,9 +36,30 @@ NILAI LAMA: URL web / base64 sisa migrasi DILEWATKAN apa adanya (tetap tampil ta
 
 ---
 
-## 2. Langkah migrasi data lama (WAJIB — sekali saja)
+## 2. Migrasi data lama — STATUS: TIDAK DIPERLUKAN SAAT INI
 
-Foto yang sudah terlanjur tersimpan sebagai base64 harus dipindahkan. Skripnya sudah ada dan sudah diuji kering.
+Pemeriksaan langsung ke database produksi (4 Oktober 2026, dry-run read-only):
+
+| Yang diperiksa | Hasil |
+|---|---|
+| Unit di tabel `units` | **1** (AD 7373 USB — Yamaha NMAX NEW, status Terjual) |
+| Unit dengan foto base64 | **0** |
+| Foto di bucket `showroom-assets` | **0 objek** |
+| Transaksi / karyawan / catatan servis | 1 / 5 / 1 |
+
+**Artinya: tidak ada foto base64 yang perlu dipindahkan.** Unit dengan foto base64 tidak pernah
+tersimpan ke database karena bug "hilang setelah refresh" (lihat `PERBAIKAN-BUG-UNIT-TIDAK-TERSIMPAN.md`) —
+jadi risiko egress besar yang dihitung di `ANALISIS-KETAHANAN-PRODUKSI.md` belum sempat terwujud.
+
+Perbaikan P0-1 tetap penting untuk **ke depan**: mulai sekarang setiap foto baru yang diunggah
+langsung masuk ke Storage dan hanya path-nya yang disimpan ke database.
+
+Jalankan ulang pemeriksaan ini kapan pun (mis. setelah data showroom terisi penuh) dengan langkah 2a–2b di bawah —
+kalau `unit_dengan_base64` masih 0, tidak ada yang perlu dimigrasi.
+
+### Kalau nanti ternyata ada foto base64 (mis. setelah impor data lama)
+
+Skripnya sudah ada, sudah diuji terhadap API produksi, dan mendukung `--dry-run` + uji satu unit.
 
 ### 2a. Lihat dulu keadaan sekarang
 

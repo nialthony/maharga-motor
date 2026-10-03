@@ -9,6 +9,7 @@ import {
   Wrench
 } from 'lucide-react';
 import { formatIDR, initialBrands, initialTypes } from '../data/mockData';
+import { generateUnitId } from '../lib/cloudStore';
 
 export default function NewUnitModal({ 
   isOpen, 
@@ -45,6 +46,8 @@ export default function NewUnitModal({
   const [displayPrice, setDisplayPrice] = useState(17500000);
   const [imageUrl, setImageUrl] = useState('https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=800&q=80');
   const [uploadPreview, setUploadPreview] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const fileInputRef = useRef(null);
 
   // Available document options matching live system
@@ -93,18 +96,20 @@ export default function NewUnitModal({
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const finalPlate = `${nopol1.trim()} ${nopol2.trim()} ${nopol3.trim()}`.trim().toUpperCase();
     if (!model.trim() || !finalPlate) {
       alert('Mohon lengkapi data merk, model, dan nomor polisi unit.');
       return;
     }
+    if (isSaving) return;
 
     const finalImage = uploadPreview || imageUrl.trim() || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=800&q=80';
 
     const newUnit = {
-      id: Date.now(),
+      // ID aman (anti-tabrakan milidetik) — lihat generateUnitId() di cloudStore.
+      id: generateUnitId(),
       brand,
       model,
       year: Number(year),
@@ -115,7 +120,7 @@ export default function NewUnitModal({
       frameNo: 'MH' + Math.floor(1000000000 + Math.random() * 9000000000),
       taxStatus,
       taxValidUntil,
-      taxDeadYears: taxStatus === 'Mati' ? Number(taxDeadYears) : 0,
+      taxDeadYears: taxStatus === 'Mati Pajak' ? Number(taxDeadYears) : 0,
       documents: documents.length > 0 ? documents : ['STNK', 'BPKB'],
       condition,
       buyPrice: Number(buyPrice),
@@ -128,8 +133,24 @@ export default function NewUnitModal({
       repairs: []
     };
 
-    onAddUnit(newUnit);
-    onClose();
+    setIsSaving(true);
+    setSaveError('');
+    try {
+      const result = await onAddUnit(newUnit);
+
+      if (result && result.ok === false) {
+        // Modal sengaja TIDAK ditutup: data yang sudah diketik (termasuk foto)
+        // tetap utuh supaya bisa diperbaiki lalu disimpan ulang.
+        setSaveError(result.message || 'Unit gagal disimpan ke database.');
+        return;
+      }
+      onClose();
+    } catch (err) {
+      console.error('Simpan unit gagal:', err);
+      setSaveError(err?.message || 'Unit gagal disimpan ke database.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -323,11 +344,11 @@ export default function NewUnitModal({
                 className="w-full px-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 focus:outline-none focus:border-amber-400 transition-colors"
               >
                 <option value="Hidup">Pajak Hidup</option>
-                <option value="Mati">Pajak Mati</option>
+                <option value="Mati Pajak">Pajak Mati</option>
               </select>
             </div>
 
-            {taxStatus === 'Mati' ? (
+            {taxStatus === 'Mati Pajak' ? (
               <div>
                 <label className="font-medium text-zinc-300 block mb-1">Pajak Mati (Berapa Tahun)</label>
                 <input
@@ -502,21 +523,34 @@ export default function NewUnitModal({
             </div>
           </div>
 
+          {saveError && (
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/40 text-rose-300 text-[11px] space-y-1">
+              <div className="font-bold">⚠️ Unit TIDAK tersimpan ke database</div>
+              <div className="leading-relaxed break-words">{saveError}</div>
+              <div className="text-rose-300/70">
+                Isian form masih utuh. Perbaiki penyebabnya, lalu tekan Simpan lagi — unit yang
+                gagal tidak akan muncul lagi di katalog setelah halaman di-refresh.
+              </div>
+            </div>
+          )}
+
           {/* Footer Submit Buttons */}
           <div className="flex justify-end gap-2 pt-2 border-t border-zinc-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold transition-colors"
+              disabled={isSaving}
+              className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold shadow-md transition-all flex items-center gap-1.5"
+              disabled={isSaving}
+              className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold shadow-md transition-all flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Check className="w-4 h-4" />
-              <span>Simpan & Terbitkan Unit</span>
+              <span>{isSaving ? 'Menyimpan ke database…' : 'Simpan & Terbitkan Unit'}</span>
             </button>
           </div>
         </form>

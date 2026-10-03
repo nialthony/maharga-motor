@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
 import Inventory from './components/Inventory';
@@ -38,10 +38,18 @@ import {
   deleteEmployeeFromCloud,
   subscribeToCloudRealtime,
   saveSystemSettingsToCloud,
-  saveMasterTypesToCloud
+  saveMasterTypesToCloud,
+  updateUnitStatusInCloud,
+  unitFromDb,
+  describeDbError
 } from './lib/cloudStore';
 
 export default function App() {
+  // Penghitung penulisan ke cloud yang sedang berjalan. Selama > 0, refetch realtime
+  // ditahan agar snapshot server (yang belum memuat data baru) tidak menimpa state
+  // lokal — inilah yang membuat unit baru "tampil lalu hilang" sebelum refresh.
+  const pendingWritesRef = useRef(0);
+
   // Load initial states from localStorage if available, fallback to mockData
   const [units, setUnits] = useState(() => {
     try {
@@ -194,6 +202,8 @@ export default function App() {
     let unsubscribe = () => {};
     try {
       unsubscribe = subscribeToCloudRealtime((remoteData) => {
+        // Tahan pembaruan realtime saat masih ada proses simpan yang berjalan.
+        if (pendingWritesRef.current > 0) return;
         if (isMounted && remoteData) {
           if (Array.isArray(remoteData.units)) setUnits(remoteData.units);
           if (Array.isArray(remoteData.salesList)) setSalesList(remoteData.salesList);
@@ -315,8 +325,21 @@ export default function App() {
     setCurrentTransaction(newTx);
     setIsPrintModalOpen(true);
 
-    // Kirim langsung ke Supabase Cloud
-    saveTransactionToCloud(newTx, unitId, newStatus, updatedUnits, updatedSales, employees);
+    // Kirim langsung ke Supabase Cloud — laporan error wajib terlihat karena ini data uang.
+    pendingWritesRef.current += 1;
+    saveTransactionToCloud(newTx, unitId, newStatus)
+      .then((res) => {
+        if (res && res.ok === false) {
+          alert(`Transaksi tersimpan sebagian:\n\n${(res.errors || []).join('\n')}`);
+        }
+      })
+      .catch((err) => {
+        console.error('Gagal upload transaksi ke cloud:', err);
+        alert(`Transaksi TIDAK tersimpan ke database:\n\n${describeDbError(err) || err.message}`);
+      })
+      .finally(() => {
+        pendingWritesRef.current = Math.max(0, pendingWritesRef.current - 1);
+      });
   };
 
   const handleAddRepair = async (unitId, repair) => {
@@ -334,51 +357,91 @@ export default function App() {
     });
     setUnits(updatedUnits);
 
-    // Kirim langsung ke tabel repairs & update repair_cost tabel units
+    // Kirim langsung ke tabel repairs & update repair_cost tabel units.
+    // HPP unit bergantung pada ini, jadi kegagalan tidak boleh dibiarkan senyap.
     if (supabase) {
-      try {
-        await supabase.from('repairs').insert([{
-          unit_id: unitId,
-          repair_date: repair.date || new Date().toISOString().split('T')[0],
-          item: repair.item,
-          mechanic_name: repair.mechanic,
-          cost: Math.max(0, Number(repair.cost) || 0)
-        }]);
+      const { error: repairErr } = await supabase.from('repairs').insert([{
+        unit_id: unitId,
+        repair_date: repair.date || new Date().toISOString().split('T')[0],
+        item: repair.item,
+        mechanic_name: repair.mechanic,
+        cost: Math.max(0, Number(repair.cost) || 0)
+      }]);
 
-        const targetUnit = updatedUnits.find(u => u.id === unitId);
-        if (targetUnit) {
-          await supabase.from('units').update({ 
-            repair_cost: targetUnit.repairCost 
-          }).eq('id', unitId);
+      if (repairErr) {
+        console.error('Gagal simpan data servis ke Supabase:', repairErr);
+        alert(`Catatan servis TIDAK tersimpan ke database:\n\n${describeDbError(repairErr)}`);
+        return;
+      }
+
+      const targetUnit = updatedUnits.find(u => u.id === unitId);
+      if (targetUnit) {
+        const { error: costErr } = await supabase.from('units').update({ 
+          repair_cost: targetUnit.repairCost 
+        }).eq('id', unitId);
+
+        if (costErr) {
+          console.error('Gagal update repair_cost ke Supabase:', costErr);
+          alert(`Biaya servis tersimpan, tetapi total HPP unit gagal diperbarui:\n\n${describeDbError(costErr)}`);
         }
-      } catch (err) {
-        console.warn('Gagal simpan data servis ke Supabase:', err);
       }
     }
   };
 
   const handleUpdateUnitStatus = async (unitId, newStatus) => {
+    const previousUnits = units;
     const updatedUnits = units.map(u => u.id === unitId ? { ...u, status: newStatus } : u);
     setUnits(updatedUnits);
     if (selectedUnit && selectedUnit.id === unitId) {
       setSelectedUnit(prev => ({ ...prev, status: newStatus }));
     }
-    if (supabase) {
-      try {
-        await supabase.from('units').update({ status: newStatus }).eq('id', unitId);
-      } catch (err) {
-        console.warn('Gagal update status unit di Supabase:', err);
-      }
+
+    pendingWritesRef.current += 1;
+    try {
+      // Alur "Unit Masuk > Bengkel > Tersedia" harus benar-benar tersimpan,
+      // bukan gagal diam-diam karena CHECK constraint.
+      await updateUnitStatusInCloud(unitId, newStatus);
+      setCloudSyncStatus('synced');
+    } catch (err) {
+      console.error('Gagal update status unit di database:', err);
+      setUnits(previousUnits);
+      setSelectedUnit(prev => (prev && prev.id === unitId ? { ...prev, status: previousUnits.find(u => u.id === unitId)?.status } : prev));
+      const detail = describeDbError(err) || err.message;
+      setCloudSyncStatus('offline');
+      alert(`Status unit TIDAK tersimpan ke database:\n\n${detail}`);
+    } finally {
+      pendingWritesRef.current = Math.max(0, pendingWritesRef.current - 1);
     }
   };
 
-  const handleAddUnit = (newUnit) => {
-    const updatedUnits = [newUnit, ...units];
-    setUnits(updatedUnits);
+  const handleAddUnit = async (newUnit) => {
+    // Simpan snapshot untuk rollback bila database menolak data.
+    const previousUnits = units;
+
+    // Tampilkan optimistis supaya UI terasa instan.
+    setUnits([newUnit, ...units]);
     setActiveTab('inventory');
 
-    // Kirim langsung ke Supabase Cloud
-    saveNewUnitToCloud(newUnit, updatedUnits, salesList, employees);
+    pendingWritesRef.current += 1;
+    try {
+      // WAJIB di-await: tanpa ini error database tidak pernah terlihat dan unit
+      // hanya "hidup" di localStorage sampai halaman di-refresh.
+      const savedRow = await saveNewUnitToCloud(newUnit);
+
+      // Sinkronkan baris hasil server (ID bisa berubah jika terjadi retry bentrok).
+      const syncedUnit = unitFromDb(savedRow, []);
+      setUnits(prev => prev.map(u => (u.id === newUnit.id ? { ...u, ...syncedUnit } : u)));
+      setCloudSyncStatus('synced');
+      return { ok: true };
+    } catch (err) {
+      console.error('Gagal menyimpan unit baru ke database:', err);
+      // Rollback: jangan pernah meninggalkan unit "hantu" di katalog.
+      setUnits(previousUnits);
+      setCloudSyncStatus('offline');
+      return { ok: false, message: describeDbError(err) || err.message || 'Gagal menyimpan unit ke database.' };
+    } finally {
+      pendingWritesRef.current = Math.max(0, pendingWritesRef.current - 1);
+    }
   };
 
   const handlePayRemaining = (txId) => {
@@ -412,7 +475,20 @@ export default function App() {
     setUnits(updatedUnits);
 
     // Kirim update pelunasan ke Supabase Cloud
-    saveSettlementToCloud(txId, targetUnitId, updatedUnits, updatedSales, employees);
+    pendingWritesRef.current += 1;
+    saveSettlementToCloud(txId, targetUnitId)
+      .then((res) => {
+        if (res && res.ok === false) {
+          alert(`Pelunasan tidak sepenuhnya tersimpan:\n\n${(res.errors || []).join('\n')}`);
+        }
+      })
+      .catch((err) => {
+        console.error('Gagal simpan pelunasan ke cloud:', err);
+        alert(`Pelunasan TIDAK tersimpan ke database:\n\n${describeDbError(err) || err.message}`);
+      })
+      .finally(() => {
+        pendingWritesRef.current = Math.max(0, pendingWritesRef.current - 1);
+      });
   };
 
   const handleCancelTempo = (txId) => {
@@ -439,7 +515,18 @@ export default function App() {
 
     setSalesList(updatedSales);
     setUnits(updatedUnits);
-    syncAllToCloud(updatedUnits, updatedSales, employees);
+
+    // syncAllToCloud tidak melempar error, tetapi melaporkan daftar kegagalan.
+    pendingWritesRef.current += 1;
+    syncAllToCloud(updatedUnits, updatedSales, employees)
+      .then((res) => {
+        if (res && res.ok === false) {
+          alert(`Pembatalan tempo tidak sepenuhnya tersimpan:\n\n${(res.errors || []).join('\n')}`);
+        }
+      })
+      .finally(() => {
+        pendingWritesRef.current = Math.max(0, pendingWritesRef.current - 1);
+      });
   };
 
   const handleSaveMasterTypes = async (newBrands, newTypes) => {
@@ -490,11 +577,11 @@ export default function App() {
   };
 
   const handleUpdateEmployees = (updaterOrArray) => {
-    setEmployees(prev => {
-      const nextEmployees = typeof updaterOrArray === 'function' ? updaterOrArray(prev) : updaterOrArray;
-      syncAllToCloud(units, salesList, nextEmployees);
-      return nextEmployees;
-    });
+    // Side-effect tidak boleh berada di dalam updater setState: React memanggilnya
+    // dua kali (StrictMode) sehingga data terkirim ganda dan berpotensi tertimpa.
+    const nextEmployees = typeof updaterOrArray === 'function' ? updaterOrArray(employees) : updaterOrArray;
+    setEmployees(nextEmployees);
+    void syncAllToCloud(units, salesList, nextEmployees);
   };
 
   const handleDeleteEmployee = async (empToDelete) => {

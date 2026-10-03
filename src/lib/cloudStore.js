@@ -7,11 +7,55 @@ import { supabase, isSupabaseConfigured } from './supabaseClient';
 // (Bukan global dump blob di maharga_master_state)
 // ==============================================================================
 
+// ==============================================================================
+// STATUS RESMI & NORMALISASI — sumber tunggal ada di ./unitStatus.js
+// (dipisah agar bisa diuji tanpa memuat klien Supabase)
+// ==============================================================================
+import {
+  UNIT_STATUSES,
+  UNIT_TAX_STATUSES,
+  normalizeUnitStatus,
+  normalizeTaxStatus,
+  generateUnitId,
+  describeDbError
+} from './unitStatus';
+
+export {
+  UNIT_STATUSES,
+  UNIT_TAX_STATUSES,
+  normalizeUnitStatus,
+  normalizeTaxStatus,
+  generateUnitId,
+  describeDbError
+};
+
+/** Lempar error bila PostgREST mengembalikan error (supabase-js tidak throw otomatis). */
+const assertNoError = (error, context) => {
+  if (!error) return;
+  console.error(`[cloudStore] ${context} gagal:`, error);
+  throw new Error(describeDbError(error));
+};
+
+/** Buang duplikasi ID — mencegah error 21000 "ON CONFLICT cannot affect row a second time". */
+const dedupeById = (rows) => {
+  const seen = new Set();
+  return rows.filter((row) => {
+    const key = String(row.id);
+    if (seen.has(key)) {
+      console.warn(`[cloudStore] ID duplikat dibuang saat sinkronisasi: ${key}`);
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+};
+
 /**
  * Konversi unit dari format UI (camelCase) ke Supabase (snake_case)
+ * Sekaligus menormalkan status & status pajak ke ejaan resmi database.
  */
 export const unitToDb = (u) => ({
-  id: u.id,
+  id: Number(u.id) || generateUnitId(),
   brand: u.brand,
   model: u.model,
   year: Number(u.year) || 2022,
@@ -20,7 +64,7 @@ export const unitToDb = (u) => ({
   odometer: Number(u.odometer) || 0,
   engine_no: u.engineNo || u.engine_no || '',
   frame_no: u.frameNo || u.frame_no || '',
-  tax_status: u.taxStatus || u.tax_status || 'Hidup',
+  tax_status: normalizeTaxStatus(u.taxStatus || u.tax_status),
   tax_valid_until: u.taxValidUntil || u.tax_valid_until || null,
   tax_dead_years: Number(u.taxDeadYears || u.tax_dead_years) || 0,
   documents: u.documents || ['STNK', 'BPKB', 'Faktur'],
@@ -29,7 +73,7 @@ export const unitToDb = (u) => ({
   repair_cost: Math.max(0, Number(u.repairCost || u.repair_cost) || 0),
   min_margin_percent: Math.min(100, Math.max(0, Number(u.minMarginPercent || u.min_margin_percent) || 10)),
   display_price: Math.max(0, Number(u.displayPrice || u.display_price) || 0),
-  status: u.status || 'Tersedia',
+  status: normalizeUnitStatus(u.status),
   images: u.images || [],
   entry_date: u.entryDate || u.entry_date || new Date().toISOString().split('T')[0]
 });
@@ -47,7 +91,7 @@ export const unitFromDb = (row, repairs = []) => ({
   odometer: row.odometer,
   engineNo: row.engine_no,
   frameNo: row.frame_no,
-  taxStatus: row.tax_status,
+  taxStatus: normalizeTaxStatus(row.tax_status),
   taxValidUntil: row.tax_valid_until,
   taxDeadYears: row.tax_dead_years,
   documents: row.documents || [],
@@ -56,7 +100,7 @@ export const unitFromDb = (row, repairs = []) => ({
   repairCost: Number(row.repair_cost) || 0,
   minMarginPercent: Number(row.min_margin_percent) || 10,
   displayPrice: Number(row.display_price) || 0,
-  status: row.status,
+  status: normalizeUnitStatus(row.status),
   images: row.images || [],
   entryDate: row.entry_date,
   repairs: repairs.filter(r => r.unit_id === row.id).map(r => ({
@@ -192,28 +236,35 @@ export const fetchCloudData = async () => {
  * Simpan data units dan employees ke tabel-tabel Supabase Cloud
  */
 export const syncAllToCloud = async (units, salesList, employees) => {
-  if (!isSupabaseConfigured() || !supabase) return false;
+  if (!isSupabaseConfigured() || !supabase) {
+    return { ok: false, errors: ['Supabase belum dikonfigurasi (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY).'] };
+  }
+
+  const errors = [];
 
   try {
     const validEmployees = Array.isArray(employees) ? employees : [];
     const validUnits = Array.isArray(units) ? units : [];
 
-    // 1. Simpan tabel units individual
+    // 1. Simpan tabel units individual (dedupe ID agar batch tidak ditolak 21000)
     if (validUnits.length > 0) {
-      const dbRows = validUnits.map(unitToDb);
-      await supabase.from('units').upsert(dbRows, { onConflict: 'id' });
+      const dbRows = dedupeById(validUnits.map(unitToDb));
+      const { error: unitErr } = await supabase.from('units').upsert(dbRows, { onConflict: 'id' });
+      if (unitErr) errors.push(`units: ${describeDbError(unitErr)}`);
     }
 
     // 2. Simpan tabel employees individual
     if (validEmployees.length > 0) {
       const empRows = validEmployees.map(employeeToDb);
-      await supabase.from('employees').upsert(empRows, { onConflict: 'username' });
+      const { error: empErr } = await supabase.from('employees').upsert(empRows, { onConflict: 'username' });
+      if (empErr) errors.push(`employees: ${describeDbError(empErr)}`);
     }
 
-    return true;
+    if (errors.length > 0) console.error('[cloudStore] Sinkronisasi selesai dengan error:', errors);
+    return { ok: errors.length === 0, errors };
   } catch (err) {
     console.error('Error sinkronisasi ke Supabase:', err);
-    return false;
+    return { ok: false, errors: [describeDbError(err)] };
   }
 };
 
@@ -343,36 +394,74 @@ export const deleteEmployeeFromCloud = async (empOrId) => {
  * Tambah unit motor baru ke Supabase Cloud
  */
 export const saveNewUnitToCloud = async (newUnit) => {
-  if (!isSupabaseConfigured() || !supabase) return;
-  try {
-    await supabase.from('units').upsert([unitToDb(newUnit)], { onConflict: 'id' });
-  } catch (e) {
-    console.warn('Gagal upload unit baru ke cloud:', e);
+  if (!isSupabaseConfigured() || !supabase) {
+    throw new Error('Supabase belum dikonfigurasi (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY). Unit hanya tersimpan di perangkat ini.');
   }
+
+  let row = unitToDb(newUnit);
+
+  // INSERT (bukan upsert): kalau ID ternyata sudah dipakai, kita ingin tahu dan
+  // membuat ID baru — bukan menimpa unit lama secara diam-diam.
+  let { error } = await supabase.from('units').insert([row]);
+
+  if (error && error.code === '23505') {
+    console.warn('[cloudStore] ID unit bentrok, mencoba ulang dengan ID baru:', row.id);
+    row = { ...row, id: generateUnitId() };
+    ({ error } = await supabase.from('units').insert([row]));
+  }
+
+  assertNoError(error, 'Simpan unit baru');
+
+  // Kembalikan baris final (ID bisa berubah bila terjadi retry) agar state UI sinkron.
+  return row;
+};
+
+/**
+ * Ubah status unit (alur bengkel / tersedia / terjual) dengan pelaporan error.
+ * Melempar Error berisi pesan ramah bila database menolak (mis. 23514 / RLS).
+ */
+export const updateUnitStatusInCloud = async (unitId, newStatus) => {
+  if (!isSupabaseConfigured() || !supabase) {
+    throw new Error('Supabase belum dikonfigurasi — perubahan status tidak tersimpan ke database.');
+  }
+  const status = normalizeUnitStatus(newStatus);
+  const { error } = await supabase.from('units').update({ status }).eq('id', unitId);
+  assertNoError(error, 'Update status unit');
+  return status;
 };
 
 /**
  * Hapus unit motor secara satuan dari Supabase Cloud
  */
 export const deleteUnitFromCloud = async (unitId) => {
-  if (!isSupabaseConfigured() || !supabase) return false;
-  try {
-    await supabase.from('repairs').delete().eq('unit_id', unitId);
-    await supabase.from('units').delete().eq('id', unitId);
-    return true;
-  } catch (e) {
-    console.warn('Gagal menghapus unit dari cloud:', e);
-    return false;
+  if (!isSupabaseConfigured() || !supabase) return { ok: false, errors: ['Supabase belum dikonfigurasi.'] };
+  const errors = [];
+
+  const { error: repErr } = await supabase.from('repairs').delete().eq('unit_id', unitId);
+  if (repErr) errors.push(`repairs: ${describeDbError(repErr)}`);
+
+  const { error: unitErr } = await supabase.from('units').delete().eq('id', unitId);
+  if (unitErr) errors.push(`units: ${describeDbError(unitErr)}`);
+
+  if (errors.length > 0) {
+    console.error('[cloudStore] Gagal menghapus unit:', errors);
+    throw new Error(errors.join(' | '));
   }
+  return { ok: true, errors: [] };
 };
 
 /**
  * Simpan transaksi penjualan ke Supabase Cloud
  */
 export const saveTransactionToCloud = async (tx, unitId, newStatus) => {
-  if (!isSupabaseConfigured() || !supabase) return;
+  if (!isSupabaseConfigured() || !supabase) {
+    throw new Error('Supabase belum dikonfigurasi — transaksi tidak tersimpan ke database.');
+  }
+  const errors = [];
   try {
-    await supabase.from('units').update({ status: newStatus }).eq('id', unitId);
+    const unitStatus = normalizeUnitStatus(newStatus);
+    const { error: statusErr } = await supabase.from('units').update({ status: unitStatus }).eq('id', unitId);
+    if (statusErr) errors.push(`units.status: ${describeDbError(statusErr)}`);
     
     const payload = {
       id: tx.id,
@@ -397,40 +486,54 @@ export const saveTransactionToCloud = async (tx, unitId, newStatus) => {
     const { error } = await supabase.from('sales_transactions').upsert([payload], { onConflict: 'id' });
     if (error) {
       console.warn('Upsert sales_transactions lengkap gagal, coba fallback:', error);
-      await supabase.from('sales_transactions').upsert([{
+      // Fallback tetap harus mengisi kolom NOT NULL (plate & buyer_phone) agar tidak gagal 23502.
+      const { error: fallbackErr } = await supabase.from('sales_transactions').upsert([{
         id: tx.id,
         unit_id: unitId,
-        unit_name: tx.unitName,
-        sales_name: tx.salesName,
-        buyer_name: tx.buyerName,
+        unit_name: tx.unitName || '-',
+        plate: tx.plate || '-',
+        sales_name: tx.salesName || 'Admin Showroom',
+        buyer_name: tx.buyerName || '-',
+        buyer_phone: tx.buyerPhone || '-',
         deal_price: Math.max(1, Number(tx.dealPrice) || 0),
         payment_method: tx.paymentType === 'Tempo DP' ? 'dp-tempo' : 'cash',
         commission: Math.max(0, Number(tx.commission) || 200000),
         status: tx.status || 'Lunas',
         tx_date: tx.date || new Date().toISOString().split('T')[0]
       }], { onConflict: 'id' });
+      if (fallbackErr) errors.push(`sales_transactions: ${describeDbError(fallbackErr)}`);
     }
   } catch (e) {
-    console.warn('Gagal upload transaksi ke cloud:', e);
+    console.error('Gagal upload transaksi ke cloud:', e);
+    errors.push(describeDbError(e));
   }
+
+  if (errors.length > 0) console.error('[cloudStore] Transaksi tersimpan sebagian:', errors);
+  return { ok: errors.length === 0, errors };
 };
 
 /**
  * Simpan pelunasan transaksi titip DP / tempo ke Supabase Cloud
  */
 export const saveSettlementToCloud = async (txId, unitId) => {
-  if (!isSupabaseConfigured() || !supabase) return;
-  try {
-    if (unitId) {
-      await supabase.from('units').update({ status: 'Terjual' }).eq('id', unitId);
-    }
-    await supabase.from('sales_transactions').update({
-      status: 'Lunas',
-      remaining_amount: 0
-    }).eq('id', txId);
-  } catch (e) {
-    console.warn('Gagal simpan pelunasan ke cloud:', e);
+  if (!isSupabaseConfigured() || !supabase) {
+    return { ok: false, errors: ['Supabase belum dikonfigurasi.'] };
   }
+  const errors = [];
+
+  if (unitId) {
+    const { error: unitErr } = await supabase.from('units').update({ status: 'Terjual' }).eq('id', unitId);
+    if (unitErr) errors.push(`units: ${describeDbError(unitErr)}`);
+  }
+
+  const { error: txErr } = await supabase.from('sales_transactions').update({
+    status: 'Lunas',
+    remaining_amount: 0
+  }).eq('id', txId);
+  if (txErr) errors.push(`sales_transactions: ${describeDbError(txErr)}`);
+
+  if (errors.length > 0) console.error('[cloudStore] Gagal simpan pelunasan ke cloud:', errors);
+  return { ok: errors.length === 0, errors };
 };
 
 /**

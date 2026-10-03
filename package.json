@@ -9,7 +9,8 @@
     "check": "tsc --noEmit",
     "deploy": "npm run build && wrangler deploy",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check:status": "node scripts/check-unit-status-parity.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.109.0",

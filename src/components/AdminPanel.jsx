@@ -27,7 +27,7 @@ import {
   getSupabaseConfig, 
   testSupabaseConnection 
 } from '../lib/supabaseClient';
-import { syncAllToCloud, clearShowroomDataInCloud, deleteUnitFromCloud } from '../lib/cloudStore';
+import { syncAllToCloud, clearShowroomDataInCloud, deleteUnitFromCloud, describeDbError } from '../lib/cloudStore';
 import RoleBadge from './RoleBadge';
 import MotorTypeManagement from './MotorTypeManagement';
 import ShowroomSettings from './ShowroomSettings';
@@ -207,7 +207,10 @@ export default function AdminPanel({
           .eq('id', selectedUnit.id);
 
         if (dbError) {
-          console.warn('Gagal update tabel units:', dbError);
+          // Jangan pernah menampilkan pesan sukses bila database menolak.
+          console.error('Gagal update tabel units:', dbError);
+          alert(`Foto TIDAK tersimpan ke database:\n\n${describeDbError(dbError)}`);
+          return;
         }
       }
 
@@ -245,10 +248,16 @@ export default function AdminPanel({
       setUnits(nextUnits);
 
       if (isSupabaseConfigured() && supabase) {
-        await supabase
+        const { error: dbError } = await supabase
           .from('units')
           .update({ images: finalImages })
           .eq('id', selectedUnit.id);
+
+        if (dbError) {
+          console.error('Gagal hapus foto di tabel units:', dbError);
+          alert(`Foto TIDAK terhapus dari database:\n\n${describeDbError(dbError)}`);
+          return;
+        }
       }
 
       setSaveSuccessMsg('Foto berhasil dihapus dan diperbarui di database cloud!');
@@ -280,10 +289,16 @@ export default function AdminPanel({
       setUnits(nextUnits);
 
       if (isSupabaseConfigured() && supabase) {
-        await supabase
+        const { error: dbError } = await supabase
           .from('units')
           .update({ images: reorderedImages })
           .eq('id', selectedUnit.id);
+
+        if (dbError) {
+          console.error('Gagal set foto utama di tabel units:', dbError);
+          alert(`Foto utama TIDAK tersimpan ke database:\n\n${describeDbError(dbError)}`);
+          return;
+        }
       }
 
       setSaveSuccessMsg('Foto utama berhasil diubah dan disimpan ke database cloud!');

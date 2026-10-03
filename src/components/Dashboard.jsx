@@ -15,6 +15,7 @@ import {
   Printer
 } from 'lucide-react';
 import { formatIDR, calculateUnitEconomics } from '../data/mockData';
+import Badge from './ui/Badge';
 
 export default function Dashboard({ 
   units = [], 
@@ -166,9 +167,9 @@ export default function Dashboard({
             <h1 className="text-base font-bold text-zinc-100 font-mono">
               Dashboard Operasional Showroom
             </h1>
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-zinc-800 text-zinc-300 border border-zinc-700">
+            <Badge variant="zinc" size="sm" mono>
               Live
-            </span>
+            </Badge>
           </div>
           <p className="text-xs text-zinc-400">
             Pusat kendali stok unit motor, valuasi modal HPP, transaksi kasir, dan monitoring piutang tempo.
@@ -305,9 +306,9 @@ export default function Dashboard({
               <div className="flex items-center gap-2">
                 <History className="w-4 h-4 text-amber-400" />
                 <h3 className="text-sm font-bold text-zinc-100">Aktivitas Terakhir Stok</h3>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-zinc-800 text-zinc-300 border border-zinc-700">
+                <Badge variant="zinc" size="sm" mono>
                   {displayedActivities.length} Aktivitas
-                </span>
+                </Badge>
               </div>
               <p className="text-[11px] text-zinc-400 mt-0.5">
                 Catatan riwayat pergerakan stok unit motor terbaru (Masuk & Terjual)
@@ -317,7 +318,7 @@ export default function Dashboard({
 
           {/* Desktop Table for Activities */}
           <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left text-xs text-zinc-300">
+            <table className="min-w-[820px] w-full text-left text-xs text-zinc-300">
               <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] tracking-wider font-bold border-b border-zinc-800">
                 <tr>
                   <th className="py-3 px-4">Status & Waktu</th>
@@ -337,15 +338,15 @@ export default function Dashboard({
                         <td className="py-3 px-4">
                           <div className="space-y-1">
                             {isSold ? (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 inline-flex items-center gap-1">
+                              <Badge variant="emerald" size="sm">
                                 <CheckCircle2 className="w-3 h-3" />
                                 {act.badgeText}
-                              </span>
+                              </Badge>
                             ) : (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-400 border border-amber-800 inline-flex items-center gap-1">
+                              <Badge variant="amber" size="sm">
                                 <Layers className="w-3 h-3" />
                                 {act.badgeText}
-                              </span>
+                              </Badge>
                             )}
                             <div className="text-[10px] text-zinc-500 font-mono">
                               {act.date || '-'}
@@ -358,7 +359,7 @@ export default function Dashboard({
                             {isSold ? `Metode: ${act.paymentType}` : `${act.yearColor || ''} • ${act.odometer ? `${act.odometer.toLocaleString('id-ID')} km` : ''}`}
                           </div>
                         </td>
-                        <td className="py-3 px-4 font-mono font-bold text-amber-400">
+                        <td className="whitespace-nowrap py-3 px-4 font-mono font-bold text-amber-400">
                           {act.plate}
                         </td>
                         <td className="py-3 px-4 text-zinc-400">
@@ -377,7 +378,7 @@ export default function Dashboard({
                             </div>
                           )}
                         </td>
-                        <td className="py-3 px-4 font-mono text-right">
+                        <td className="whitespace-nowrap py-3 px-4 font-mono text-right">
                           {isSold ? (
                             <div>
                               <div className="font-bold text-emerald-400">{formatIDR(act.price)}</div>
@@ -448,15 +449,15 @@ export default function Dashboard({
                       <div className="space-y-1">
                         <div className="flex items-center gap-1.5">
                           {isSold ? (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 inline-flex items-center gap-1">
+                            <Badge variant="emerald" size="sm">
                               <CheckCircle2 className="w-3 h-3" />
                               {act.badgeText}
-                            </span>
+                            </Badge>
                           ) : (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-400 border border-amber-800 inline-flex items-center gap-1">
+                            <Badge variant="amber" size="sm">
                               <Layers className="w-3 h-3" />
                               {act.badgeText}
-                            </span>
+                            </Badge>
                           )}
                           <span className="text-[10px] text-zinc-500 font-mono">{act.date || '-'}</span>
                         </div>
@@ -553,12 +554,12 @@ export default function Dashboard({
                       {drilldownType === 'sold' && 'Penjualan Bulan Ini'}
                       {drilldownType === 'sales' && 'Daftar Tim Sales Aktif'}
                     </span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-zinc-800 text-zinc-300 border border-zinc-700">
+                    <Badge variant="zinc" size="sm" mono>
                       {drilldownType === 'ready' && `${readyUnits.length} Unit`}
                       {drilldownType === 'repair' && `${units.filter(u => u.status === 'Perbaikan' || (u.repairs && u.repairs.length > 0 && u.status !== 'Terjual')).length} Unit`}
                       {drilldownType === 'sold' && `${soldThisMonth.length} Unit`}
                       {drilldownType === 'sales' && `${employees.filter(e => e.role === 'sales' && e.status === 'active').length} Sales`}
-                    </span>
+                    </Badge>
                   </h3>
                   <p className="text-[11px] text-zinc-400 mt-0.5">
                     {drilldownType === 'ready' && 'Daftar seluruh unit motor siap tampil dan siap dipasarkan ke konsumen.'}
@@ -584,7 +585,7 @@ export default function Dashboard({
                 <div className="space-y-2">
                   {readyUnits.length > 0 ? (
                     <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs text-zinc-300">
+                      <table className="min-w-[780px] w-full text-left text-xs text-zinc-300">
                         <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] tracking-wider font-bold border-b border-zinc-800">
                           <tr>
                             <th className="py-2.5 px-3">No. Polisi</th>
@@ -598,7 +599,7 @@ export default function Dashboard({
                         <tbody className="divide-y divide-zinc-800/60 font-medium">
                           {readyUnits.map((u) => (
                             <tr key={u.id} className="hover:bg-zinc-850/50 transition-colors">
-                              <td className="py-2.5 px-3 font-mono font-bold text-amber-400">{u.plate}</td>
+                              <td className="whitespace-nowrap py-2.5 px-3 font-mono font-bold text-amber-400">{u.plate}</td>
                               <td className="py-2.5 px-3 font-semibold text-zinc-100">{u.brand} {u.model}</td>
                               <td className="py-2.5 px-3 text-zinc-400">{u.year} • {u.color}</td>
                               <td className="py-2.5 px-3">
@@ -608,7 +609,7 @@ export default function Dashboard({
                                   {u.taxStatus || 'Hidup'}
                                 </span>
                               </td>
-                              <td className="py-2.5 px-3 text-right font-mono font-bold text-zinc-100">
+                              <td className="whitespace-nowrap py-2.5 px-3 text-right font-mono font-bold text-zinc-100">
                                 {formatIDR(u.displayPrice || 0)}
                               </td>
                               <td className="py-2.5 px-3 text-center">
@@ -661,7 +662,7 @@ export default function Dashboard({
                     }
                     return (
                       <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs text-zinc-300">
+                        <table className="min-w-[760px] w-full text-left text-xs text-zinc-300">
                           <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] tracking-wider font-bold border-b border-zinc-800">
                             <tr>
                               <th className="py-2.5 px-3">No. Polisi</th>
@@ -679,17 +680,17 @@ export default function Dashboard({
                               const totalCost = repList.reduce((acc, r) => acc + (r.cost || 0), 0) || u.repairCost || 0;
                               return (
                                 <tr key={u.id} className="hover:bg-zinc-850/50 transition-colors">
-                                  <td className="py-2.5 px-3 font-mono font-bold text-amber-400">{u.plate}</td>
+                                  <td className="whitespace-nowrap py-2.5 px-3 font-mono font-bold text-amber-400">{u.plate}</td>
                                   <td className="py-2.5 px-3 font-semibold text-zinc-100">{u.brand} {u.model}</td>
                                   <td className="py-2.5 px-3 text-zinc-300">
-                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-yellow-400 border border-yellow-800">
+                                    <Badge variant="yellow" size="sm">
                                       {lastRep?.mechanic || 'Workshop Bengkel'}
-                                    </span>
+                                    </Badge>
                                   </td>
                                   <td className="py-2.5 px-3 text-zinc-400 max-w-[200px] truncate">
                                     {repList.length > 0 ? repList.map(r => r.item || r.description).join(', ') : (u.notes || 'Perbaikan standar')}
                                   </td>
-                                  <td className="py-2.5 px-3 text-right font-mono font-bold text-yellow-400">
+                                  <td className="whitespace-nowrap py-2.5 px-3 text-right font-mono font-bold text-yellow-400">
                                     {formatIDR(totalCost)}
                                   </td>
                                   <td className="py-2.5 px-3 text-center">
@@ -732,9 +733,9 @@ export default function Dashboard({
                           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 border-b border-zinc-800/60 pb-2">
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
-                                <span className="px-2 py-0.5 rounded bg-zinc-800 text-amber-400 font-mono font-bold text-xs border border-zinc-700">
+                                <Badge variant="zincAmber" size="md" mono>
                                   {plateNo}
-                                </span>
+                                </Badge>
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                                   isTempo 
                                     ? 'bg-amber-950 text-amber-400 border border-amber-800' 
@@ -834,7 +835,7 @@ export default function Dashboard({
                     }
                     return (
                       <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs text-zinc-300">
+                        <table className="min-w-[700px] w-full text-left text-xs text-zinc-300">
                           <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] tracking-wider font-bold border-b border-zinc-800">
                             <tr>
                               <th className="py-2.5 px-3">Nama Lengkap</th>
@@ -848,15 +849,15 @@ export default function Dashboard({
                             {salesTeam.map((emp) => (
                               <tr key={emp.id} className="hover:bg-zinc-850/50 transition-colors">
                                 <td className="py-2.5 px-3 font-bold text-zinc-100">{emp.name}</td>
-                                <td className="py-2.5 px-3 font-mono text-zinc-400">
-                                  <span className="px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+                                <td className="whitespace-nowrap py-2.5 px-3 font-mono text-zinc-400">
+                                  <Badge variant="zinc" size="base">
                                     {emp.username || emp.nik || '-'}
-                                  </span>
+                                  </Badge>
                                 </td>
-                                <td className="py-2.5 px-3 font-mono font-semibold text-amber-400">
+                                <td className="whitespace-nowrap py-2.5 px-3 font-mono font-semibold text-amber-400">
                                   {emp.targetSales ? `${emp.targetSales} Unit / Bulan` : '-'}
                                 </td>
-                                <td className="py-2.5 px-3 font-mono text-zinc-300">
+                                <td className="whitespace-nowrap py-2.5 px-3 font-mono text-zinc-300">
                                   {emp.phone ? (
                                     <a 
                                       href={`https://wa.me/${emp.phone.replace(/[^0-9]/g, '')}`} 
@@ -870,9 +871,9 @@ export default function Dashboard({
                                   ) : '-'}
                                 </td>
                                 <td className="py-2.5 px-3 text-center">
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
+                                  <Badge variant="emerald" size="sm">
                                     Aktif
-                                  </span>
+                                  </Badge>
                                 </td>
                               </tr>
                             ))}

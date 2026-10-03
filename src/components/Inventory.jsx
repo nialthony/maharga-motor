@@ -8,6 +8,7 @@ import {
   Printer
 } from 'lucide-react';
 import { formatIDR, calculateUnitEconomics } from '../data/mockData';
+import Badge from './ui/Badge';
 
 export default function Inventory({ 
   units = [], 
@@ -55,9 +56,9 @@ export default function Inventory({
               <Layers className="w-5 h-5 text-amber-400" />
               Katalog & Stok Unit Showroom
             </h2>
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-zinc-800 text-zinc-300 border border-zinc-700">
+            <Badge variant="zinc" size="sm" mono>
               {units.length} Unit Terdaftar
-            </span>
+            </Badge>
           </div>
           <p className="text-xs text-zinc-400 mt-0.5">
             Manajemen stok motor, perhitungan modal HPP, batas minimal penawaran sales, dan kelengkapan dokumen.
@@ -218,7 +219,7 @@ export default function Inventory({
         /* Table View */
         <div className="bg-zinc-900/90 rounded-xl border border-zinc-800 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-zinc-300">
+            <table className="min-w-[980px] w-full text-left text-xs text-zinc-300">
               <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] tracking-wider font-bold border-b border-zinc-800">
                 <tr>
                   <th className="py-3 px-4">Unit Motor</th>
@@ -241,7 +242,7 @@ export default function Inventory({
                         <div className="font-bold text-zinc-100">{unit.brand} {unit.model}</div>
                         <div className="text-[10px] text-zinc-500 font-mono">{(unit.odometer || 0).toLocaleString('id-ID')} km</div>
                       </td>
-                      <td className="py-3 px-4 font-mono font-bold text-amber-400">{unit.plate}</td>
+                      <td className="whitespace-nowrap py-3 px-4 font-mono font-bold text-amber-400">{unit.plate}</td>
                       <td className="py-3 px-4">{unit.year} • {unit.color}</td>
                       <td className="py-3 px-4">
                         <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
@@ -251,14 +252,14 @@ export default function Inventory({
                         </span>
                       </td>
                       {role === 'owner' && (
-                        <td className="py-3 px-4 font-mono font-semibold text-zinc-300">
+                        <td className="whitespace-nowrap py-3 px-4 font-mono font-semibold text-zinc-300">
                           {formatIDR(eco.totalModal)}
                         </td>
                       )}
-                      <td className="py-3 px-4 font-mono font-semibold text-rose-400">
+                      <td className="whitespace-nowrap py-3 px-4 font-mono font-semibold text-rose-400">
                         {formatIDR(eco.minPrice)}
                       </td>
-                      <td className="py-3 px-4 font-mono font-bold text-zinc-100">
+                      <td className="whitespace-nowrap py-3 px-4 font-mono font-bold text-zinc-100">
                         {formatIDR(unit.displayPrice)}
                       </td>
                       <td className="py-3 px-4">
@@ -326,9 +327,9 @@ export default function Inventory({
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                      <span className="px-2 py-0.5 rounded text-xs font-bold font-mono bg-zinc-950/90 text-amber-400 border border-zinc-800">
+                      <Badge variant="zincDark" size="md" mono>
                         {unit.plate}
-                      </span>
+                      </Badge>
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                         unit.taxStatus === 'Hidup' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-rose-950 text-rose-400 border border-rose-800'
                       }`}>

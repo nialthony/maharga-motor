@@ -1,0 +1,163 @@
+# ==============================================================================
+# P0-2 — BACKUP HARIAN SUPABASE (pg_dump)
+# ==============================================================================
+# MASALAH: Supabase Free TIDAK punya backup otomatis dan TIDAK punya PITR.
+# Kalau data showroom (omzet, komisi, HPP, transaksi) terhapus atau kena
+# migrasi gagal, hilang permanen. Untuk aplikasi yang dijual, ini risiko
+# paling mahal — dan paling sering jadi sumber komplain pasca-jual.
+#
+# SOLUSI: dump database tiap hari lewat GitHub Actions, simpan sebagai artifact
+# 30 hari (+ opsi kirim ke Cloudflare R2 / S3 untuk retensi panjang).
+#
+# ------------------------------------------------------------------------------
+# CARA MENGAKTIFKAN (isi 1 secret, ±2 menit):
+#   1. Supabase Dashboard → Settings → Database → Connection string → tab "URI"
+#      Pilih **Session pooler** (host berakhiran .pooler.supabase.com, port 5432).
+#      PENTING: jangan pakai "Transaction pooler" (port 6543) — mode itu tidak
+#      mendukung pg_dump dan akan gagal.
+#      Ganti [YOUR-PASSWORD] dengan password database Anda. Kalau password
+#      mengandung karakter khusus (@ : / ? # [ ] %), URL-encode dulu
+#      (contoh: @ -> %40).
+#      Format: postgresql://postgres.<project-ref>:<PASSWORD>@aws-0-<region>.pooler.supabase.com:5432/postgres
+#   2. Repo → Settings → Secrets and variables → Actions → New repository secret
+#        Nama : SUPABASE_DB_URL
+#        Nilai: connection string di atas
+#   3. Uji: tab Actions → "Backup Supabase (harian)" → Run workflow
+#      (kalau belum diisi, workflow ini SENGAJA gagal agar tidak diam-diam
+#       menjalankan backup kosong — kegagalan itu sendiri pengingatnya)
+#
+# ------------------------------------------------------------------------------
+# WAJIB DILAKUKAN SEKALI — UJI RESTORE:
+#   Backup yang belum pernah diuji restore bukan backup, hanya harapan.
+#   Unduh artifact dari tab Actions, lalu restore ke project Supabase kedua (gratis):
+#     pg_restore --no-owner --no-privileges -d "<URL_PROJECT_BARU>" maharga_backup_XXXX.dump
+#   Pastikan tabel units/sales_transactions/employees berisi data yang benar.
+# ==============================================================================
+
+name: Backup Supabase (harian)
+
+on:
+  schedule:
+    # Setiap hari 18:00 UTC = 01:00 WIB (sebelum showroom buka)
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Cek secret tersedia
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DB_URL:-}" ]; then
+            {
+              echo "### ⚠️ Backup TIDAK berjalan — secret belum diisi"
+              echo ""
+              echo "Isi \`SUPABASE_DB_URL\` di **Settings → Secrets and variables → Actions**:"
+              echo ""
+              echo "1. Supabase → Settings → Database → Connection string → **URI**"
+              echo "2. Pilih **Session pooler** (port 5432) — jangan Transaction pooler (6543)"
+              echo "3. Ganti \`[YOUR-PASSWORD]\`, URL-encode karakter khusus, lalu simpan sebagai secret \`SUPABASE_DB_URL\`"
+              echo ""
+              echo "Cara cepat: repo → Settings → Secrets and variables → Actions → New repository secret"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::Secret SUPABASE_DB_URL belum diisi — backup tidak dijalankan."
+            exit 1
+          fi
+          echo "Connection string terdeteksi (${#DB_URL} karakter)."
+
+      - name: Siapkan client PostgreSQL
+        run: |
+          set -euo pipefail
+          if ! command -v pg_dump >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql-client
+          fi
+          pg_dump --version
+
+      - name: Jalankan pg_dump (format custom + plain SQL)
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+
+          STAMP=$(date -u +'%Y-%m-%d_%H%M')
+          DUMP="maharga_backup_${STAMP}.dump"
+          PLAIN="maharga_backup_${STAMP}.sql"
+
+          # --no-owner/--no-privileges: agar bisa di-restore ke project Supabase lain
+          # -Fc: format custom (dukung pg_restore selektif + kompresi)
+          pg_dump "$DB_URL" --no-owner --no-privileges --format=custom --file="$DUMP"
+
+          # Versi plain SQL: untuk dibaca manusia / impor manual via SQL Editor
+          pg_dump "$DB_URL" --no-owner --no-privileges --format=plain --file="$PLAIN"
+
+          SIZE_BYTES=$(stat -c%s "$DUMP")
+          SIZE=$(du -h "$DUMP" | cut -f1)
+
+          if [ "$SIZE_BYTES" -lt 5120 ]; then
+            echo "::error::Dump hanya ${SIZE_BYTES} byte — terlalu kecil, kemungkinan gagal/kosong."
+            exit 1
+          fi
+
+          # Bukti dump bisa dibaca ulang oleh pg_restore (daftar objek di dalamnya)
+          OBJECTS=$(pg_restore --list "$DUMP" | grep -c ';' || true)
+          echo "Objek terdeteksi di dalam dump: ${OBJECTS}"
+
+          echo "BACKUP_FILE=$DUMP" >> "$GITHUB_ENV"
+          echo "PLAIN_FILE=$PLAIN" >> "$GITHUB_ENV"
+          echo "SIZE_HUMAN=$SIZE" >> "$GITHUB_ENV"
+          echo "OBJECTS=$OBJECTS" >> "$GITHUB_ENV"
+
+          echo "✅ Dump selesai: ${DUMP} (${SIZE}, ${OBJECTS} objek)"
+
+      - name: Simpan sebagai artifact (retensi 30 hari)
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-backup-${{ github.run_number }}
+          path: |
+            ${{ env.BACKUP_FILE }}
+            ${{ env.PLAIN_FILE }}
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Ringkasan
+        if: always()
+        run: |
+          {
+            echo "### Backup Supabase — $(date -u +'%Y-%m-%d %H:%M UTC')"
+            echo ""
+            echo "| Item | Nilai |"
+            echo "|---|---|"
+            echo "| Berkas | \`${BACKUP_FILE:-gagal}\` |"
+            echo "| Ukuran | ${SIZE_HUMAN:-—} |"
+            echo "| Objek di dump | ${OBJECTS:-—} |"
+            echo "| Retensi artifact | 30 hari |"
+            echo ""
+            echo "**Cara restore** (unduh artifact dulu):"
+            echo '```bash'
+            echo 'pg_restore --no-owner --no-privileges -d "<URL_PROJECT_SUPABASE>" <file>.dump'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # -------------------------------------------------------------------
+      # OPSIONAL — kirim juga ke Cloudflare R2 / S3 (retensi lebih panjang).
+      # Aktifkan dengan menghapus komentar, setelah 4 secret R2 diisi:
+      #   R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_ENDPOINT, R2_BUCKET
+      # -------------------------------------------------------------------
+      # - name: Kirim ke Cloudflare R2
+      #   env:
+      #     AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      #   run: |
+      #     pip install --quiet awscli
+      #     aws s3 cp "$BACKUP_FILE" "s3://${{ secrets.R2_BUCKET }}/maharga/" \
+      #       --endpoint-url "${{ secrets.R2_ENDPOINT }}"
+      #     echo "✅ Terkirim ke R2"

@@ -1,0 +1,110 @@
+# ==============================================================================
+# P0-3 — KEEP-ALIVE SUPABASE (mencegah project Free tier di-pause otomatis)
+# ==============================================================================
+# MASALAH: Supabase Free mem-pause project yang tidak ada aktivitas 7 hari.
+# Kalau showroom libur seminggu (libur panjang/lebaran), aplikasi jadi MATI
+# sampai di-restore manual dari dashboard — pembeli akan panik.
+#
+# SOLUSI: ping ringan ke API Supabase setiap 2 hari (jauh di bawah ambang 7 hari).
+#
+# STATUS: aktif. Secret SUPABASE_URL & SUPABASE_ANON_KEY sudah terpasang.
+# Jika nanti pakai Supabase Pro (tidak pernah pause), workflow ini boleh dihapus.
+#
+# CATATAN PENTING — GitHub menonaktifkan workflow terjadwal setelah repo
+# tidak ada commit selama 60 hari. Kalau repo sudah tidak diubah lagi,
+# aktifkan kembali lewat tab Actions → "Supabase Keep-Alive" → Enable workflow,
+# ATAU pakai keep-alive eksternal (UptimeRobot gratis) — lihat ops/README.md.
+# ==============================================================================
+
+name: Supabase Keep-Alive
+
+on:
+  schedule:
+    # Setiap 2 hari pukul 02:00 UTC (09:00 WIB)
+    - cron: '0 2 */2 * *'
+  workflow_dispatch:   # tombol "Run workflow" manual
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Cek secret tersedia
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          missing=""
+          [ -z "${SUPABASE_URL:-}" ] && missing="${missing} SUPABASE_URL"
+          [ -z "${SUPABASE_ANON_KEY:-}" ] && missing="${missing} SUPABASE_ANON_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error::Secret belum diisi:$missing"
+            echo "Buka: Settings → Secrets and variables → Actions → New repository secret"
+            exit 1
+          fi
+          echo "URL: ${SUPABASE_URL}"
+
+      - name: Ping GoTrue health (endpoint publik, balas 200 tanpa RLS)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+
+          CODE=$(curl -sS -o /tmp/health.json -w '%{http_code}' \
+            "${SUPABASE_URL}/auth/v1/health" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            --max-time 30 || echo "000")
+
+          echo "HTTP ${CODE}"
+          cat /tmp/health.json 2>/dev/null || true
+          echo
+
+          if [ "$CODE" != "200" ]; then
+            echo "::error::Ping gagal (HTTP ${CODE}). Project mungkin sedang PAUSED atau URL salah."
+            echo "Cek: ${SUPABASE_URL%/}/../dashboard → Restore project"
+            exit 1
+          fi
+          GOTRUE_VERSION=$(python3 -c "import json;print(json.load(open('/tmp/health.json')).get('version','?'))" 2>/dev/null || echo '?')
+          echo "✅ Project aktif (GoTrue ${GOTRUE_VERSION})."
+
+      - name: Ping PostgREST (aktivitas database tambahan)
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          # RLS pada project ini melarang anon membaca tabel, jadi 401 itu NORMAL.
+          # Yang penting: request-nya sampai ke project = tercatat sebagai aktivitas.
+          CODE=$(curl -sS -o /dev/null -w '%{http_code}' \
+            "${SUPABASE_URL}/rest/v1/units?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            --max-time 30 || echo "000")
+
+          echo "HTTP ${CODE}"
+          case "$CODE" in
+            200|206) echo "✅ PostgREST aktif & data terbaca." ;;
+            401|403) echo "ℹ️  PostgREST menjawab ${CODE} (RLS menolak anon) — project tetap aktif." ;;
+            *)       echo "::warning::PostgREST menjawab ${CODE}." ;;
+          esac
+
+      - name: Ringkasan
+        if: always()
+        run: |
+          {
+            echo "### Supabase Keep-Alive"
+            echo ""
+            echo "| Item | Nilai |"
+            echo "|---|---|"
+            echo "| Project | \`${{ secrets.SUPABASE_URL }}\` |"
+            echo "| Waktu ping | $(date -u +'%Y-%m-%d %H:%M UTC') |"
+            echo "| Tujuan | mencegah pause otomatis (batas Supabase Free: 7 hari idle) |"
+            echo ""
+            echo "_Workflow ini jalan otomatis setiap 2 hari._"
+          } >> "$GITHUB_STEP_SUMMARY"

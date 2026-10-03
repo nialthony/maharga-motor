@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Wallet, Download, Printer } from 'lucide-react';
 import { formatIDR } from '../data/mockData';
 
+import Badge from './ui/Badge';
+
 export default function SalesCommissionReport({ salesList, currentUser, onPrintReceipt }) {
   const [startDate, setStartDate] = useState('2026-09-01');
   const [endDate, setEndDate] = useState('2026-09-30');
@@ -26,9 +28,9 @@ export default function SalesCommissionReport({ salesList, currentUser, onPrintR
             <h2 className="text-sm sm:text-base font-bold text-zinc-100">
               Laporan Komisi Saya
             </h2>
-            <span className="px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
+            <Badge variant="emerald" size="sm" mono className="sm:text-[11px]">
               Skema Komisi: Rp 100.000 / Rp 200.000 per Unit
-            </span>
+            </Badge>
           </div>
           <p className="text-[11px] text-zinc-400 mt-0.5">
             Akun Sales: <strong>{currentUser.name}</strong> • Rekapitulasi perolehan komisi penjualan
@@ -98,7 +100,7 @@ export default function SalesCommissionReport({ salesList, currentUser, onPrintR
 
         {/* Desktop View */}
         <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left text-xs text-zinc-300">
+          <table className="min-w-[960px] w-full text-left text-xs text-zinc-300">
             <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] tracking-wider font-bold border-b border-zinc-800">
               <tr>
                 <th className="py-2.5 px-4">Unit Motor</th>

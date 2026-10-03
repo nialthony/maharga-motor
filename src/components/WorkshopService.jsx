@@ -3,6 +3,8 @@ import { Wrench, Plus, Users, Search, X, ChevronRight, CheckCircle2 } from 'luci
 import { formatIDR } from '../data/mockData';
 import RoleBadge from './RoleBadge';
 
+import Badge from './ui/Badge';
+
 export default function WorkshopService({ 
   units = [], 
   salesList = [], 
@@ -145,9 +147,9 @@ export default function WorkshopService({
                         )}
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            <Badge variant="amberStrong" size="xs" mono>
                               {selectedUnit.plate}
-                            </span>
+                            </Badge>
                             <span className="text-xs font-bold text-zinc-100 truncate">{selectedUnit.brand} {selectedUnit.model}</span>
                             <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
                               selectedUnit.status === 'Tersedia' 
@@ -295,9 +297,9 @@ export default function WorkshopService({
                   <Users className="w-3.5 h-3.5 text-purple-400" />
                   <span>Mekanik Showroom</span>
                 </h4>
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-zinc-800 text-zinc-300 border border-zinc-700">
+                <Badge variant="zinc" size="xs" mono>
                   {allMechanics.length} Staf
-                </span>
+                </Badge>
               </div>
               <div className="space-y-1.5">
                 {allMechanics.length > 0 ? (
@@ -337,7 +339,7 @@ export default function WorkshopService({
 
               {selectedUnit?.repairs && selectedUnit.repairs.length > 0 ? (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-zinc-300">
+                  <table className="min-w-[560px] w-full text-left text-xs text-zinc-300">
                     <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] tracking-wider font-bold border-b border-zinc-800">
                       <tr>
                         <th className="py-2.5 px-4">Tanggal</th>
@@ -455,9 +457,9 @@ export default function WorkshopService({
                           )}
                         </div>
                         <div className="min-w-0">
-                          <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                          <Badge variant="amberSoft" size="xs" mono>
                             {u.plate}
-                          </span>
+                          </Badge>
                           <h5 className="text-xs font-bold text-zinc-100 truncate mt-0.5">
                             {u.brand} {u.model}
                           </h5>

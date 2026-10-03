@@ -2,6 +2,8 @@ import React from 'react';
 import { X, CreditCard, CheckCircle2, ExternalLink, Printer } from 'lucide-react';
 import { formatIDR, calculateUnitEconomics } from '../data/mockData';
 
+import Badge from './ui/Badge';
+
 export default function UnitDetailModal({ 
   unit, 
   salesList = [], 
@@ -23,9 +25,9 @@ export default function UnitDetailModal({
         {/* Header */}
         <div className="p-4 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <span className="text-xs font-bold font-mono px-2 py-0.5 rounded bg-zinc-800 text-amber-400 border border-zinc-700">
+            <Badge variant="zincAmber" size="md" mono>
               {unit.plate}
-            </span>
+            </Badge>
             <h3 className="text-sm font-bold text-zinc-100">{unit.brand} {unit.model} ({unit.year})</h3>
             <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
               isSold ? 'bg-rose-950 text-rose-400 border border-rose-800' :
@@ -116,9 +118,9 @@ export default function UnitDetailModal({
                       <span>Cetak Kwitansi</span>
                     </button>
                   )}
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 dark:border-emerald-800 font-mono">
+                  <Badge variant="emeraldDual" size="smWide" shape="pill" mono>
                     {matchedSale.paymentType || (matchedSale.paymentMethod === 'dp-tempo' ? 'Tempo DP' : 'Cash Lunas')}
-                  </span>
+                  </Badge>
                 </div>
               </div>
 

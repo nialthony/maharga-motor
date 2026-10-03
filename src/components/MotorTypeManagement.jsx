@@ -11,6 +11,8 @@ import {
   Sparkles
 } from 'lucide-react';
 
+import Badge from './ui/Badge';
+
 export default function MotorTypeManagement({
   brands = [],
   setBrands,
@@ -377,7 +379,7 @@ export default function MotorTypeManagement({
       {activeTab === 'types' && (
         <div className="bg-zinc-900/90 rounded-2xl border border-zinc-800 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-zinc-300">
+            <table className="min-w-[520px] w-full text-left text-xs text-zinc-300">
               <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] tracking-wider border-b border-zinc-800">
                 <tr>
                   <th className="px-4 py-3 font-semibold">No</th>
@@ -398,9 +400,9 @@ export default function MotorTypeManagement({
                     <tr key={item.id} className="hover:bg-zinc-800/40 transition-colors">
                       <td className="px-4 py-3 text-zinc-500 font-mono text-[11px]">{idx + 1}</td>
                       <td className="px-4 py-3">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-800 text-zinc-200 border border-zinc-700">
+                        <Badge variant="zincLight" size="sm">
                           {item.brandName}
-                        </span>
+                        </Badge>
                       </td>
                       <td className="px-4 py-3 font-bold text-zinc-100">
                         {item.name}
@@ -443,7 +445,7 @@ export default function MotorTypeManagement({
       {activeTab === 'brands' && (
         <div className="bg-zinc-900/90 rounded-2xl border border-zinc-800 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-zinc-300">
+            <table className="min-w-[520px] w-full text-left text-xs text-zinc-300">
               <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] tracking-wider border-b border-zinc-800">
                 <tr>
                   <th className="px-4 py-3 font-semibold">No</th>
@@ -470,9 +472,9 @@ export default function MotorTypeManagement({
                           <span>{brand.name}</span>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-800 text-zinc-300 border border-zinc-700">
+                          <Badge variant="zinc" size="base" mono className="text-[10px]">
                             {count} Model / Tipe
-                          </span>
+                          </Badge>
                         </td>
                         <td className="px-4 py-3 text-center">
                           <div className="flex items-center justify-center gap-1.5">

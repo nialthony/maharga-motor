@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { formatIDR } from '../data/mockData';
 
+import Badge from './ui/Badge';
+
 export default function OwnerFinancialReport({ 
   salesList = [], 
   employees = [], 
@@ -231,7 +233,7 @@ export default function OwnerFinancialReport({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-zinc-300">
+          <table className="min-w-[780px] w-full text-left text-xs text-zinc-300">
             <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] tracking-wider font-bold border-b border-zinc-800">
               <tr>
                 <th className="py-3 px-4">Deskripsi / Tanggal</th>
@@ -264,9 +266,9 @@ export default function OwnerFinancialReport({
                       {item.salesName || '-'}
                     </td>
                     <td className="py-3 px-4">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 inline-block mb-0.5">
+                      <Badge variant="emerald" size="sm" className="mb-0.5">
                         Terjual
-                      </span>
+                      </Badge>
                       <span className="text-[10px] text-zinc-400 block font-mono capitalize">
                         {item.paymentMethod === 'dp-tempo' ? 'Cash-Tempo' : item.paymentMethod}
                       </span>
@@ -322,7 +324,7 @@ export default function OwnerFinancialReport({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-zinc-300">
+          <table className="min-w-[680px] w-full text-left text-xs text-zinc-300">
             <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] tracking-wider font-bold border-b border-zinc-800">
               <tr>
                 <th className="py-3 px-4">Nama Staf Sales</th>
@@ -340,9 +342,9 @@ export default function OwnerFinancialReport({
                     <span className="text-[10px] text-zinc-500 font-mono">@{staff.username}</span>
                   </td>
                   <td className="py-3 px-4 text-center">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">
+                    <Badge variant="amberStrong" size="smWide" shape="pill" mono>
                       {staff.unitCount} Unit
-                    </span>
+                    </Badge>
                   </td>
                   <td className="py-3 px-4 text-end font-mono font-semibold text-zinc-300">
                     {formatIDR(staff.omset)}
@@ -495,9 +497,9 @@ export default function OwnerFinancialReport({
                   <p className="text-xs text-zinc-600">Jual Beli Motor Bekas Berkualitas & Cash-Tempo</p>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs font-mono font-bold px-2 py-0.5 bg-zinc-100 border border-zinc-300 rounded">
+                  <Badge variant="light" size="md" mono>
                     SLIP KOMISI RESMI
-                  </span>
+                  </Badge>
                   <p className="text-[11px] text-zinc-500 mt-1 font-mono">{new Date().toLocaleDateString('id-ID')}</p>
                 </div>
               </div>

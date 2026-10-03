@@ -25,6 +25,8 @@ import { formatIDR, calculateUnitEconomics } from '../data/mockData';
 
 const generateTransactionId = () => `TX-${Date.now().toString().slice(-6)}`;
 
+import Badge from './ui/Badge';
+
 export default function SalesPOS({ 
   units = [], 
   selectedUnit, 
@@ -374,9 +376,9 @@ export default function SalesPOS({
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/15 text-amber-500 dark:text-amber-400 border border-amber-500/30">
+                      <Badge variant="amberSoftDual" size="xs">
                         {activeUnit.plate}
-                      </span>
+                      </Badge>
                       <h4 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">
                         {activeUnit.brand} {activeUnit.model} ({activeUnit.year})
                       </h4>
@@ -858,7 +860,7 @@ export default function SalesPOS({
 
             {/* Desktop Table View */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left text-xs text-zinc-300">
+              <table className="min-w-[1000px] w-full text-left text-xs text-zinc-300">
                 <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] tracking-wider font-bold border-b border-zinc-800">
                   <tr>
                     <th className="py-3 px-4">Tgl Jual</th>
@@ -996,9 +998,9 @@ export default function SalesPOS({
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-amber-400 text-xs px-1.5 py-0.5 rounded bg-zinc-950 border border-zinc-800">
+                            <Badge variant="zincSolid" size="xsMd" mono>
                               {s.plate || '-'}
-                            </span>
+                            </Badge>
                             <span className="text-[10px] text-zinc-500 font-mono">
                               {s.date ? s.date.split('-').reverse().join('/') : '-'}
                             </span>
@@ -1152,9 +1154,9 @@ export default function SalesPOS({
                           )}
                         </div>
                         <div className="min-w-0">
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/15 text-amber-500 dark:text-amber-400 border border-amber-500/30">
+                          <Badge variant="amberSoftDual" size="xs" mono>
                             {u.plate}
-                          </span>
+                          </Badge>
                           <h5 className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate mt-0.5">
                             {u.brand} {u.model}
                           </h5>

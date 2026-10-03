@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { formatIDR } from '../data/mockData';
 
+import Badge from './ui/Badge';
+
 export default function TempoMonitor({ salesList = [], onPayRemaining, onCancelTempo, onPrintReceipt }) {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -71,9 +73,9 @@ Jika sudah melakukan transfer, mohon kirimkan bukti pelunasan agar berkas jamina
               <Clock className="w-5 h-5 text-amber-400" />
               Monitoring Piutang & Titip DP (Tempo)
             </h2>
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-950 text-amber-400 border border-amber-800">
+            <Badge variant="amber" size="sm" mono>
               {tempoList.length} Aktif
-            </span>
+            </Badge>
           </div>
           <p className="text-xs text-zinc-400 mt-0.5">
             Daftar transaksi dengan skema titip uang muka (DP), sisa piutang, dan jaminan fisik yang disimpan showroom.
@@ -148,7 +150,7 @@ Jika sudah melakukan transfer, mohon kirimkan bukti pelunasan agar berkas jamina
           <>
             {/* Desktop Table */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left text-xs text-zinc-300">
+              <table className="min-w-[980px] w-full text-left text-xs text-zinc-300">
                 <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] tracking-wider font-bold border-b border-zinc-800">
                   <tr>
                     <th className="py-3 px-4">No. Transaksi</th>

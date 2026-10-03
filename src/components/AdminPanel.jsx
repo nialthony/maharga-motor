@@ -32,6 +32,8 @@ import RoleBadge from './RoleBadge';
 import MotorTypeManagement from './MotorTypeManagement';
 import ShowroomSettings from './ShowroomSettings';
 
+import Badge from './ui/Badge';
+
 export default function AdminPanel({ 
   units = [], 
   setUnits,
@@ -725,9 +727,9 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
                             <h3 className="text-sm sm:text-base font-bold text-zinc-100">
                               {selectedUnit.brand} {selectedUnit.model} ({selectedUnit.year})
                             </h3>
-                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-950 text-amber-400 border border-amber-800">
+                            <Badge variant="amber" size="sm" mono>
                               {selectedUnit.plate}
-                            </span>
+                            </Badge>
                           </div>
                           <p className="text-[11px] text-zinc-400 mt-0.5">
                             Status: <strong className="text-zinc-200">{selectedUnit.status}</strong> • Harga Display: <strong>{formatIDR(selectedUnit.displayPrice)}</strong>
@@ -946,9 +948,9 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
                     Hapus unit motor tertentu dari database tanpa mereset data showroom lainnya. Perubahan otomatis disinkronkan ke Supabase Cloud dan seluruh perangkat staf.
                   </p>
                 </div>
-                <span className="px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs font-mono text-amber-400 font-bold shrink-0">
+                <Badge variant="zincSolid" size="xlg" shape="lg" mono className="shrink-0">
                   {units.length} Unit Terdaftar
-                </span>
+                </Badge>
               </div>
             </div>
 
@@ -979,7 +981,7 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
             ) : (
               <div className="bg-zinc-900/90 rounded-xl border border-zinc-800 overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-zinc-300">
+                  <table className="min-w-[840px] w-full text-left text-xs text-zinc-300">
                     <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] tracking-wider font-bold border-b border-zinc-800">
                       <tr>
                         <th className="py-3 px-4">Foto & Motor</th>

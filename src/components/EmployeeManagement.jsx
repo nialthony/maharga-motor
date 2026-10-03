@@ -14,6 +14,8 @@ import {
 import { supabase } from '../lib/supabaseClient';
 import RoleBadge from './RoleBadge';
 
+import Badge from './ui/Badge';
+
 export default function EmployeeManagement({ employees, setEmployees, onDeleteEmployee, currentRole, onSwitchUser }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -255,7 +257,7 @@ export default function EmployeeManagement({ employees, setEmployees, onDeleteEm
       {/* Employees Table */}
       <div className="bg-zinc-900/90 rounded-xl border border-zinc-800 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-zinc-300">
+          <table className="min-w-[880px] w-full text-left text-xs text-zinc-300">
             <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] tracking-wider font-bold border-b border-zinc-800">
               <tr>
                 <th className="py-3 px-4">Nama Karyawan</th>
@@ -318,9 +320,9 @@ export default function EmployeeManagement({ employees, setEmployees, onDeleteEm
                       </button>
                     </td>
                     <td className="py-3 px-4 font-mono font-bold text-amber-400">
-                      <span className="bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800">
+                      <Badge variant="zincPlain" size="base">
                         ••••
-                      </span>
+                      </Badge>
                     </td>
                     <td className="py-3 px-4 text-center">
                       <div className="flex items-center justify-center gap-1.5">
